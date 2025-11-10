@@ -1,0 +1,94 @@
+.game-container {
+  flex: 1 1 640px;
+  background: #091b26;
+  border-radius: 20px;
+  border: 1px solid #223845;
+  position: relative;
+  overflow: hidden;
+  padding: 8px 80px;
+  order: 2;
+}
+
+#game {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #091b26;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#game.is-round-complete {
+  pointer-events: none;
+  cursor: default;
+}
+
+#game canvas {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  font-size: 1.5rem;
+  color: #eaff00;
+}
+
+.loading::after {
+  content: "...";
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0%,
+  20% {
+    content: ".";
+  }
+
+  40% {
+    content: "..";
+  }
+
+  60%,
+  100% {
+    content: "...";
+  }
+}
+
+@media (max-width: 768px), (orientation: portrait) {
+  .game-container {
+    order: 1;
+    padding: 0px;
+    min-height: clamp(
+      140px,
+      calc(
+        100vh - (var(--app-body-vertical-padding, 0px) * 2) -
+          (var(--app-container-vertical-padding, 0px) * 2)
+      ),
+      380px
+    );
+    max-height: 200px;
+  }
+
+  #game {
+    min-height: clamp(
+      140px,
+      calc(
+        100vh - (var(--app-body-vertical-padding, 0px) * 2) -
+          (var(--app-container-vertical-padding, 0px) * 2)
+      ),
+      380px
+    );
+    padding: 0px;
+    padding-bottom: 4px;
+  }
+}
