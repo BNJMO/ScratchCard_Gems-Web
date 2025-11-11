@@ -414,14 +414,13 @@ export class Card {
             iconSizePercentage ??
             contentConfig.iconSizePercentage ??
             this.iconOptions.sizePercentage;
-          const maxW = tileSize * baseSize * iconSizeFactor;
-          const maxH = tileSize * baseSize * iconSizeFactor;
-          icon.width = maxW;
-          icon.height = maxH;
+          const maxDimension = tileSize * baseSize * iconSizeFactor;
 
           if (contentConfig.texture) {
             icon.texture = contentConfig.texture;
           }
+
+          this.#applyIconSizing(icon, maxDimension, contentConfig.texture);
 
           contentConfig.configureIcon?.(icon, {
             card: this,
@@ -654,6 +653,85 @@ export class Card {
       wrap.scale.x = 1;
       wrap.scale.y = 1;
     }
+  }
+
+  #applyIconSizing(icon, maxDimension, textureOverride = null) {
+    if (!icon) {
+      return;
+    }
+
+    const targetSize = Math.max(0, maxDimension ?? 0);
+    const texture = textureOverride ?? icon.texture ?? null;
+
+    const applySquareSize = () => {
+      icon.width = targetSize;
+      icon.height = targetSize;
+    };
+
+    if (!texture) {
+      applySquareSize();
+      return;
+    }
+
+    const dimensions = this.#getTextureDimensions(texture);
+    if (!dimensions) {
+      applySquareSize();
+
+      if (texture?.valid === false && typeof texture.once === "function") {
+        texture.once("update", () => {
+          if (this.destroyed || icon.destroyed) {
+            return;
+          }
+          this.#applyIconSizing(icon, maxDimension, texture);
+        });
+      }
+
+      return;
+    }
+
+    const aspect = dimensions.width / dimensions.height;
+    if (!Number.isFinite(aspect) || aspect <= 0) {
+      applySquareSize();
+      return;
+    }
+
+    if (aspect >= 1) {
+      icon.width = targetSize;
+      icon.height = targetSize / aspect;
+    } else {
+      icon.height = targetSize;
+      icon.width = targetSize * aspect;
+    }
+  }
+
+  #getTextureDimensions(texture) {
+    if (!texture) {
+      return null;
+    }
+
+    const width =
+      texture?.orig?.width ??
+      texture?.frame?.width ??
+      texture?.trim?.width ??
+      texture?.baseTexture?.realWidth ??
+      texture?.baseTexture?.width ??
+      texture?.width ??
+      0;
+
+    const height =
+      texture?.orig?.height ??
+      texture?.frame?.height ??
+      texture?.trim?.height ??
+      texture?.baseTexture?.realHeight ??
+      texture?.baseTexture?.height ??
+      texture?.height ??
+      0;
+
+    if (width > 0 && height > 0) {
+      return { width, height };
+    }
+
+    return null;
   }
 
   startMatchShake({
