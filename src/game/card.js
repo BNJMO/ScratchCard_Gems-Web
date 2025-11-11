@@ -62,6 +62,7 @@ export class Card {
     this._spawnTweenCancel = null;
     this._matchEffectsLayer = null;
     this._frameSprite = null;
+    this._frameTweenCancel = null;
     this._activeSparkCleanup = null;
 
     this._tiltDir = 1;
@@ -69,6 +70,7 @@ export class Card {
     this._baseY = 0;
 
     this.container = this.#createCard(tileSize);
+    this.hideWinFrame();
   }
 
   setDisableAnimations(disabled) {
@@ -82,6 +84,10 @@ export class Card {
       }
       if (this._wrap) {
         this.setSkew(0);
+      }
+      if (this._frameSprite) {
+        this._frameTweenCancel?.();
+        this._frameTweenCancel = null;
       }
     }
   }
@@ -557,6 +563,10 @@ export class Card {
     this._bumpToken = null;
     this.#cancelSpawnAnimation();
     this.#stopWinHighlightLoop();
+    if (this._frameTweenCancel) {
+      this._frameTweenCancel();
+      this._frameTweenCancel = null;
+    }
     this.container?.destroy?.({ children: true });
     this._wrap = null;
     this._card = null;
@@ -564,6 +574,48 @@ export class Card {
     this._icon = null;
     this._frameSprite = null;
     this._matchEffectsLayer = null;
+  }
+
+  fadeInWinFrame({ duration = 1000 } = {}) {
+    const sprite = this._frameSprite;
+    if (!sprite) return;
+
+    const startAlpha = sprite.visible ? sprite.alpha ?? 0 : 0;
+    const clampedStart = Math.min(1, Math.max(0, startAlpha));
+    if (clampedStart >= 0.999) {
+      sprite.visible = true;
+      sprite.alpha = 1;
+      return;
+    }
+
+    this._frameTweenCancel?.();
+    this._frameTweenCancel = null;
+
+    sprite.visible = true;
+    sprite.alpha = clampedStart;
+
+    this._frameTweenCancel = this.tween({
+      duration,
+      ease: (t) => t,
+      update: (p) => {
+        const eased = Math.min(1, Math.max(0, p));
+        sprite.alpha = clampedStart + (1 - clampedStart) * eased;
+      },
+      complete: () => {
+        sprite.alpha = 1;
+        sprite.visible = true;
+        this._frameTweenCancel = null;
+      },
+    });
+  }
+
+  hideWinFrame() {
+    const sprite = this._frameSprite;
+    if (!sprite) return;
+    this._frameTweenCancel?.();
+    this._frameTweenCancel = null;
+    sprite.alpha = 0;
+    sprite.visible = false;
   }
 
   #stopWinHighlightLoop() {
@@ -846,6 +898,8 @@ export class Card {
       frameSprite.position.set(tileSize / 2, tileSize / 2);
       frameSprite.width = tileSize;
       frameSprite.height = tileSize;
+      frameSprite.alpha = 0;
+      frameSprite.visible = false;
     }
 
     const matchEffectsLayer = new Container();
