@@ -570,7 +570,7 @@ export async function createGame(mount, opts = {}) {
     ) {
       currentRoundOutcome.winFramesShown = true;
       for (const winningCard of currentRoundOutcome.winningCards) {
-        winningCard?.fadeInWinFrame?.({ duration: 1000 });
+        winningCard?.fadeInWinFrame?.({ duration: 250 });
       }
     }
 
