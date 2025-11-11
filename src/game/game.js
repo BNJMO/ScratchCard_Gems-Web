@@ -12,11 +12,11 @@ import sparkSpriteUrl from "../../assets/sprites/Spark.png";
 
 const CARD_TYPE_TEXTURES = (() => {
   const modules = import.meta.glob(
-    "../../assets/sprites/cardTypes/cardType_*.png",
+    "../../assets/sprites/cardTypes/cardType_*.svg",
     { eager: true }
   );
   return Object.entries(modules).map(([path, mod]) => {
-    const match = path.match(/cardType_([^/]+)\.png$/i);
+    const match = path.match(/cardType_([^/]+)\.svg$/i);
     const id = match?.[1] ?? path;
     const texturePath =
       typeof mod === "string" ? mod : mod?.default ?? mod ?? null;
