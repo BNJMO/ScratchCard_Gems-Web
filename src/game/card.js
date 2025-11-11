@@ -16,6 +16,7 @@ export class Card {
     animationOptions,
     iconOptions,
     matchEffects,
+    frameTexture,
     row,
     col,
     tileSize,
@@ -34,6 +35,7 @@ export class Card {
       sparkTexture: matchEffects?.sparkTexture ?? null,
       sparkDuration: Math.max(0, matchEffects?.sparkDuration ?? 1500),
     };
+    this.frameTexture = frameTexture ?? null;
     this.row = row;
     this.col = col;
     this.strokeWidth = strokeWidth;
@@ -59,6 +61,7 @@ export class Card {
     this._winHighlightInterval = null;
     this._spawnTweenCancel = null;
     this._matchEffectsLayer = null;
+    this._frameSprite = null;
     this._activeSparkCleanup = null;
 
     this._tiltDir = 1;
@@ -559,6 +562,7 @@ export class Card {
     this._card = null;
     this._inset = null;
     this._icon = null;
+    this._frameSprite = null;
     this._matchEffectsLayer = null;
   }
 
@@ -836,18 +840,30 @@ export class Card {
     icon.y = tileSize / 2;
     icon.visible = false;
 
+    const frameSprite = this.frameTexture ? new Sprite(this.frameTexture) : null;
+    if (frameSprite) {
+      frameSprite.anchor.set(0.5);
+      frameSprite.position.set(tileSize / 2, tileSize / 2);
+      frameSprite.width = tileSize;
+      frameSprite.height = tileSize;
+    }
+
     const matchEffectsLayer = new Container();
     matchEffectsLayer.position.set(tileSize / 2, tileSize / 2);
 
     const flipWrap = new Container();
-    flipWrap.addChild(
+    const children = [
       elevationShadow,
       elevationLip,
       card,
       inset,
-      matchEffectsLayer,
-      icon
-    );
+    ];
+    if (frameSprite) {
+      children.push(frameSprite);
+    }
+    children.push(matchEffectsLayer, icon);
+
+    flipWrap.addChild(...children);
     flipWrap.position.set(tileSize / 2, tileSize / 2);
     flipWrap.pivot.set(tileSize / 2, tileSize / 2);
 
@@ -863,6 +879,7 @@ export class Card {
     this._card = card;
     this._inset = inset;
     this._icon = icon;
+    this._frameSprite = frameSprite;
     this._matchEffectsLayer = matchEffectsLayer;
     this._tileSize = tileSize;
     this._tileRadius = radius;

@@ -9,6 +9,7 @@ import roundWinSoundUrl from "../../assets/sounds/Win.wav";
 import roundLostSoundUrl from "../../assets/sounds/Lost.wav";
 import twoMatchSoundUrl from "../../assets/sounds/2Match.wav";
 import sparkSpriteUrl from "../../assets/sprites/Spark.png";
+import winFrameSpriteUrl from "../../assets/sprites/WinFrame.svg";
 
 const CARD_TYPE_TEXTURES = (() => {
   const modules = import.meta.glob(
@@ -285,6 +286,7 @@ export async function createGame(mount, opts = {}) {
   );
 
   const matchSparkTexture = await loadTexture(sparkSpriteUrl);
+  const winFrameTexture = await loadTexture(winFrameSpriteUrl);
 
   const scene = new GameScene({
     root,
@@ -303,6 +305,7 @@ export async function createGame(mount, opts = {}) {
         sparkTexture: matchSparkTexture,
         sparkDuration: 1500,
       },
+      frameTexture: winFrameTexture,
       winPopupWidth: winPopupOptions.winPopupWidth,
       winPopupHeight: winPopupOptions.winPopupHeight,
     },

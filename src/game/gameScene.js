@@ -29,6 +29,7 @@ export class GameScene {
       winPopupWidth: cardOptions?.winPopupWidth,
       winPopupHeight: cardOptions?.winPopupHeight,
       matchEffects: cardOptions?.matchEffects ?? {},
+      frameTexture: cardOptions?.frameTexture ?? null,
     };
     this.layoutOptions = {
       gapBetweenTiles: layoutOptions?.gapBetweenTiles ?? 0.012,
@@ -118,6 +119,7 @@ export class GameScene {
           animationOptions: this.animationOptions,
           iconOptions: this.cardOptions.icon,
           matchEffects: this.cardOptions.matchEffects,
+          frameTexture: this.cardOptions.frameTexture,
           row: r,
           col: c,
           tileSize: layout.tileSize,
