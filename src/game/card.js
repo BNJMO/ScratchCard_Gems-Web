@@ -292,7 +292,7 @@ export class Card {
 
   highlightWin({
     faceColor = 0xeaff00,
-    scaleMultiplier = 1.08,
+    scaleMultiplier = 1.03,
     duration = 260,
   } = {}) {
     if (!this.revealed || this._winHighlighted) {
