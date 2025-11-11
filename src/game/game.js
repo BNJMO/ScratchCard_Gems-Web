@@ -31,24 +31,24 @@ const DEFAULT_PALETTE = {
   appBg: 0x091b26,
   tileBase: 0x2b4756,
   tileInset: 0x2b4756,
-  tileStroke: 0x080e11,
-  tileStrokeFlipped: 0x0f0f0f,
+  tileStroke: 0x2b4756,
+  tileStrokeFlipped: 0x061217,
   tileElevationBase: 0x1b2931,
   tileElevationShadow: 0x091b26,
   hover: 0x528aa5,
   pressedTint: 0x7a7a7a,
   defaultTint: 0xffffff,
-  cardFace: 0x0f181e,
-  cardFaceUnrevealed: 0x0f181e,
-  cardInset: 0x0f181e,
-  cardInsetUnrevealed: 0x0f181e,
+  cardFace: 0x061217,
+  cardFaceUnrevealed: 0x061217,
+  cardInset: 0x061217,
+  cardInsetUnrevealed: 0x061217,
   winPopupBorder: 0xeaff00,
   winPopupBackground: 0x091b26,
   winPopupMultiplierText: 0xeaff00,
   winPopupSeparationLine: 0x1b2931,
 };
 
-const WIN_FACE_COLOR = 0xeaff00;
+const WIN_FACE_COLOR = 0x061217;
 
 const SOUND_ALIASES = {
   tileHover: "mines.tileHover",
