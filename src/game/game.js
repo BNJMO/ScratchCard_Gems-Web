@@ -83,10 +83,36 @@ async function loadSoundLibrary() {
   }
 }
 
-async function loadTexture(path) {
+function getDevicePixelRatio() {
+  if (typeof window === "undefined") {
+    return 1;
+  }
+  const ratio = Number(window.devicePixelRatio);
+  return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
+}
+
+function resolveSvgResolution(svgResolution) {
+  if (Number.isFinite(svgResolution) && svgResolution > 0) {
+    return svgResolution;
+  }
+  const defaultMultiplier = 2;
+  const resolution = getDevicePixelRatio() * defaultMultiplier;
+  return Math.max(2, Math.ceil(resolution));
+}
+
+async function loadTexture(path, options = {}) {
   if (!path) return null;
   try {
-    return await Assets.load(path);
+    const isSvg = typeof path === "string" && /\.svg(?:$|\?)/i.test(path);
+    const asset = isSvg
+      ? {
+          src: path,
+          data: {
+            resolution: resolveSvgResolution(options.svgResolution),
+          },
+        }
+      : path;
+    return await Assets.load(asset);
   } catch (error) {
     console.error("Texture load failed", path, error);
     return null;
@@ -201,6 +227,19 @@ export async function createGame(mount, opts = {}) {
     return { width, height };
   }
 
+  const svgRasterizationResolution = (() => {
+    const absolute = Number(opts.svgRasterizationResolution);
+    if (Number.isFinite(absolute) && absolute > 0) {
+      return absolute;
+    }
+    const multiplier = Number(opts.svgRasterizationResolutionMultiplier);
+    const safeMultiplier = Number.isFinite(multiplier) && multiplier > 0
+      ? multiplier
+      : 2;
+    const computed = Math.ceil(getDevicePixelRatio() * safeMultiplier);
+    return Math.max(2, computed);
+  })();
+
   const soundEffectPaths = {
     tileTapDown: opts.tileTapDownSoundPath ?? tileTapDownSoundUrl,
     tileFlip: opts.tileFlipSoundPath ?? tileFlipSoundUrl,
@@ -262,7 +301,9 @@ export async function createGame(mount, opts = {}) {
       const entry = { ...definition };
       let texture = entry.texture;
       if (!texture && entry.texturePath) {
-        texture = await loadTexture(entry.texturePath);
+        texture = await loadTexture(entry.texturePath, {
+          svgResolution: svgRasterizationResolution,
+        });
       }
 
       const playSound =
