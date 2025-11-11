@@ -93,9 +93,11 @@ export class Card {
         if (this._winFrameVisible) {
           this._winFrame.alpha = 1;
           this._winFrame.visible = true;
+          this._winFrame.renderable = true;
         } else {
           this._winFrame.alpha = 0;
           this._winFrame.visible = false;
+          this._winFrame.renderable = false;
         }
       }
     }
@@ -862,10 +864,41 @@ export class Card {
     const winFrame = new Sprite(WIN_FRAME_TEXTURE);
     winFrame.anchor.set(0.5);
     winFrame.position.set(tileSize / 2, tileSize / 2);
-    winFrame.width = tileSize;
-    winFrame.height = tileSize;
     winFrame.visible = false;
     winFrame.alpha = 0;
+    winFrame.eventMode = "none";
+    winFrame.cursor = "default";
+
+    const syncWinFrameScale = () => {
+      if (!winFrame || winFrame.destroyed) {
+        return;
+      }
+      const texture = winFrame.texture;
+      const origWidth =
+        texture?.orig?.width ??
+        texture?.baseTexture?.realWidth ??
+        texture?.width ??
+        texture?.baseTexture?.width ??
+        1;
+      const origHeight =
+        texture?.orig?.height ??
+        texture?.baseTexture?.realHeight ??
+        texture?.height ??
+        texture?.baseTexture?.height ??
+        1;
+
+      if (origWidth <= 0 || origHeight <= 0) {
+        return;
+      }
+
+      winFrame.scale.set(tileSize / origWidth, tileSize / origHeight);
+    };
+
+    if (winFrame.texture?.valid) {
+      syncWinFrameScale();
+    } else {
+      winFrame.texture?.once?.("update", syncWinFrameScale);
+    }
 
     const matchEffectsLayer = new Container();
     matchEffectsLayer.position.set(tileSize / 2, tileSize / 2);
@@ -943,6 +976,7 @@ export class Card {
 
     this._winFrameVisible = true;
     frame.visible = true;
+    frame.renderable = true;
 
     if (this._winFrameTweenCancel) {
       this._winFrameTweenCancel();
@@ -985,6 +1019,7 @@ export class Card {
     }
     frame.alpha = 0;
     frame.visible = false;
+    frame.renderable = false;
   }
 }
 
