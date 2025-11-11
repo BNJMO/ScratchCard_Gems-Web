@@ -1,7 +1,7 @@
 import { BlurFilter, Container, Graphics, Sprite } from "pixi.js";
 import Ease from "../ease.js";
 
-const AUTO_SELECTION_COLOR = 0xCFDD00;
+const AUTO_SELECTION_COLOR = 0xcfdd00;
 
 /**
  * Card encapsulates the visual and interaction logic for a single tile on the grid.
@@ -16,6 +16,7 @@ export class Card {
     animationOptions,
     iconOptions,
     matchEffects,
+    frameTexture,
     row,
     col,
     tileSize,
@@ -34,6 +35,7 @@ export class Card {
       sparkTexture: matchEffects?.sparkTexture ?? null,
       sparkDuration: Math.max(0, matchEffects?.sparkDuration ?? 1500),
     };
+    this.frameTexture = frameTexture ?? null;
     this.row = row;
     this.col = col;
     this.strokeWidth = strokeWidth;
@@ -59,6 +61,8 @@ export class Card {
     this._winHighlightInterval = null;
     this._spawnTweenCancel = null;
     this._matchEffectsLayer = null;
+    this._frameSprite = null;
+    this._frameTweenCancel = null;
     this._activeSparkCleanup = null;
 
     this._tiltDir = 1;
@@ -70,6 +74,7 @@ export class Card {
     this._hoverColorProgress = 0;
 
     this.container = this.#createCard(tileSize);
+    this.hideWinFrame();
   }
 
   setDisableAnimations(disabled) {
@@ -83,6 +88,10 @@ export class Card {
       }
       if (this._wrap) {
         this.setSkew(0);
+      }
+      if (this._frameSprite) {
+        this._frameTweenCancel?.();
+        this._frameTweenCancel = null;
       }
     }
   }
@@ -123,8 +132,13 @@ export class Card {
 
   hover(on) {
     if (this.revealed || this._animating) return;
-    const { hoverEnabled, hoverEnterDuration, hoverExitDuration, hoverSkewAmount, hoverTiltAxis } =
-      this.animationOptions;
+    const {
+      hoverEnabled,
+      hoverEnterDuration,
+      hoverExitDuration,
+      hoverSkewAmount,
+      hoverTiltAxis,
+    } = this.animationOptions;
 
     if (!hoverEnabled) return;
 
@@ -207,7 +221,8 @@ export class Card {
         this.setSkew(baseSkew + wiggle);
 
         const scaleWiggle =
-          1 + Math.sin(p * Math.PI * wiggleSelectionTimes) * wiggleSelectionScale;
+          1 +
+          Math.sin(p * Math.PI * wiggleSelectionTimes) * wiggleSelectionScale;
         wrap.scale.x = wrap.scale.y = baseScale * scaleWiggle;
       },
       complete: () => {
@@ -253,11 +268,7 @@ export class Card {
       ease: (t) => t,
       update: (t) => {
         const scale = wrap.scale;
-        if (
-          this._bumpToken !== token ||
-          this.destroyed ||
-          !scale
-        ) {
+        if (this._bumpToken !== token || this.destroyed || !scale) {
           return;
         }
         const phase = t < 0.5 ? easeOut(t / 0.5) : easeOut((1 - t) / 0.5);
@@ -279,7 +290,11 @@ export class Card {
     });
   }
 
-  highlightWin({ faceColor = 0xeaff00, scaleMultiplier = 1.08, duration = 260 } = {}) {
+  highlightWin({
+    faceColor = 0xeaff00,
+    scaleMultiplier = 1.08,
+    duration = 260,
+  } = {}) {
     if (!this.revealed || this._winHighlighted) {
       return;
     }
@@ -562,12 +577,59 @@ export class Card {
     this._bumpToken = null;
     this.#cancelSpawnAnimation();
     this.#stopWinHighlightLoop();
+    if (this._frameTweenCancel) {
+      this._frameTweenCancel();
+      this._frameTweenCancel = null;
+    }
     this.container?.destroy?.({ children: true });
     this._wrap = null;
     this._card = null;
     this._inset = null;
     this._icon = null;
+    this._frameSprite = null;
     this._matchEffectsLayer = null;
+  }
+
+  fadeInWinFrame({ duration = 1000 } = {}) {
+    const sprite = this._frameSprite;
+    if (!sprite) return;
+
+    const startAlpha = sprite.visible ? sprite.alpha ?? 0 : 0;
+    const clampedStart = Math.min(1, Math.max(0, startAlpha));
+    if (clampedStart >= 0.999) {
+      sprite.visible = true;
+      sprite.alpha = 1;
+      return;
+    }
+
+    this._frameTweenCancel?.();
+    this._frameTweenCancel = null;
+
+    sprite.visible = true;
+    sprite.alpha = clampedStart;
+
+    this._frameTweenCancel = this.tween({
+      duration,
+      ease: (t) => t,
+      update: (p) => {
+        const eased = Math.min(1, Math.max(0, p));
+        sprite.alpha = clampedStart + (1 - clampedStart) * eased;
+      },
+      complete: () => {
+        sprite.alpha = 1;
+        sprite.visible = true;
+        this._frameTweenCancel = null;
+      },
+    });
+  }
+
+  hideWinFrame() {
+    const sprite = this._frameSprite;
+    if (!sprite) return;
+    this._frameTweenCancel?.();
+    this._frameTweenCancel = null;
+    sprite.alpha = 0;
+    sprite.visible = false;
   }
 
   #stopWinHighlightLoop() {
@@ -692,9 +754,15 @@ export class Card {
     sprite.alpha = 0;
 
     const textureWidth =
-      texture?.width ?? texture?.orig?.width ?? texture?.baseTexture?.width ?? 1;
+      texture?.width ??
+      texture?.orig?.width ??
+      texture?.baseTexture?.width ??
+      1;
     const textureHeight =
-      texture?.height ?? texture?.orig?.height ?? texture?.baseTexture?.height ?? 1;
+      texture?.height ??
+      texture?.orig?.height ??
+      texture?.baseTexture?.height ??
+      1;
     const maxDimension = Math.max(1, textureWidth, textureHeight);
     const baseScale = (this._tileSize * 0.9) / maxDimension;
 
@@ -791,13 +859,16 @@ export class Card {
     }
 
     if (revealedByPlayer) {
-      return paletteSet?.revealed ?? fallbackRevealed ?? this.palette.defaultTint;
+      return (
+        paletteSet?.revealed ?? fallbackRevealed ?? this.palette.defaultTint
+      );
     }
 
     return (
       paletteSet?.unrevealed ??
       fallbackUnrevealed ??
-      this.palette.defaultTint ?? 0xffffff
+      this.palette.defaultTint ??
+      0xffffff
     );
   }
 
@@ -852,7 +923,7 @@ export class Card {
 
   #createCard(tileSize) {
     const pad = Math.max(6, Math.floor(tileSize * 0.04));
-    const radius = Math.max(10, Math.floor(tileSize * 0.04));
+    const radius = Math.max(10, Math.floor(tileSize * 0.12));
     const elevationOffset = Math.max(2, Math.floor(tileSize * 0.04));
     const lipOffset = Math.max(4, Math.floor(tileSize * 0.01));
     const shadowBlur = Math.max(10, Math.floor(tileSize * 0.22));
@@ -896,7 +967,13 @@ export class Card {
 
     const inset = new Graphics();
     inset
-      .roundRect(pad, pad, tileSize - pad * 2, tileSize - pad * 2, Math.max(0, radius - pad))
+      .roundRect(
+        pad,
+        pad,
+        tileSize - pad * 2,
+        tileSize - pad * 2,
+        Math.max(0, radius - pad)
+      )
       .fill(this.palette.tileInset);
 
     const icon = new Sprite();
@@ -905,20 +982,44 @@ export class Card {
     icon.y = tileSize / 2;
     icon.visible = false;
 
+    const frameSprite = this.frameTexture
+      ? new Sprite(this.frameTexture)
+      : null;
+    if (frameSprite) {
+      frameSprite.anchor.set(0.5);
+      frameSprite.position.set(tileSize / 2, tileSize / 2);
+      frameSprite.width = tileSize;
+      frameSprite.height = tileSize;
+      frameSprite.alpha = 0;
+      frameSprite.visible = false;
+    }
+
     const matchEffectsLayer = new Container();
     matchEffectsLayer.position.set(tileSize / 2, tileSize / 2);
 
     const flipWrap = new Container();
-    flipWrap.addChild(
+    const children = [
       elevationShadow,
       elevationLip,
       elevationHoverOverlay,
       card,
       inset,
       hoverFaceOverlay,
-      matchEffectsLayer,
-      icon
-    );
+    ];
+    if (frameSprite) {
+      children.push(frameSprite);
+    }
+    children.push(matchEffectsLayer, icon);
+
+    flipWrap.addChild(...children);
+
+    if (frameSprite) {
+      children.push(frameSprite);
+    }
+    children.push(matchEffectsLayer, icon);
+
+    flipWrap.addChild(...children);
+
     flipWrap.position.set(tileSize / 2, tileSize / 2);
     flipWrap.pivot.set(tileSize / 2, tileSize / 2);
 
@@ -934,6 +1035,7 @@ export class Card {
     this._card = card;
     this._inset = inset;
     this._icon = icon;
+    this._frameSprite = frameSprite;
     this._matchEffectsLayer = matchEffectsLayer;
     this._hoverFaceOverlay = hoverFaceOverlay;
     this._hoverElevationOverlay = elevationHoverOverlay;
@@ -961,9 +1063,13 @@ export class Card {
       });
     }
 
-    tile.on("pointerover", () => this.interactionCallbacks.onPointerOver?.(this));
+    tile.on("pointerover", () =>
+      this.interactionCallbacks.onPointerOver?.(this)
+    );
     tile.on("pointerout", () => this.interactionCallbacks.onPointerOut?.(this));
-    tile.on("pointerdown", () => this.interactionCallbacks.onPointerDown?.(this));
+    tile.on("pointerdown", () =>
+      this.interactionCallbacks.onPointerDown?.(this)
+    );
     tile.on("pointerup", () => this.interactionCallbacks.onPointerUp?.(this));
     tile.on("pointerupoutside", () =>
       this.interactionCallbacks.onPointerUpOutside?.(this)
@@ -973,4 +1079,3 @@ export class Card {
     return tile;
   }
 }
-
