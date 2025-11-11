@@ -30,13 +30,16 @@ const CARD_TYPE_TEXTURES = (() => {
 
 const DEFAULT_PALETTE = {
   appBg: 0x091b26,
-  tileBase: 0x2b4756,
-  tileInset: 0x2b4756,
-  tileStroke: 0x2b4756,
-  tileStrokeFlipped: 0x061217,
+  tileBase: 0x223845, // main tile face
+  tileInset: 0x223845, // inner inset
+  tileStroke: 0x223845, // subtle outline
+  tileStrokeFlipped: 0x0f0f0f, // subtle outline
+  tileElevationBase: 0x152a33, // visible lip beneath tile face
+  tileElevationFlipped: 0x040c0f, // revealed tile elevation lip
+  tileElevationHover: 0x1f3f4c, // hover elevation lip
   tileElevationBase: 0x1b2931,
-  tileElevationShadow: 0x091b26,
-  hover: 0x528aa5,
+  tileElevationShadow: 0x091b26, // soft drop shadow
+  hover: 0x35586b, // hover
   pressedTint: 0x7a7a7a,
   defaultTint: 0xffffff,
   cardFace: 0x061217,
@@ -163,7 +166,7 @@ export async function createGame(mount, opts = {}) {
     hoverEnabled: opts.hoverEnabled ?? true,
     hoverEnterDuration: opts.hoverEnterDuration ?? 120,
     hoverExitDuration: opts.hoverExitDuration ?? 200,
-    hoverSkewAmount: opts.hoverSkewAmount ?? 0.02,
+    hoverSkewAmount: opts.hoverSkewAmount ?? 0.00,
     hoverTiltAxis: opts.hoverTiltAxis ?? "x",
   };
 

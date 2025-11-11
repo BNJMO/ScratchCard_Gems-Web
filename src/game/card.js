@@ -1,7 +1,7 @@
 import { BlurFilter, Container, Graphics, Sprite } from "pixi.js";
 import Ease from "../ease.js";
 
-const AUTO_SELECTION_COLOR = 0xCFDD00;
+const AUTO_SELECTION_COLOR = 0xcfdd00;
 
 /**
  * Card encapsulates the visual and interaction logic for a single tile on the grid.
@@ -68,6 +68,10 @@ export class Card {
     this._tiltDir = 1;
     this._baseX = 0;
     this._baseY = 0;
+    this._hoverFaceOverlay = null;
+    this._hoverElevationOverlay = null;
+    this._hoverColorToken = null;
+    this._hoverColorProgress = 0;
 
     this.container = this.#createCard(tileSize);
     this.hideWinFrame();
@@ -128,13 +132,20 @@ export class Card {
 
   hover(on) {
     if (this.revealed || this._animating) return;
-    const { hoverEnabled, hoverEnterDuration, hoverExitDuration, hoverSkewAmount, hoverTiltAxis } =
-      this.animationOptions;
+    const {
+      hoverEnabled,
+      hoverEnterDuration,
+      hoverExitDuration,
+      hoverSkewAmount,
+      hoverTiltAxis,
+    } = this.animationOptions;
 
     if (!hoverEnabled) return;
 
     const wrap = this._wrap;
     if (!wrap) return;
+
+    this.#animateHoverColors(on);
 
     const startScale = wrap.scale.x;
     const endScale = on ? 1.03 : 1.0;
@@ -175,6 +186,8 @@ export class Card {
 
   stopHover() {
     this._hoverToken = Symbol("card-hover-cancel");
+    this._hoverColorToken = Symbol("card-hover-colors-cancel");
+    this.#setHoverColorProgress(0);
   }
 
   wiggle() {
@@ -208,7 +221,8 @@ export class Card {
         this.setSkew(baseSkew + wiggle);
 
         const scaleWiggle =
-          1 + Math.sin(p * Math.PI * wiggleSelectionTimes) * wiggleSelectionScale;
+          1 +
+          Math.sin(p * Math.PI * wiggleSelectionTimes) * wiggleSelectionScale;
         wrap.scale.x = wrap.scale.y = baseScale * scaleWiggle;
       },
       complete: () => {
@@ -254,11 +268,7 @@ export class Card {
       ease: (t) => t,
       update: (t) => {
         const scale = wrap.scale;
-        if (
-          this._bumpToken !== token ||
-          this.destroyed ||
-          !scale
-        ) {
+        if (this._bumpToken !== token || this.destroyed || !scale) {
           return;
         }
         const phase = t < 0.5 ? easeOut(t / 0.5) : easeOut((1 - t) / 0.5);
@@ -280,7 +290,11 @@ export class Card {
     });
   }
 
-  highlightWin({ faceColor = 0xeaff00, scaleMultiplier = 1.08, duration = 260 } = {}) {
+  highlightWin({
+    faceColor = 0xeaff00,
+    scaleMultiplier = 1.08,
+    duration = 260,
+  } = {}) {
     if (!this.revealed || this._winHighlighted) {
       return;
     }
@@ -740,9 +754,15 @@ export class Card {
     sprite.alpha = 0;
 
     const textureWidth =
-      texture?.width ?? texture?.orig?.width ?? texture?.baseTexture?.width ?? 1;
+      texture?.width ??
+      texture?.orig?.width ??
+      texture?.baseTexture?.width ??
+      1;
     const textureHeight =
-      texture?.height ?? texture?.orig?.height ?? texture?.baseTexture?.height ?? 1;
+      texture?.height ??
+      texture?.orig?.height ??
+      texture?.baseTexture?.height ??
+      1;
     const maxDimension = Math.max(1, textureWidth, textureHeight);
     const baseScale = (this._tileSize * 0.9) / maxDimension;
 
@@ -839,14 +859,66 @@ export class Card {
     }
 
     if (revealedByPlayer) {
-      return paletteSet?.revealed ?? fallbackRevealed ?? this.palette.defaultTint;
+      return (
+        paletteSet?.revealed ?? fallbackRevealed ?? this.palette.defaultTint
+      );
     }
 
     return (
       paletteSet?.unrevealed ??
       fallbackUnrevealed ??
-      this.palette.defaultTint ?? 0xffffff
+      this.palette.defaultTint ??
+      0xffffff
     );
+  }
+
+  #animateHoverColors(isHovering) {
+    const overlays = [this._hoverFaceOverlay, this._hoverElevationOverlay];
+    if (!overlays.some(Boolean)) {
+      return;
+    }
+
+    const startProgress = this._hoverColorProgress ?? 0;
+    const endProgress = isHovering ? 1 : 0;
+    if (startProgress === endProgress) {
+      return;
+    }
+
+    const token = Symbol("card-hover-colors");
+    this._hoverColorToken = token;
+
+    if (this.disableAnimations) {
+      this.#setHoverColorProgress(endProgress);
+      return;
+    }
+
+    const duration = 250;
+    this.tween({
+      duration,
+      ease: (t) => t,
+      update: (t) => {
+        if (this._hoverColorToken !== token) return;
+        const progress = startProgress + (endProgress - startProgress) * t;
+        this.#setHoverColorProgress(progress);
+      },
+      complete: () => {
+        if (this._hoverColorToken !== token) return;
+        this.#setHoverColorProgress(endProgress);
+      },
+    });
+  }
+
+  #setHoverColorProgress(value) {
+    const progress = Math.max(0, Math.min(1, value));
+    this._hoverColorProgress = progress;
+
+    if (this._hoverFaceOverlay) {
+      this._hoverFaceOverlay.alpha = progress;
+    }
+
+    if (this._hoverElevationOverlay) {
+      this._hoverElevationOverlay.alpha = progress;
+    }
   }
 
   #createCard(tileSize) {
@@ -871,6 +943,12 @@ export class Card {
     elevationLip.y = lipOffset;
     elevationLip.alpha = 0.85;
 
+    const elevationHoverOverlay = new Graphics()
+      .roundRect(0, 0, tileSize, tileSize, radius)
+      .fill(this.palette.tileElevationHover ?? this.palette.tileElevationBase);
+    elevationHoverOverlay.y = lipOffset;
+    elevationHoverOverlay.alpha = 0;
+
     const card = new Graphics();
     card
       .roundRect(0, 0, tileSize, tileSize, radius)
@@ -881,9 +959,21 @@ export class Card {
         alpha: 0.9,
       });
 
+    const hoverFaceOverlay = new Graphics();
+    hoverFaceOverlay
+      .roundRect(0, 0, tileSize, tileSize, radius)
+      .fill(this.palette.hover ?? this.palette.tileBase);
+    hoverFaceOverlay.alpha = 0;
+
     const inset = new Graphics();
     inset
-      .roundRect(pad, pad, tileSize - pad * 2, tileSize - pad * 2, Math.max(0, radius - pad))
+      .roundRect(
+        pad,
+        pad,
+        tileSize - pad * 2,
+        tileSize - pad * 2,
+        Math.max(0, radius - pad)
+      )
       .fill(this.palette.tileInset);
 
     const icon = new Sprite();
@@ -892,7 +982,9 @@ export class Card {
     icon.y = tileSize / 2;
     icon.visible = false;
 
-    const frameSprite = this.frameTexture ? new Sprite(this.frameTexture) : null;
+    const frameSprite = this.frameTexture
+      ? new Sprite(this.frameTexture)
+      : null;
     if (frameSprite) {
       frameSprite.anchor.set(0.5);
       frameSprite.position.set(tileSize / 2, tileSize / 2);
@@ -909,8 +1001,10 @@ export class Card {
     const children = [
       elevationShadow,
       elevationLip,
+      elevationHoverOverlay,
       card,
       inset,
+      hoverFaceOverlay,
     ];
     if (frameSprite) {
       children.push(frameSprite);
@@ -918,6 +1012,14 @@ export class Card {
     children.push(matchEffectsLayer, icon);
 
     flipWrap.addChild(...children);
+
+    if (frameSprite) {
+      children.push(frameSprite);
+    }
+    children.push(matchEffectsLayer, icon);
+
+    flipWrap.addChild(...children);
+
     flipWrap.position.set(tileSize / 2, tileSize / 2);
     flipWrap.pivot.set(tileSize / 2, tileSize / 2);
 
@@ -935,6 +1037,8 @@ export class Card {
     this._icon = icon;
     this._frameSprite = frameSprite;
     this._matchEffectsLayer = matchEffectsLayer;
+    this._hoverFaceOverlay = hoverFaceOverlay;
+    this._hoverElevationOverlay = elevationHoverOverlay;
     this._tileSize = tileSize;
     this._tileRadius = radius;
     this._tilePad = pad;
@@ -959,9 +1063,13 @@ export class Card {
       });
     }
 
-    tile.on("pointerover", () => this.interactionCallbacks.onPointerOver?.(this));
+    tile.on("pointerover", () =>
+      this.interactionCallbacks.onPointerOver?.(this)
+    );
     tile.on("pointerout", () => this.interactionCallbacks.onPointerOut?.(this));
-    tile.on("pointerdown", () => this.interactionCallbacks.onPointerDown?.(this));
+    tile.on("pointerdown", () =>
+      this.interactionCallbacks.onPointerDown?.(this)
+    );
     tile.on("pointerup", () => this.interactionCallbacks.onPointerUp?.(this));
     tile.on("pointerupoutside", () =>
       this.interactionCallbacks.onPointerUpOutside?.(this)
@@ -971,4 +1079,3 @@ export class Card {
     return tile;
   }
 }
-
