@@ -821,7 +821,7 @@ export class Card {
       return;
     }
 
-    const duration = 1000;
+    const duration = 250;
     this.tween({
       duration,
       ease: (t) => t,
@@ -914,8 +914,8 @@ export class Card {
       elevationLip,
       elevationHoverOverlay,
       card,
-      hoverFaceOverlay,
       inset,
+      hoverFaceOverlay,
       matchEffectsLayer,
       icon
     );
