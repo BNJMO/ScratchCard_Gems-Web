@@ -1,7 +1,9 @@
-import { BlurFilter, Container, Graphics, Sprite } from "pixi.js";
+import { BlurFilter, Container, Graphics, Sprite, Texture } from "pixi.js";
 import Ease from "../ease.js";
+import winFrameUrl from "../../assets/sprites/WinFrame.svg";
 
 const AUTO_SELECTION_COLOR = 0xCFDD00;
+const WIN_FRAME_TEXTURE = Texture.from(winFrameUrl);
 
 /**
  * Card encapsulates the visual and interaction logic for a single tile on the grid.
@@ -60,6 +62,9 @@ export class Card {
     this._spawnTweenCancel = null;
     this._matchEffectsLayer = null;
     this._activeSparkCleanup = null;
+    this._winFrame = null;
+    this._winFrameTweenCancel = null;
+    this._winFrameVisible = false;
 
     this._tiltDir = 1;
     this._baseX = 0;
@@ -83,6 +88,21 @@ export class Card {
       }
       if (this._wrap) {
         this.setSkew(0);
+      }
+      if (this._winFrameTweenCancel) {
+        this._winFrameTweenCancel();
+        this._winFrameTweenCancel = null;
+      }
+      if (this._winFrame) {
+        if (this._winFrameVisible) {
+          this._winFrame.alpha = 1;
+          this._winFrame.visible = true;
+          this._winFrame.renderable = true;
+        } else {
+          this._winFrame.alpha = 0;
+          this._winFrame.visible = false;
+          this._winFrame.renderable = false;
+        }
       }
     }
   }
@@ -562,12 +582,17 @@ export class Card {
     this._bumpToken = null;
     this.#cancelSpawnAnimation();
     this.#stopWinHighlightLoop();
+    if (this._winFrameTweenCancel) {
+      this._winFrameTweenCancel();
+      this._winFrameTweenCancel = null;
+    }
     this.container?.destroy?.({ children: true });
     this._wrap = null;
     this._card = null;
     this._inset = null;
     this._icon = null;
     this._matchEffectsLayer = null;
+    this._winFrame = null;
   }
 
   #stopWinHighlightLoop() {
@@ -905,6 +930,45 @@ export class Card {
     icon.y = tileSize / 2;
     icon.visible = false;
 
+    const winFrame = new Sprite(WIN_FRAME_TEXTURE);
+    winFrame.anchor.set(0.5);
+    winFrame.position.set(tileSize / 2, tileSize / 2);
+    winFrame.visible = false;
+    winFrame.alpha = 0;
+    winFrame.eventMode = "none";
+    winFrame.cursor = "default";
+
+    const syncWinFrameScale = () => {
+      if (!winFrame || winFrame.destroyed) {
+        return;
+      }
+      const texture = winFrame.texture;
+      const origWidth =
+        texture?.orig?.width ??
+        texture?.baseTexture?.realWidth ??
+        texture?.width ??
+        texture?.baseTexture?.width ??
+        1;
+      const origHeight =
+        texture?.orig?.height ??
+        texture?.baseTexture?.realHeight ??
+        texture?.height ??
+        texture?.baseTexture?.height ??
+        1;
+
+      if (origWidth <= 0 || origHeight <= 0) {
+        return;
+      }
+
+      winFrame.scale.set(tileSize / origWidth, tileSize / origHeight);
+    };
+
+    if (winFrame.texture?.valid) {
+      syncWinFrameScale();
+    } else {
+      winFrame.texture?.once?.("update", syncWinFrameScale);
+    }
+
     const matchEffectsLayer = new Container();
     matchEffectsLayer.position.set(tileSize / 2, tileSize / 2);
 
@@ -917,7 +981,8 @@ export class Card {
       inset,
       hoverFaceOverlay,
       matchEffectsLayer,
-      icon
+      icon,
+      winFrame
     );
     flipWrap.position.set(tileSize / 2, tileSize / 2);
     flipWrap.pivot.set(tileSize / 2, tileSize / 2);
@@ -940,6 +1005,7 @@ export class Card {
     this._tileSize = tileSize;
     this._tileRadius = radius;
     this._tilePad = pad;
+    this._winFrame = winFrame;
 
     const s0 = 0.0001;
     flipWrap.scale?.set?.(s0);
@@ -971,6 +1037,62 @@ export class Card {
     tile.on("pointertap", () => this.interactionCallbacks.onPointerTap?.(this));
 
     return tile;
+  }
+
+  showWinFrame({ animate = true } = {}) {
+    const frame = this._winFrame;
+    if (!frame) return;
+
+    if (this._winFrameVisible && frame.visible && !this._winFrameTweenCancel && frame.alpha >= 1) {
+      return;
+    }
+
+    this._winFrameVisible = true;
+    frame.visible = true;
+    frame.renderable = true;
+
+    if (this._winFrameTweenCancel) {
+      this._winFrameTweenCancel();
+      this._winFrameTweenCancel = null;
+    }
+
+    if (!animate) {
+      frame.alpha = 1;
+      return;
+    }
+
+    frame.alpha = 0;
+    this._winFrameTweenCancel = this.tween({
+      duration: 260,
+      ease: (t) => 1 - Math.pow(1 - t, 3),
+      update: (value) => {
+        if (!this._winFrame || frame.destroyed) return;
+        frame.alpha = value;
+      },
+      complete: () => {
+        if (!this._winFrame || frame.destroyed) return;
+        frame.alpha = 1;
+        this._winFrameTweenCancel = null;
+      },
+    });
+  }
+
+  hideWinFrame() {
+    const frame = this._winFrame;
+    if (!frame) return;
+
+    if (!this._winFrameVisible && !frame.visible && !this._winFrameTweenCancel && frame.alpha <= 0) {
+      return;
+    }
+
+    this._winFrameVisible = false;
+    if (this._winFrameTweenCancel) {
+      this._winFrameTweenCancel();
+      this._winFrameTweenCancel = null;
+    }
+    frame.alpha = 0;
+    frame.visible = false;
+    frame.renderable = false;
   }
 }
 
