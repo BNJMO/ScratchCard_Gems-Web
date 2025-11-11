@@ -881,7 +881,7 @@ const opts = {
   hoverEnterDuration: 120,
   hoverExitDuration: 200,
   hoverTiltAxis: "x",
-  hoverSkewAmount: 0.02,
+  hoverSkewAmount: 0.00,
   disableAnimations: false,
   wiggleSelectionEnabled: true,
   wiggleSelectionDuration: 900,
