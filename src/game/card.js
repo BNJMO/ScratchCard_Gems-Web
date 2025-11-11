@@ -64,6 +64,10 @@ export class Card {
     this._tiltDir = 1;
     this._baseX = 0;
     this._baseY = 0;
+    this._hoverFaceOverlay = null;
+    this._hoverElevationOverlay = null;
+    this._hoverColorToken = null;
+    this._hoverColorProgress = 0;
 
     this.container = this.#createCard(tileSize);
   }
@@ -127,6 +131,8 @@ export class Card {
     const wrap = this._wrap;
     if (!wrap) return;
 
+    this.#animateHoverColors(on);
+
     const startScale = wrap.scale.x;
     const endScale = on ? 1.03 : 1.0;
     const startSkew = this.getSkew();
@@ -166,6 +172,8 @@ export class Card {
 
   stopHover() {
     this._hoverToken = Symbol("card-hover-cancel");
+    this._hoverColorToken = Symbol("card-hover-colors-cancel");
+    this.#setHoverColorProgress(0);
   }
 
   wiggle() {
@@ -793,6 +801,55 @@ export class Card {
     );
   }
 
+  #animateHoverColors(isHovering) {
+    const overlays = [this._hoverFaceOverlay, this._hoverElevationOverlay];
+    if (!overlays.some(Boolean)) {
+      return;
+    }
+
+    const startProgress = this._hoverColorProgress ?? 0;
+    const endProgress = isHovering ? 1 : 0;
+    if (startProgress === endProgress) {
+      return;
+    }
+
+    const token = Symbol("card-hover-colors");
+    this._hoverColorToken = token;
+
+    if (this.disableAnimations) {
+      this.#setHoverColorProgress(endProgress);
+      return;
+    }
+
+    const duration = 1000;
+    this.tween({
+      duration,
+      ease: (t) => t,
+      update: (t) => {
+        if (this._hoverColorToken !== token) return;
+        const progress = startProgress + (endProgress - startProgress) * t;
+        this.#setHoverColorProgress(progress);
+      },
+      complete: () => {
+        if (this._hoverColorToken !== token) return;
+        this.#setHoverColorProgress(endProgress);
+      },
+    });
+  }
+
+  #setHoverColorProgress(value) {
+    const progress = Math.max(0, Math.min(1, value));
+    this._hoverColorProgress = progress;
+
+    if (this._hoverFaceOverlay) {
+      this._hoverFaceOverlay.alpha = progress;
+    }
+
+    if (this._hoverElevationOverlay) {
+      this._hoverElevationOverlay.alpha = progress;
+    }
+  }
+
   #createCard(tileSize) {
     const pad = Math.max(6, Math.floor(tileSize * 0.04));
     const radius = Math.max(10, Math.floor(tileSize * 0.04));
@@ -815,6 +872,12 @@ export class Card {
     elevationLip.y = lipOffset;
     elevationLip.alpha = 0.85;
 
+    const elevationHoverOverlay = new Graphics()
+      .roundRect(0, 0, tileSize, tileSize, radius)
+      .fill(this.palette.tileElevationHover ?? this.palette.tileElevationBase);
+    elevationHoverOverlay.y = lipOffset;
+    elevationHoverOverlay.alpha = 0;
+
     const card = new Graphics();
     card
       .roundRect(0, 0, tileSize, tileSize, radius)
@@ -824,6 +887,12 @@ export class Card {
         width: this.strokeWidth,
         alpha: 0.9,
       });
+
+    const hoverFaceOverlay = new Graphics();
+    hoverFaceOverlay
+      .roundRect(0, 0, tileSize, tileSize, radius)
+      .fill(this.palette.hover ?? this.palette.tileBase);
+    hoverFaceOverlay.alpha = 0;
 
     const inset = new Graphics();
     inset
@@ -843,7 +912,9 @@ export class Card {
     flipWrap.addChild(
       elevationShadow,
       elevationLip,
+      elevationHoverOverlay,
       card,
+      hoverFaceOverlay,
       inset,
       matchEffectsLayer,
       icon
@@ -864,6 +935,8 @@ export class Card {
     this._inset = inset;
     this._icon = icon;
     this._matchEffectsLayer = matchEffectsLayer;
+    this._hoverFaceOverlay = hoverFaceOverlay;
+    this._hoverElevationOverlay = elevationHoverOverlay;
     this._tileSize = tileSize;
     this._tileRadius = radius;
     this._tilePad = pad;
