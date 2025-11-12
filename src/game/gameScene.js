@@ -65,6 +65,7 @@ export class GameScene {
     this.resizeObserver = null;
     this._windowResizeListener = null;
     this._currentResolution = 1;
+    this._lastLayout = null;
   }
 
   async init() {
@@ -158,7 +159,7 @@ export class GameScene {
   layoutCards(layout = this.#layoutSizes()) {
     if (!this.cards.length) return;
 
-    const { tileSize, gap, contentSize } = layout;
+    const { tileSize, gap, contentSize, boardCenterX, boardCenterY } = layout;
     const startX = -contentSize / 2;
     const startY = -contentSize / 2;
 
@@ -169,10 +170,13 @@ export class GameScene {
       card.setLayout({ x, y, scale });
     }
 
-    this.board.position.set(
-      this.app.renderer.width / 2,
-      this.app.renderer.height / 2
-    );
+    const centerX =
+      boardCenterX ?? (this.app?.renderer?.width ?? 0) / 2;
+    const centerY =
+      boardCenterY ?? (this.app?.renderer?.height ?? 0) / 2;
+
+    this.board.position.set(centerX, centerY);
+    this._lastLayout = layout;
   }
 
   resize() {
@@ -231,6 +235,7 @@ export class GameScene {
     this.boardShadows?.removeChildren();
     this.boardContent?.removeChildren();
     this.cards = [];
+    this._lastLayout = null;
   }
 
   setAnimationsEnabled(enabled) {
@@ -319,23 +324,67 @@ export class GameScene {
   }
 
   #layoutSizes() {
-    const size = Math.min(this.app.renderer.width, this.app.renderer.height);
+    const rendererWidth = this.app?.renderer?.width ?? 1;
+    const rendererHeight = this.app?.renderer?.height ?? 1;
+    const { horizontal, vertical } = this.#getGridPadding();
+
+    const availableWidth = Math.max(1, rendererWidth - horizontal * 2);
+    const availableHeight = Math.max(1, rendererHeight - vertical * 2);
+    const size = Math.min(availableWidth, availableHeight);
+
     const topSpace = 30;
     const boardSpace = Math.max(40, size - topSpace - 5);
     const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0.012;
     const gap = Math.max(1, Math.floor(boardSpace * gapValue));
     const totalGaps = gap * (this.gridSize - 1);
-    const tileSize = Math.floor((boardSpace - totalGaps) / this.gridSize);
+    const tileArea = Math.max(1, boardSpace - totalGaps);
+    const tileSize = Math.max(1, Math.floor(tileArea / this.gridSize));
     const contentSize = tileSize * this.gridSize + totalGaps;
-    return { tileSize, gap, contentSize };
+    const boardCenterX = horizontal + availableWidth / 2;
+    const boardCenterY = vertical + availableHeight / 2;
+
+    return { tileSize, gap, contentSize, boardCenterX, boardCenterY };
   }
 
   #positionWinPopup() {
     if (!this.winPopup) return;
-    this.winPopup.container.position.set(
-      this.app.renderer.width / 2,
-      this.app.renderer.height / 2
-    );
+    const layout = this._lastLayout;
+    const fallbackWidth = this.app?.renderer?.width ?? 0;
+    const fallbackHeight = this.app?.renderer?.height ?? 0;
+    const centerX = layout?.boardCenterX ?? fallbackWidth / 2;
+    const centerY = layout?.boardCenterY ?? fallbackHeight / 2;
+    this.winPopup.container.position.set(centerX, centerY);
+  }
+
+  #getGridPadding() {
+    if (!this.app?.renderer) {
+      return { horizontal: 0, vertical: 0 };
+    }
+
+    const rendererWidth = this.app.renderer.width;
+    const rendererHeight = this.app.renderer.height;
+
+    const horizontalPadding = rendererWidth > 0 ? rendererWidth * 0.02 : 0;
+
+    let verticalPadding = 0;
+    if (typeof window !== "undefined") {
+      const viewportHeight = Number(window.innerHeight);
+      if (Number.isFinite(viewportHeight) && viewportHeight > 0) {
+        verticalPadding = viewportHeight * 0.06;
+      }
+    }
+
+    if (!(verticalPadding > 0) && rendererHeight > 0) {
+      verticalPadding = rendererHeight * 0.06;
+    }
+
+    const maxHorizontal = Math.max(0, rendererWidth / 2 - 1);
+    const maxVertical = Math.max(0, rendererHeight / 2 - 1);
+
+    return {
+      horizontal: Math.max(0, Math.min(horizontalPadding, maxHorizontal)),
+      vertical: Math.max(0, Math.min(verticalPadding, maxVertical)),
+    };
   }
 
   #createWinPopup() {
