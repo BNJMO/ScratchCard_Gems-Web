@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
 import { Card } from "./card.js";
 
 const DEFAULT_FONT_FAMILY = "Inter, system-ui, -apple-system, Segoe UI, Arial";
@@ -9,6 +9,7 @@ export class GameScene {
     backgroundColor,
     initialSize,
     palette,
+    backgroundTexture,
     fontFamily = DEFAULT_FONT_FAMILY,
     gridSize,
     strokeWidth,
@@ -22,6 +23,7 @@ export class GameScene {
     this.initialSize = Math.max(1, initialSize || 400);
     this.palette = palette;
     this.fontFamily = fontFamily;
+    this.backgroundTexture = backgroundTexture ?? null;
     this.gridSize = gridSize;
     this.strokeWidth = strokeWidth;
     this.cardOptions = {
@@ -60,9 +62,11 @@ export class GameScene {
     this.boardContent = null;
     this.ui = null;
     this.winPopup = null;
+    this.backgroundSprite = null;
     this.resizeObserver = null;
     this._windowResizeListener = null;
     this._currentResolution = 1;
+    this._lastLayout = null;
   }
 
   async init() {
@@ -78,6 +82,13 @@ export class GameScene {
 
     this._currentResolution = initialResolution;
     this.app.renderer.resolution = this._currentResolution;
+
+    if (this.backgroundTexture) {
+      this.backgroundSprite = new Sprite(this.backgroundTexture);
+      this.backgroundSprite.anchor.set(0.5, 0.5);
+      this.backgroundSprite.eventMode = "none";
+      this.app.stage.addChild(this.backgroundSprite);
+    }
 
     this.board = new Container();
     this.boardShadows = new Container();
@@ -150,7 +161,7 @@ export class GameScene {
   layoutCards(layout = this.#layoutSizes()) {
     if (!this.cards.length) return;
 
-    const { tileSize, gap, contentSize } = layout;
+    const { tileSize, gap, contentSize, boardCenterX, boardCenterY } = layout;
     const startX = -contentSize / 2;
     const startY = -contentSize / 2;
 
@@ -161,10 +172,13 @@ export class GameScene {
       card.setLayout({ x, y, scale });
     }
 
-    this.board.position.set(
-      this.app.renderer.width / 2,
-      this.app.renderer.height / 2
-    );
+    const centerX =
+      boardCenterX ?? (this.app?.renderer?.width ?? 0) / 2;
+    const centerY =
+      boardCenterY ?? (this.app?.renderer?.height ?? 0) / 2;
+
+    this.board.position.set(centerX, centerY);
+    this._lastLayout = layout;
   }
 
   resize() {
@@ -181,12 +195,39 @@ export class GameScene {
     const size = Math.floor(Math.min(width, height));
     this.app.renderer.resize(size, size);
     this.#syncCanvasCssSize(size);
+    this.#layoutBackgroundSprite();
     if (this.cards.length > 0) {
       this.layoutCards();
     }
 
     this.#positionWinPopup();
     this.onResize?.(size);
+  }
+
+  #layoutBackgroundSprite() {
+    if (!this.app || !this.backgroundSprite) return;
+
+    const rendererWidth = this.app.renderer.width;
+    const rendererHeight = this.app.renderer.height;
+    if (rendererWidth <= 0 || rendererHeight <= 0) return;
+
+    const texture = this.backgroundSprite.texture;
+    const textureWidth = texture?.orig?.width || texture?.width || 0;
+    const textureHeight = texture?.orig?.height || texture?.height || 0;
+    if (textureWidth <= 0 || textureHeight <= 0) {
+      return;
+    }
+
+    const scale = Math.max(
+      rendererWidth / textureWidth,
+      rendererHeight / textureHeight
+    );
+
+    this.backgroundSprite.scale.set(scale);
+    this.backgroundSprite.position.set(
+      rendererWidth / 2,
+      rendererHeight / 2
+    );
   }
 
   clearGrid() {
@@ -196,6 +237,7 @@ export class GameScene {
     this.boardShadows?.removeChildren();
     this.boardContent?.removeChildren();
     this.cards = [];
+    this._lastLayout = null;
   }
 
   setAnimationsEnabled(enabled) {
@@ -284,23 +326,107 @@ export class GameScene {
   }
 
   #layoutSizes() {
-    const size = Math.min(this.app.renderer.width, this.app.renderer.height);
+    const rendererWidth = this.app?.renderer?.width ?? 1;
+    const rendererHeight = this.app?.renderer?.height ?? 1;
+    const { horizontal, vertical } = this.#getGridPadding();
+
+    const availableWidth = Math.max(1, rendererWidth - horizontal * 2);
+    const availableHeight = Math.max(1, rendererHeight - vertical * 2);
+    const size = Math.min(availableWidth, availableHeight);
+
     const topSpace = 30;
     const boardSpace = Math.max(40, size - topSpace - 5);
     const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0.012;
     const gap = Math.max(1, Math.floor(boardSpace * gapValue));
     const totalGaps = gap * (this.gridSize - 1);
-    const tileSize = Math.floor((boardSpace - totalGaps) / this.gridSize);
+    const tileArea = Math.max(1, boardSpace - totalGaps);
+    const tileSize = Math.max(1, Math.floor(tileArea / this.gridSize));
     const contentSize = tileSize * this.gridSize + totalGaps;
-    return { tileSize, gap, contentSize };
+    const boardCenterX = horizontal + availableWidth / 2;
+    const boardCenterY = vertical + availableHeight / 2;
+
+    return { tileSize, gap, contentSize, boardCenterX, boardCenterY };
   }
 
   #positionWinPopup() {
     if (!this.winPopup) return;
-    this.winPopup.container.position.set(
-      this.app.renderer.width / 2,
-      this.app.renderer.height / 2
-    );
+    const layout = this._lastLayout;
+    const fallbackWidth = this.app?.renderer?.width ?? 0;
+    const fallbackHeight = this.app?.renderer?.height ?? 0;
+    const centerX = layout?.boardCenterX ?? fallbackWidth / 2;
+    const centerY = layout?.boardCenterY ?? fallbackHeight / 2;
+    this.winPopup.container.position.set(centerX, centerY);
+  }
+
+  #getGridPadding() {
+    if (!this.app?.renderer) {
+      return { horizontal: 0, vertical: 0 };
+    }
+
+    if (this.#isPortraitViewport()) {
+      return { horizontal: 0, vertical: 0 };
+    }
+
+    const rendererWidth = this.app.renderer.width;
+    const rendererHeight = this.app.renderer.height;
+
+    const horizontalPadding = rendererWidth > 0 ? rendererWidth * 0.02 : 0;
+
+    let verticalPadding = 0;
+    if (typeof window !== "undefined") {
+      const viewportHeight = Number(window.innerHeight);
+      if (Number.isFinite(viewportHeight) && viewportHeight > 0) {
+        verticalPadding = viewportHeight * 0.06;
+      }
+    }
+
+    if (!(verticalPadding > 0) && rendererHeight > 0) {
+      verticalPadding = rendererHeight * 0.06;
+    }
+
+    const maxHorizontal = Math.max(0, rendererWidth / 2 - 1);
+    const maxVertical = Math.max(0, rendererHeight / 2 - 1);
+
+    return {
+      horizontal: Math.max(0, Math.min(horizontalPadding, maxHorizontal)),
+      vertical: Math.max(0, Math.min(verticalPadding, maxVertical)),
+    };
+  }
+
+  #isPortraitViewport() {
+    if (typeof window !== "undefined") {
+      const viewportWidth = Number(window.innerWidth);
+      const viewportHeight = Number(window.innerHeight);
+      if (
+        Number.isFinite(viewportWidth) &&
+        Number.isFinite(viewportHeight) &&
+        viewportWidth > 0 &&
+        viewportHeight > 0
+      ) {
+        return viewportHeight >= viewportWidth;
+      }
+
+      const mediaQuery = window.matchMedia?.("(orientation: portrait)");
+      if (mediaQuery?.matches === true) {
+        return true;
+      }
+      if (mediaQuery?.matches === false) {
+        return false;
+      }
+    }
+
+    const rendererWidth = this.app?.renderer?.width;
+    const rendererHeight = this.app?.renderer?.height;
+    if (
+      Number.isFinite(rendererWidth) &&
+      Number.isFinite(rendererHeight) &&
+      rendererWidth > 0 &&
+      rendererHeight > 0
+    ) {
+      return rendererHeight > rendererWidth;
+    }
+
+    return false;
   }
 
   #createWinPopup() {

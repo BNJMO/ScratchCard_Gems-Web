@@ -14,6 +14,22 @@ import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
 import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
 import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
 
+const optionalBackgroundSpriteModules = import.meta.glob(
+  "../../assets/sprites/game_background.svg",
+  {
+    eager: true,
+  }
+);
+
+const gameBackgroundSpriteUrl = (() => {
+  const module =
+    optionalBackgroundSpriteModules["../../assets/sprites/game_background.svg"];
+  if (!module) {
+    return null;
+  }
+  return typeof module === "string" ? module : module?.default ?? null;
+})();
+
 const CARD_TYPE_TEXTURES = (() => {
   const modules = import.meta.glob(
     "../../assets/sprites/cardTypes/cardType_*.svg",
@@ -332,13 +348,16 @@ export async function createGame(mount, opts = {}) {
     })
   );
 
+
   const [
+    gameBackgroundTexture,
     matchSparkTexture,
     winFrameTexture,
     tileDefaultTexture,
     tileHoverTexture,
     tileFlippedTexture,
   ] = await Promise.all([
+    loadTexture(gameBackgroundSpriteUrl, {svgResolution: svgRasterizationResolution,}),
     loadTexture(sparkSpriteUrl),
     loadTexture(winFrameSpriteUrl),
     loadTexture(tileUnflippedSpriteUrl, {
@@ -378,6 +397,7 @@ export async function createGame(mount, opts = {}) {
       winPopupWidth: winPopupOptions.winPopupWidth,
       winPopupHeight: winPopupOptions.winPopupHeight,
     },
+    backgroundTexture: gameBackgroundTexture,
     layoutOptions: { gapBetweenTiles },
     animationOptions: {
       ...hoverOptions,
