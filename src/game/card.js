@@ -1,4 +1,4 @@
-import { BlurFilter, Container, Graphics, Sprite } from "pixi.js";
+import { BLEND_MODES, BlurFilter, Container, Graphics, Sprite } from "pixi.js";
 import Ease from "../ease.js";
 
 const AUTO_SELECTION_COLOR = 0xcfdd00;
@@ -1011,6 +1011,7 @@ export class Card {
       .fill(this.palette.tileElevationShadow);
     elevationShadow.y = elevationOffset;
     elevationShadow.alpha = 0.32;
+    elevationShadow.blendMode = BLEND_MODES.DST_OVER;
     const shadowFilter = new BlurFilter(shadowBlur);
     shadowFilter.quality = 2;
     elevationShadow.filters = [shadowFilter];
