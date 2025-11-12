@@ -9,7 +9,10 @@ import roundWinSoundUrl from "../../assets/sounds/Win.wav";
 import roundLostSoundUrl from "../../assets/sounds/Lost.wav";
 import twoMatchSoundUrl from "../../assets/sounds/2Match.wav";
 import sparkSpriteUrl from "../../assets/sprites/Spark.png";
-import winFrameSpriteUrl from "../../assets/sprites/WinFrame.svg";
+import winFrameSpriteUrl from "../../assets/sprites/winFrame.svg";
+import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
+import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
+import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
 
 const optionalBackgroundSpriteModules = import.meta.glob(
   "../../assets/sprites/game_background.svg",
@@ -345,11 +348,28 @@ export async function createGame(mount, opts = {}) {
     })
   );
 
-  const matchSparkTexture = await loadTexture(sparkSpriteUrl);
-  const winFrameTexture = await loadTexture(winFrameSpriteUrl);
-  const gameBackgroundTexture = await loadTexture(gameBackgroundSpriteUrl, {
-    svgResolution: svgRasterizationResolution,
-  });
+
+  const [
+    gameBackgroundTexture,
+    matchSparkTexture,
+    winFrameTexture,
+    tileDefaultTexture,
+    tileHoverTexture,
+    tileFlippedTexture,
+  ] = await Promise.all([
+    loadTexture(gameBackgroundSpriteUrl, {svgResolution: svgRasterizationResolution,}),
+    loadTexture(sparkSpriteUrl),
+    loadTexture(winFrameSpriteUrl),
+    loadTexture(tileUnflippedSpriteUrl, {
+      svgResolution: svgRasterizationResolution,
+    }),
+    loadTexture(tileHoveredSpriteUrl, {
+      svgResolution: svgRasterizationResolution,
+    }),
+    loadTexture(tileFlippedSpriteUrl, {
+      svgResolution: svgRasterizationResolution,
+    }),
+  ]);
 
   const scene = new GameScene({
     root,
@@ -369,6 +389,11 @@ export async function createGame(mount, opts = {}) {
         sparkDuration: 1500,
       },
       frameTexture: winFrameTexture,
+      stateTextures: {
+        default: tileDefaultTexture,
+        hover: tileHoverTexture,
+        flipped: tileFlippedTexture,
+      },
       winPopupWidth: winPopupOptions.winPopupWidth,
       winPopupHeight: winPopupOptions.winPopupHeight,
     },
