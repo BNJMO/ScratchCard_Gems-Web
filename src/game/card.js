@@ -1,4 +1,4 @@
-import { BLEND_MODES, BlurFilter, Container, Graphics, Sprite } from "pixi.js";
+import { BlurFilter, Container, Graphics, Sprite } from "pixi.js";
 import Ease from "../ease.js";
 
 const AUTO_SELECTION_COLOR = 0xcfdd00;
@@ -72,6 +72,8 @@ export class Card {
     this._hoverElevationOverlay = null;
     this._hoverColorToken = null;
     this._hoverColorProgress = 0;
+    this._shadowContainer = null;
+    this._shadowWrap = null;
 
     this.container = this.#createCard(tileSize);
     this.hideWinFrame();
@@ -86,6 +88,9 @@ export class Card {
       if (this._wrap?.scale?.set) {
         this._wrap.scale.set(1);
       }
+      if (this._shadowWrap?.scale?.set) {
+        this._shadowWrap.scale.set(1);
+      }
       if (this._wrap) {
         this.setSkew(0);
       }
@@ -98,6 +103,10 @@ export class Card {
 
   get displayObject() {
     return this.container;
+  }
+
+  get shadowDisplayObject() {
+    return this._shadowContainer;
   }
 
   setAutoSelected(selected, { refresh = true } = {}) {
@@ -143,6 +152,8 @@ export class Card {
     if (!hoverEnabled) return;
 
     const wrap = this._wrap;
+    const shadowWrap = this._shadowWrap;
+    const shadowContainer = this._shadowContainer;
     if (!wrap) return;
 
     this.#animateHoverColors(on);
@@ -153,14 +164,20 @@ export class Card {
     const endSkew = on ? hoverSkewAmount : 0;
     const startY = this.container.y;
     const endY = on ? this._baseY - 3 : this._baseY;
+    const startShadowY = shadowContainer?.y ?? startY;
+    const endShadowY = on ? this._baseY - 3 : this._baseY;
 
     const token = Symbol("card-hover");
     this._hoverToken = token;
 
     if (this.disableAnimations) {
       this._wrap.scale?.set?.(endScale);
+      shadowWrap?.scale?.set?.(endScale);
       this.setSkew(endSkew);
       this.container.y = endY;
+      if (shadowContainer) {
+        shadowContainer.y = endShadowY;
+      }
       return;
     }
 
@@ -171,15 +188,29 @@ export class Card {
         if (this._hoverToken !== token) return;
         const scale = startScale + (endScale - startScale) * p;
         wrap.scale.x = wrap.scale.y = scale;
+        if (shadowWrap?.scale) {
+          shadowWrap.scale.x = shadowWrap.scale.y = scale;
+        }
         const k = startSkew + (endSkew - startSkew) * p;
         this.setSkew(k);
-        this.container.y = startY + (endY - startY) * p;
+        const nextY = startY + (endY - startY) * p;
+        this.container.y = nextY;
+        if (shadowContainer) {
+          shadowContainer.y =
+            startShadowY + (endShadowY - startShadowY) * p;
+        }
       },
       complete: () => {
         if (this._hoverToken !== token) return;
         wrap.scale.x = wrap.scale.y = endScale;
+        if (shadowWrap?.scale) {
+          shadowWrap.scale.x = shadowWrap.scale.y = endScale;
+        }
         this.setSkew(endSkew);
         this.container.y = endY;
+        if (shadowContainer) {
+          shadowContainer.y = endShadowY;
+        }
       },
     });
   }
@@ -202,8 +233,10 @@ export class Card {
     if (!wiggleSelectionEnabled || this._animating) return;
 
     const wrap = this._wrap;
+    const shadowWrap = this._shadowWrap;
     const baseSkew = this.getSkew();
     const baseScale = wrap.scale.x;
+    const baseShadowScale = shadowWrap?.scale?.x ?? null;
 
     this._animating = true;
 
@@ -224,11 +257,18 @@ export class Card {
           1 +
           Math.sin(p * Math.PI * wiggleSelectionTimes) * wiggleSelectionScale;
         wrap.scale.x = wrap.scale.y = baseScale * scaleWiggle;
+        if (shadowWrap?.scale && baseShadowScale != null) {
+          const next = baseShadowScale * scaleWiggle;
+          shadowWrap.scale.x = shadowWrap.scale.y = next;
+        }
       },
       complete: () => {
         if (this._wiggleToken !== token) return;
         this.setSkew(baseSkew);
         wrap.scale.x = wrap.scale.y = baseScale;
+        if (shadowWrap?.scale && baseShadowScale != null) {
+          shadowWrap.scale.x = shadowWrap.scale.y = baseShadowScale;
+        }
         this._animating = false;
       },
     });
@@ -246,10 +286,19 @@ export class Card {
     const baseScale = wrap.scale;
     if (!baseScale) return;
 
+    const shadowWrap = this._shadowWrap;
+    const shadowScale = shadowWrap?.scale ?? null;
+
     const baseScaleX = baseScale.x;
     const baseScaleY = baseScale.y;
     const targetScaleX = baseScaleX * scaleMultiplier;
     const targetScaleY = baseScaleY * scaleMultiplier;
+    const shadowBaseScaleX = shadowScale?.x ?? null;
+    const shadowBaseScaleY = shadowScale?.y ?? null;
+    const shadowTargetScaleX =
+      shadowBaseScaleX != null ? shadowBaseScaleX * scaleMultiplier : null;
+    const shadowTargetScaleY =
+      shadowBaseScaleY != null ? shadowBaseScaleY * scaleMultiplier : null;
 
     const token = Symbol("card-bump");
     this._bumpToken = token;
@@ -257,6 +306,10 @@ export class Card {
     if (this.disableAnimations || duration <= 0) {
       baseScale.x = baseScaleX;
       baseScale.y = baseScaleY;
+      if (shadowScale && shadowBaseScaleX != null && shadowBaseScaleY != null) {
+        shadowScale.x = shadowBaseScaleX;
+        shadowScale.y = shadowBaseScaleY;
+      }
       this._bumpToken = null;
       return;
     }
@@ -276,6 +329,22 @@ export class Card {
         const nextScaleY = baseScaleY + (targetScaleY - baseScaleY) * phase;
         scale.x = nextScaleX;
         scale.y = nextScaleY;
+        if (
+          shadowScale &&
+          shadowBaseScaleX != null &&
+          shadowBaseScaleY != null &&
+          shadowTargetScaleX != null &&
+          shadowTargetScaleY != null
+        ) {
+          const nextShadowX =
+            shadowBaseScaleX +
+            (shadowTargetScaleX - shadowBaseScaleX) * phase;
+          const nextShadowY =
+            shadowBaseScaleY +
+            (shadowTargetScaleY - shadowBaseScaleY) * phase;
+          shadowScale.x = nextShadowX;
+          shadowScale.y = nextShadowY;
+        }
       },
       complete: () => {
         const scale = wrap.scale;
@@ -285,6 +354,10 @@ export class Card {
         }
         scale.x = baseScaleX;
         scale.y = baseScaleY;
+        if (shadowScale && shadowBaseScaleX != null && shadowBaseScaleY != null) {
+          shadowScale.x = shadowBaseScaleX;
+          shadowScale.y = shadowBaseScaleY;
+        }
         this._bumpToken = null;
       },
     });
@@ -316,10 +389,18 @@ export class Card {
     if (!this._wrap?.scale || !this.container) return;
     this.stopMatchShake();
     this._wrap.scale.x = this._wrap.scale.y = 1;
+    if (this._shadowWrap?.scale) {
+      this._shadowWrap.scale.x = this._shadowWrap.scale.y = 1;
+    }
     this.setSkew(0);
     this.container.x = this._baseX;
     this.container.y = this._baseY;
     this.container.rotation = 0;
+    if (this._shadowContainer) {
+      this._shadowContainer.x = this._baseX;
+      this._shadowContainer.y = this._baseY;
+      this._shadowContainer.rotation = 0;
+    }
     this._shakeActive = false;
     this._bumpToken = null;
     this.#stopWinHighlightLoop();
@@ -361,6 +442,7 @@ export class Card {
 
     const easeFlip = Ease[flipEaseFunction] || ((t) => t);
     const wrap = this._wrap;
+    const shadowWrap = this._shadowWrap;
     const card = this._card;
     const inset = this._inset;
     const icon = this._icon;
@@ -368,6 +450,9 @@ export class Card {
     const radius = this._tileRadius;
     const pad = this._tilePad;
     const startScaleY = Math.max(1, wrap.scale.y);
+    const startShadowScaleY = shadowWrap?.scale
+      ? Math.max(1, shadowWrap.scale.y)
+      : null;
     const startSkew = this.getSkew();
     const startTilt = this._tiltDir >= 0 ? +1 : -1;
 
@@ -400,6 +485,11 @@ export class Card {
 
         wrap.scale.x = widthFactor * popS;
         wrap.scale.y = startScaleY * popS;
+        if (shadowWrap?.scale) {
+          const baseY = startShadowScaleY ?? startScaleY;
+          shadowWrap.scale.x = widthFactor * popS;
+          shadowWrap.scale.y = baseY * popS;
+        }
         this.setSkew(skewOut);
 
         if (!this._swapHandled && t >= 0.5) {
@@ -541,12 +631,17 @@ export class Card {
     this._baseX = x;
     this._baseY = y;
     this.container.position.set(x, y);
+    this._shadowContainer?.position.set(x, y);
     if (scale != null) {
       this.container.scale?.set?.(scale, scale);
+      this._shadowContainer?.scale?.set?.(scale, scale);
       this._layoutScale = scale;
     }
     if (!this._shakeActive) {
       this.container.rotation = 0;
+      if (this._shadowContainer) {
+        this._shadowContainer.rotation = 0;
+      }
     }
   }
 
@@ -554,8 +649,14 @@ export class Card {
     if (!this._wrap?.skew) return;
     if (this.animationOptions.hoverTiltAxis === "y") {
       this._wrap.skew.y = v;
+      if (this._shadowWrap?.skew) {
+        this._shadowWrap.skew.y = v;
+      }
     } else {
       this._wrap.skew.x = v;
+      if (this._shadowWrap?.skew) {
+        this._shadowWrap.skew.x = v;
+      }
     }
   }
 
@@ -580,6 +681,9 @@ export class Card {
       this._frameTweenCancel();
       this._frameTweenCancel = null;
     }
+    this._shadowContainer?.destroy?.({ children: true });
+    this._shadowContainer = null;
+    this._shadowWrap = null;
     this.container?.destroy?.({ children: true });
     this._wrap = null;
     this._card = null;
@@ -644,6 +748,7 @@ export class Card {
     }
 
     const wrap = this._wrap;
+    const shadowWrap = this._shadowWrap;
     this._spawnTweenCancel();
     this._spawnTweenCancel = null;
 
@@ -652,6 +757,12 @@ export class Card {
     } else if (wrap?.scale) {
       wrap.scale.x = 1;
       wrap.scale.y = 1;
+    }
+    if (shadowWrap?.scale?.set) {
+      shadowWrap.scale.set(1, 1);
+    } else if (shadowWrap?.scale) {
+      shadowWrap.scale.x = 1;
+      shadowWrap.scale.y = 1;
     }
   }
 
@@ -810,6 +921,11 @@ export class Card {
       this.container.x = this._baseX;
       this.container.y = this._baseY;
       this.container.rotation = 0;
+    }
+    if (this._shadowContainer) {
+      this._shadowContainer.x = this._baseX;
+      this._shadowContainer.y = this._baseY;
+      this._shadowContainer.rotation = 0;
     }
   }
 
@@ -1011,10 +1127,18 @@ export class Card {
       .fill(this.palette.tileElevationShadow);
     elevationShadow.y = elevationOffset;
     elevationShadow.alpha = 0.32;
-    elevationShadow.blendMode = BLEND_MODES.DST_OVER;
     const shadowFilter = new BlurFilter(shadowBlur);
     shadowFilter.quality = 2;
     elevationShadow.filters = [shadowFilter];
+
+    const shadowWrap = new Container();
+    shadowWrap.addChild(elevationShadow);
+    shadowWrap.position.set(tileSize / 2, tileSize / 2);
+    shadowWrap.pivot.set(tileSize / 2, tileSize / 2);
+
+    const shadowContainer = new Container();
+    shadowContainer.addChild(shadowWrap);
+    shadowContainer.eventMode = "none";
 
     const elevationLip = new Graphics()
       .roundRect(0, 0, tileSize, tileSize, radius)
@@ -1077,27 +1201,16 @@ export class Card {
     matchEffectsLayer.position.set(tileSize / 2, tileSize / 2);
 
     const flipWrap = new Container();
-    const children = [
-      elevationShadow,
+    flipWrap.addChild(
       elevationLip,
       elevationHoverOverlay,
       card,
       inset,
       hoverFaceOverlay,
-    ];
-    if (frameSprite) {
-      children.push(frameSprite);
-    }
-    children.push(matchEffectsLayer, icon);
-
-    flipWrap.addChild(...children);
-
-    if (frameSprite) {
-      children.push(frameSprite);
-    }
-    children.push(matchEffectsLayer, icon);
-
-    flipWrap.addChild(...children);
+      ...(frameSprite ? [frameSprite] : []),
+      matchEffectsLayer,
+      icon
+    );
 
     flipWrap.position.set(tileSize / 2, tileSize / 2);
     flipWrap.pivot.set(tileSize / 2, tileSize / 2);
@@ -1111,6 +1224,8 @@ export class Card {
     tile.col = this.col;
 
     this._wrap = flipWrap;
+    this._shadowContainer = shadowContainer;
+    this._shadowWrap = shadowWrap;
     this._card = card;
     this._inset = inset;
     this._icon = icon;
@@ -1124,8 +1239,10 @@ export class Card {
 
     const s0 = 0.0001;
     flipWrap.scale?.set?.(s0);
+    shadowWrap.scale?.set?.(s0);
     if (this.disableAnimations) {
       flipWrap.scale?.set?.(1, 1);
+      shadowWrap.scale?.set?.(1, 1);
     } else {
       this._spawnTweenCancel?.();
       this._spawnTweenCancel = this.tween({
@@ -1134,9 +1251,11 @@ export class Card {
         update: (p) => {
           const s = s0 + (1 - s0) * p;
           flipWrap.scale?.set?.(s);
+          shadowWrap.scale?.set?.(s);
         },
         complete: () => {
           flipWrap.scale?.set?.(1, 1);
+          shadowWrap.scale?.set?.(1, 1);
           this._spawnTweenCancel = null;
         },
       });
