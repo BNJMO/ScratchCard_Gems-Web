@@ -586,6 +586,11 @@ export class Card {
     this._tileState = "flipped";
     this._isHovering = false;
     this.#updateTileTexture();
+    if (this.stateTextures?.flipped) {
+      sprite.tint = 0xffffff;
+      return;
+    }
+
     if (color != null) {
       sprite.tint = color;
     } else {
