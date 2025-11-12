@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
 import { Card } from "./card.js";
 
 const DEFAULT_FONT_FAMILY = "Inter, system-ui, -apple-system, Segoe UI, Arial";
@@ -9,6 +9,7 @@ export class GameScene {
     backgroundColor,
     initialSize,
     palette,
+    backgroundTexture,
     fontFamily = DEFAULT_FONT_FAMILY,
     gridSize,
     strokeWidth,
@@ -22,6 +23,7 @@ export class GameScene {
     this.initialSize = Math.max(1, initialSize || 400);
     this.palette = palette;
     this.fontFamily = fontFamily;
+    this.backgroundTexture = backgroundTexture ?? null;
     this.gridSize = gridSize;
     this.strokeWidth = strokeWidth;
     this.cardOptions = {
@@ -59,6 +61,7 @@ export class GameScene {
     this.boardContent = null;
     this.ui = null;
     this.winPopup = null;
+    this.backgroundSprite = null;
     this.resizeObserver = null;
     this._windowResizeListener = null;
     this._currentResolution = 1;
@@ -77,6 +80,13 @@ export class GameScene {
 
     this._currentResolution = initialResolution;
     this.app.renderer.resolution = this._currentResolution;
+
+    if (this.backgroundTexture) {
+      this.backgroundSprite = new Sprite(this.backgroundTexture);
+      this.backgroundSprite.anchor.set(0.5, 0.5);
+      this.backgroundSprite.eventMode = "none";
+      this.app.stage.addChild(this.backgroundSprite);
+    }
 
     this.board = new Container();
     this.boardShadows = new Container();
@@ -179,12 +189,39 @@ export class GameScene {
     const size = Math.floor(Math.min(width, height));
     this.app.renderer.resize(size, size);
     this.#syncCanvasCssSize(size);
+    this.#layoutBackgroundSprite();
     if (this.cards.length > 0) {
       this.layoutCards();
     }
 
     this.#positionWinPopup();
     this.onResize?.(size);
+  }
+
+  #layoutBackgroundSprite() {
+    if (!this.app || !this.backgroundSprite) return;
+
+    const rendererWidth = this.app.renderer.width;
+    const rendererHeight = this.app.renderer.height;
+    if (rendererWidth <= 0 || rendererHeight <= 0) return;
+
+    const texture = this.backgroundSprite.texture;
+    const textureWidth = texture?.orig?.width || texture?.width || 0;
+    const textureHeight = texture?.orig?.height || texture?.height || 0;
+    if (textureWidth <= 0 || textureHeight <= 0) {
+      return;
+    }
+
+    const scale = Math.max(
+      rendererWidth / textureWidth,
+      rendererHeight / textureHeight
+    );
+
+    this.backgroundSprite.scale.set(scale);
+    this.backgroundSprite.position.set(
+      rendererWidth / 2,
+      rendererHeight / 2
+    );
   }
 
   clearGrid() {

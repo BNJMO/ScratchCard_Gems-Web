@@ -10,6 +10,7 @@ import roundLostSoundUrl from "../../assets/sounds/Lost.wav";
 import twoMatchSoundUrl from "../../assets/sounds/2Match.wav";
 import sparkSpriteUrl from "../../assets/sprites/Spark.png";
 import winFrameSpriteUrl from "../../assets/sprites/WinFrame.svg";
+import gameBackgroundSpriteUrl from "../../assets/sprites/game_background.svg";
 
 const CARD_TYPE_TEXTURES = (() => {
   const modules = import.meta.glob(
@@ -331,6 +332,9 @@ export async function createGame(mount, opts = {}) {
 
   const matchSparkTexture = await loadTexture(sparkSpriteUrl);
   const winFrameTexture = await loadTexture(winFrameSpriteUrl);
+  const gameBackgroundTexture = await loadTexture(gameBackgroundSpriteUrl, {
+    svgResolution: svgRasterizationResolution,
+  });
 
   const scene = new GameScene({
     root,
@@ -353,6 +357,7 @@ export async function createGame(mount, opts = {}) {
       winPopupWidth: winPopupOptions.winPopupWidth,
       winPopupHeight: winPopupOptions.winPopupHeight,
     },
+    backgroundTexture: gameBackgroundTexture,
     layoutOptions: { gapBetweenTiles },
     animationOptions: {
       ...hoverOptions,
