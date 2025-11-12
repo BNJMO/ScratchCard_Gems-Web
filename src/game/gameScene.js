@@ -33,6 +33,7 @@ export class GameScene {
     };
     this.layoutOptions = {
       gapBetweenTiles: layoutOptions?.gapBetweenTiles ?? 0.012,
+      verticalGapPx: Math.max(0, Math.floor(layoutOptions?.verticalGapPx ?? 4)),
     };
     this.animationOptions = {
       hoverEnabled: animationOptions?.hoverEnabled ?? true,
@@ -148,14 +149,14 @@ export class GameScene {
   layoutCards(layout = this.#layoutSizes()) {
     if (!this.cards.length) return;
 
-    const { tileSize, gap, contentSize } = layout;
-    const startX = -contentSize / 2;
-    const startY = -contentSize / 2;
+    const { tileSize, gap, verticalGap, contentWidth, contentHeight } = layout;
+    const startX = -contentWidth / 2;
+    const startY = -contentHeight / 2;
 
     for (const card of this.cards) {
       const scale = tileSize / card._tileSize;
       const x = startX + card.col * (tileSize + gap);
-      const y = startY + card.row * (tileSize + gap);
+      const y = startY + card.row * (tileSize + verticalGap);
       card.setLayout({ x, y, scale });
     }
 
@@ -286,11 +287,24 @@ export class GameScene {
     const topSpace = 30;
     const boardSpace = Math.max(40, size - topSpace - 5);
     const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0.012;
-    const gap = Math.max(1, Math.floor(boardSpace * gapValue));
-    const totalGaps = gap * (this.gridSize - 1);
-    const tileSize = Math.floor((boardSpace - totalGaps) / this.gridSize);
-    const contentSize = tileSize * this.gridSize + totalGaps;
-    return { tileSize, gap, contentSize };
+    const horizontalGap = Math.max(1, Math.floor(boardSpace * gapValue));
+    const verticalGap = Math.max(
+      0,
+      Math.floor(this.layoutOptions?.verticalGapPx ?? 4)
+    );
+    const totalHorizontalGaps = horizontalGap * (this.gridSize - 1);
+    const totalVerticalGaps = verticalGap * (this.gridSize - 1);
+    const tileSizeForWidth =
+      (boardSpace - totalHorizontalGaps) / this.gridSize;
+    const tileSizeForHeight =
+      (boardSpace - totalVerticalGaps) / this.gridSize;
+    const tileSize = Math.max(
+      1,
+      Math.floor(Math.min(tileSizeForWidth, tileSizeForHeight))
+    );
+    const contentWidth = tileSize * this.gridSize + totalHorizontalGaps;
+    const contentHeight = tileSize * this.gridSize + totalVerticalGaps;
+    return { tileSize, gap: horizontalGap, verticalGap, contentWidth, contentHeight };
   }
 
   #positionWinPopup() {
