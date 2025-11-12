@@ -361,6 +361,10 @@ export class GameScene {
       return { horizontal: 0, vertical: 0 };
     }
 
+    if (this.#isPortraitViewport()) {
+      return { horizontal: 0, vertical: 0 };
+    }
+
     const rendererWidth = this.app.renderer.width;
     const rendererHeight = this.app.renderer.height;
 
@@ -385,6 +389,42 @@ export class GameScene {
       horizontal: Math.max(0, Math.min(horizontalPadding, maxHorizontal)),
       vertical: Math.max(0, Math.min(verticalPadding, maxVertical)),
     };
+  }
+
+  #isPortraitViewport() {
+    if (typeof window !== "undefined") {
+      const viewportWidth = Number(window.innerWidth);
+      const viewportHeight = Number(window.innerHeight);
+      if (
+        Number.isFinite(viewportWidth) &&
+        Number.isFinite(viewportHeight) &&
+        viewportWidth > 0 &&
+        viewportHeight > 0
+      ) {
+        return viewportHeight >= viewportWidth;
+      }
+
+      const mediaQuery = window.matchMedia?.("(orientation: portrait)");
+      if (mediaQuery?.matches === true) {
+        return true;
+      }
+      if (mediaQuery?.matches === false) {
+        return false;
+      }
+    }
+
+    const rendererWidth = this.app?.renderer?.width;
+    const rendererHeight = this.app?.renderer?.height;
+    if (
+      Number.isFinite(rendererWidth) &&
+      Number.isFinite(rendererHeight) &&
+      rendererWidth > 0 &&
+      rendererHeight > 0
+    ) {
+      return rendererHeight > rendererWidth;
+    }
+
+    return false;
   }
 
   #createWinPopup() {
