@@ -10,7 +10,22 @@ import roundLostSoundUrl from "../../assets/sounds/Lost.wav";
 import twoMatchSoundUrl from "../../assets/sounds/2Match.wav";
 import sparkSpriteUrl from "../../assets/sprites/Spark.png";
 import winFrameSpriteUrl from "../../assets/sprites/WinFrame.svg";
-import gameBackgroundSpriteUrl from "../../assets/sprites/game_background.svg";
+
+const optionalBackgroundSpriteModules = import.meta.glob(
+  "../../assets/sprites/game_background.svg",
+  {
+    eager: true,
+  }
+);
+
+const gameBackgroundSpriteUrl = (() => {
+  const module =
+    optionalBackgroundSpriteModules["../../assets/sprites/game_background.svg"];
+  if (!module) {
+    return null;
+  }
+  return typeof module === "string" ? module : module?.default ?? null;
+})();
 
 const CARD_TYPE_TEXTURES = (() => {
   const modules = import.meta.glob(
