@@ -55,6 +55,8 @@ export class GameScene {
 
     this.app = null;
     this.board = null;
+    this.boardShadows = null;
+    this.boardContent = null;
     this.ui = null;
     this.winPopup = null;
     this.resizeObserver = null;
@@ -77,6 +79,10 @@ export class GameScene {
     this.app.renderer.resolution = this._currentResolution;
 
     this.board = new Container();
+    this.boardShadows = new Container();
+    this.boardShadows.eventMode = "none";
+    this.boardContent = new Container();
+    this.board.addChild(this.boardShadows, this.boardContent);
     this.ui = new Container();
     this.app.stage.addChild(this.board, this.ui);
 
@@ -129,7 +135,10 @@ export class GameScene {
         });
 
         this.cards.push(card);
-        this.board.addChild(card.displayObject);
+        if (card.shadowDisplayObject) {
+          this.boardShadows?.addChild(card.shadowDisplayObject);
+        }
+        this.boardContent?.addChild(card.displayObject);
       }
     }
 
@@ -182,7 +191,8 @@ export class GameScene {
     for (const card of this.cards) {
       card?.destroy?.();
     }
-    this.board?.removeChildren();
+    this.boardShadows?.removeChildren();
+    this.boardContent?.removeChildren();
     this.cards = [];
   }
 
