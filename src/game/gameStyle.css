@@ -5,7 +5,7 @@
   border: 1px solid #223845;
   position: relative;
   overflow: hidden;
-  padding: 8px 80px;
+  padding: 8px 2%;
   order: 2;
 }
 
@@ -89,6 +89,5 @@
       380px
     );
     padding: 0px;
-    padding-bottom: 4px;
   }
 }
