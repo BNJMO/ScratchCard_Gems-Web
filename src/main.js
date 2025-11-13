@@ -257,6 +257,41 @@ function setControlPanelMinesState(isClickable) {
   );
 }
 
+function setControlPanelLoadingState(isLoading) {
+  if (!controlPanel) {
+    return;
+  }
+
+  if (isLoading) {
+    setControlPanelBetState(false);
+    setControlPanelRandomState(false);
+    setControlPanelAutoStartState(false);
+    setControlPanelMinesState(false);
+    controlPanel.setModeToggleClickable?.(false);
+    controlPanel.setBetControlsClickable?.(false);
+    controlPanel.setNumberOfBetsClickable?.(false);
+    controlPanel.setAdvancedToggleClickable?.(false);
+    controlPanel.setAdvancedStrategyControlsClickable?.(false);
+    controlPanel.setStopOnProfitClickable?.(false);
+    controlPanel.setStopOnLossClickable?.(false);
+    controlPanel.setAnimationsToggleClickable?.(false);
+    controlPanel.setShowDummyServerClickable?.(false);
+    return;
+  }
+
+  finalizeRound();
+  controlPanel.setNumberOfBetsClickable?.(true);
+  controlPanel.setAdvancedToggleClickable?.(true);
+  controlPanel.setAdvancedStrategyControlsClickable?.(true);
+  controlPanel.setStopOnProfitClickable?.(true);
+  controlPanel.setStopOnLossClickable?.(true);
+  controlPanel.setAnimationsToggleClickable?.(true);
+  controlPanel.setShowDummyServerClickable?.(true);
+  controlPanel.setDummyServerPanelVisibility?.(
+    serverDummyUI?.isVisible?.() ?? false
+  );
+}
+
 function disableServerRoundSetupControls() {
   setControlPanelBetState(false);
   setControlPanelRandomState(false);
@@ -1037,6 +1072,7 @@ const opts = {
     controlPanel.setDummyServerPanelVisibility(
       serverDummyUI?.isVisible?.() ?? false
     );
+    setControlPanelLoadingState(true);
   } catch (err) {
     console.error("Control panel initialization failed:", err);
   }
@@ -1061,6 +1097,7 @@ const opts = {
     if (animationsEnabled != null) {
       game?.setAnimationsEnabled?.(Boolean(animationsEnabled));
     }
+    setControlPanelLoadingState(false);
   } catch (e) {
     console.error("Game initialization failed:", e);
     const gameDiv = document.querySelector("#game");

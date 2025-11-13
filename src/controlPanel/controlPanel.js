@@ -116,6 +116,9 @@ export class ControlPanel extends EventTarget {
     this.updateAnimationToggle();
 
     this.setupResponsiveLayout();
+
+    this.dummyServerVisible = false;
+    this.isShowDummyServerClickable = true;
   }
 
   buildToggle() {
@@ -1269,9 +1272,14 @@ export class ControlPanel extends EventTarget {
 
   setDummyServerPanelVisibility(isVisible) {
     if (!this.showDummyServerButton) return;
-    const disabled = Boolean(isVisible);
+    this.dummyServerVisible = Boolean(isVisible);
+    const disabled = this.dummyServerVisible || !this.isShowDummyServerClickable;
     this.showDummyServerButton.disabled = disabled;
-    this.showDummyServerButton.classList.toggle("is-disabled", disabled);
+    this.showDummyServerButton.classList.toggle("is-disabled", this.dummyServerVisible);
+    this.showDummyServerButton.classList.toggle(
+      "is-non-clickable",
+      !this.isShowDummyServerClickable
+    );
     this.showDummyServerButton.setAttribute("aria-disabled", String(disabled));
   }
 
@@ -1460,6 +1468,26 @@ export class ControlPanel extends EventTarget {
     if (this.autoStopOnLossField?.stepper?.setClickable) {
       this.autoStopOnLossField.stepper.setClickable(clickable);
     }
+  }
+
+  setAnimationsToggleClickable(isClickable) {
+    if (!this.animationToggleButton) return;
+    const clickable = Boolean(isClickable);
+    this.animationToggleButton.disabled = !clickable;
+    this.animationToggleButton.classList.toggle("is-non-clickable", !clickable);
+    this.animationToggleButton.setAttribute("aria-disabled", String(!clickable));
+  }
+
+  setShowDummyServerClickable(isClickable) {
+    if (!this.showDummyServerButton) return;
+    this.isShowDummyServerClickable = Boolean(isClickable);
+    const disabled = !this.isShowDummyServerClickable || this.dummyServerVisible;
+    this.showDummyServerButton.disabled = disabled;
+    this.showDummyServerButton.classList.toggle(
+      "is-non-clickable",
+      !this.isShowDummyServerClickable
+    );
+    this.showDummyServerButton.setAttribute("aria-disabled", String(disabled));
   }
 
   getMode() {

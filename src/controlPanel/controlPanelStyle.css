@@ -482,6 +482,12 @@
   pointer-events: none;
 }
 
+.control-show-dummy-server.is-non-clickable {
+  opacity: 0.55;
+  cursor: default;
+  pointer-events: none;
+}
+
 .control-mode-section {
   display: flex;
   flex-direction: column;
