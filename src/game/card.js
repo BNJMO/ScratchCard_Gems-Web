@@ -645,6 +645,26 @@ export class Card {
     }
   }
 
+  getCenterPosition() {
+    const scale = this._layoutScale || 1;
+    const half = (this._tileSize * scale) / 2;
+    return { x: this.container.x + half, y: this.container.y + half };
+  }
+
+  setInitialIcon(content, { iconSizePercentage } = {}) {
+    const icon = this._icon;
+    if (!icon) return;
+    const texture = content?.texture ?? null;
+    icon.visible = true;
+    if (texture) {
+      icon.texture = texture;
+      const baseSize = iconSizePercentage ?? content?.iconSizePercentage ?? this.iconOptions.sizePercentage;
+      const maxDimension = this._tileSize * Math.max(0, baseSize ?? 0.7);
+      this.#applyIconSizing(icon, maxDimension, texture);
+      content?.configureIcon?.(icon, { card: this, revealedByPlayer: false });
+    }
+  }
+
   setSkew(v) {
     if (!this._wrap?.skew) return;
     if (this.animationOptions.hoverTiltAxis === "y") {

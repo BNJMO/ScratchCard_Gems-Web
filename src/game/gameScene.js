@@ -1,5 +1,6 @@
 import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
 import { Card } from "./card.js";
+import { ScratchCover, loadScratchCoverAssets } from "./scratchCover.js";
 
 const DEFAULT_FONT_FAMILY = "Inter, system-ui, -apple-system, Segoe UI, Arial";
 
@@ -60,6 +61,7 @@ export class GameScene {
     this.board = null;
     this.boardShadows = null;
     this.boardContent = null;
+    this.scratchLayer = null;
     this.ui = null;
     this.winPopup = null;
     this.backgroundSprite = null;
@@ -67,6 +69,7 @@ export class GameScene {
     this._windowResizeListener = null;
     this._currentResolution = 1;
     this._lastLayout = null;
+    this.cardCenterResolver = null;
   }
 
   async init() {
@@ -95,6 +98,20 @@ export class GameScene {
     this.boardShadows.eventMode = "none";
     this.boardContent = new Container();
     this.board.addChild(this.boardShadows, this.boardContent);
+    this.scratchLayer = new ScratchCover({ app: this.app });
+
+    // Load grid cover and scratch mask textures and set them on the scratch layer
+    try {
+      const assets = await loadScratchCoverAssets();
+      if (assets?.coverTexture) this.scratchLayer.setCoverTexture(assets.coverTexture);
+      if (assets?.scratchMaskTextures?.length) {
+        this.scratchLayer.setScratchTextures(assets.scratchMaskTextures);
+      }
+    } catch (err) {
+      console.warn("Failed to load scratch cover assets", err);
+    }
+
+    this.board.addChild(this.scratchLayer.container);
     this.ui = new Container();
     this.app.stage.addChild(this.board, this.ui);
 
@@ -155,7 +172,9 @@ export class GameScene {
       }
     }
 
+    // First layout the cards, then sync the scratch centers
     this.layoutCards(layout);
+    this.#syncScratchCardCenters();
   }
 
   layoutCards(layout = this.#layoutSizes()) {
@@ -178,7 +197,12 @@ export class GameScene {
       boardCenterY ?? (this.app?.renderer?.height ?? 0) / 2;
 
     this.board.position.set(centerX, centerY);
+    // Scratch layer is a child of board, so it uses local (0,0) positioning
+    this.scratchLayer?.container.position.set(0, 0);
     this._lastLayout = layout;
+
+    // After layout updates, keep scratch centers in sync
+    this.#syncScratchCardCenters();
   }
 
   resize() {
@@ -200,6 +224,7 @@ export class GameScene {
       this.layoutCards();
     }
 
+    this.coverLayout?.({ width: this.board.width, height: this.board.height });
     this.#positionWinPopup();
     this.onResize?.(size);
   }
@@ -356,6 +381,10 @@ export class GameScene {
     const centerX = layout?.boardCenterX ?? fallbackWidth / 2;
     const centerY = layout?.boardCenterY ?? fallbackHeight / 2;
     this.winPopup.container.position.set(centerX, centerY);
+    this.scratchLayer?.setLayout({
+      width: layout?.contentSize ?? fallbackWidth,
+      height: layout?.contentSize ?? fallbackHeight,
+    });
   }
 
   #getGridPadding() {
@@ -484,5 +513,18 @@ export class GameScene {
 
     return { container, multiplierText, amountText, layoutAmountRow };
   }
-}
 
+  #syncScratchCardCenters() {
+    if (!this.scratchLayer) return;
+    const centers = this.cards.map((card, index) => {
+      const center = card.getCenterPosition();
+      return {
+        id: card.id ?? `${index}`,
+        x: center.x,
+        y: center.y,
+        data: { row: card.row, col: card.col },
+      };
+    });
+    this.scratchLayer.setCardCenters(centers);
+  }
+}

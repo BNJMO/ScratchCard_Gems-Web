@@ -49,16 +49,15 @@ const CARD_TYPE_TEXTURES = (() => {
 
 const DEFAULT_PALETTE = {
   appBg: 0x091b26,
-  tileBase: 0x223845, // main tile face
-  tileInset: 0x223845, // inner inset
-  tileStroke: 0x223845, // subtle outline
-  tileStrokeFlipped: 0x0f0f0f, // subtle outline
-  tileElevationBase: 0x152a33, // visible lip beneath tile face
-  tileElevationFlipped: 0x040c0f, // revealed tile elevation lip
-  tileElevationHover: 0x1f3f4c, // hover elevation lip
+  tileBase: 0x223845,
+  tileInset: 0x223845,
+  tileStroke: 0x223845,
+  tileStrokeFlipped: 0x0f0f0f,
   tileElevationBase: 0x1b2931,
-  tileElevationShadow: 0x091b26, // soft drop shadow
-  hover: 0x35586b, // hover
+  tileElevationFlipped: 0x040c0f,
+  tileElevationHover: 0x1f3f4c,
+  tileElevationShadow: 0x091b26,
+  hover: 0x35586b,
   pressedTint: 0x7a7a7a,
   defaultTint: 0xffffff,
   cardFace: 0x061217,
@@ -211,7 +210,7 @@ export async function createGame(mount, opts = {}) {
     hoverEnabled: opts.hoverEnabled ?? true,
     hoverEnterDuration: opts.hoverEnterDuration ?? 120,
     hoverExitDuration: opts.hoverExitDuration ?? 200,
-    hoverSkewAmount: opts.hoverSkewAmount ?? 0.00,
+    hoverSkewAmount: opts.hoverSkewAmount ?? 0.0,
     hoverTiltAxis: opts.hoverTiltAxis ?? "x",
   };
 
@@ -228,8 +227,6 @@ export async function createGame(mount, opts = {}) {
     winPopupHeight: opts.winPopupHeight ?? 170,
   };
 
-
-  // Resolve mount element
   const root =
     typeof mount === "string" ? document.querySelector(mount) : mount;
   if (!root) throw new Error("createGame: mount element not found");
@@ -348,7 +345,6 @@ export async function createGame(mount, opts = {}) {
     })
   );
 
-
   const [
     gameBackgroundTexture,
     matchSparkTexture,
@@ -357,18 +353,12 @@ export async function createGame(mount, opts = {}) {
     tileHoverTexture,
     tileFlippedTexture,
   ] = await Promise.all([
-    loadTexture(gameBackgroundSpriteUrl, {svgResolution: svgRasterizationResolution,}),
+    loadTexture(gameBackgroundSpriteUrl, { svgResolution: svgRasterizationResolution }),
     loadTexture(sparkSpriteUrl),
     loadTexture(winFrameSpriteUrl),
-    loadTexture(tileUnflippedSpriteUrl, {
-      svgResolution: svgRasterizationResolution,
-    }),
-    loadTexture(tileHoveredSpriteUrl, {
-      svgResolution: svgRasterizationResolution,
-    }),
-    loadTexture(tileFlippedSpriteUrl, {
-      svgResolution: svgRasterizationResolution,
-    }),
+    loadTexture(tileUnflippedSpriteUrl, { svgResolution: svgRasterizationResolution }),
+    loadTexture(tileHoveredSpriteUrl, { svgResolution: svgRasterizationResolution }),
+    loadTexture(tileFlippedSpriteUrl, { svgResolution: svgRasterizationResolution }),
   ]);
 
   const scene = new GameScene({
@@ -547,6 +537,14 @@ export async function createGame(mount, opts = {}) {
       card._randomSelectionPending = false;
       clearScheduledAutoReveal(card);
       card.stopMatchShake?.();
+
+      const faceKey = currentAssignments.get(key) ?? null;
+      if (faceKey != null) {
+        const content = contentLibrary[faceKey];
+        if (content) {
+          card.setInitialIcon(content, { iconSizePercentage });
+        }
+      }
     }
   }
 
@@ -568,13 +566,14 @@ export async function createGame(mount, opts = {}) {
     face,
     { revealedByPlayer = true, forceFullIconSize = false } = {}
   ) {
-    if (!card) return;
+    if (!card || card.revealed) return;
     clearScheduledAutoReveal(card);
+    
     const content = contentLibrary[face] ?? {};
     const pitch = 0.9 + Math.random() * 0.2;
     soundManager.play("tileFlip", { speed: pitch });
     card._revealedFace = face;
-    const iconRevealFactor = forceFullIconSize ? 1 : iconRevealedSizeFactor;
+    
     const isWinningFace =
       currentRoundOutcome.betResult === "win" &&
       currentRoundOutcome.winningKey != null &&
@@ -583,44 +582,36 @@ export async function createGame(mount, opts = {}) {
     const engagedWinningBefore =
       currentRoundOutcome.revealedWinning +
       currentRoundOutcome.pendingWinningReveals;
-    const started = card.reveal({
-      content,
-      useSelectionTint: false,
-      revealedByPlayer,
-      iconSizePercentage,
-      iconRevealedSizeFactor: iconRevealFactor,
-      flipDuration,
-      flipEaseFunction,
-      onComplete: (instance, payload) => {
-        currentRoundOutcome.pendingReveals = Math.max(
-          0,
-          currentRoundOutcome.pendingReveals - 1
-        );
-        handleCardRevealComplete(instance, payload);
-      },
-    });
-    if (started) {
-      currentRoundOutcome.pendingReveals += 1;
-      card._pendingWinningReveal = Boolean(isWinningFace);
-      if (isWinningFace) {
-        currentRoundOutcome.pendingWinningReveals += 1;
-        const engagedWinningAfter = engagedWinningBefore + 1;
-        if (
-          !currentRoundOutcome.autoRevealTriggered &&
-          currentRoundOutcome.winningCountRequired > 0 &&
-          engagedWinningAfter >= currentRoundOutcome.winningCountRequired
-        ) {
-          currentRoundOutcome.autoRevealTriggered = true;
-          revealRemainingTiles({ exclude: [card] });
-        }
+    
+    // Cards are already face-up, just mark as revealed without flip animation
+    card.revealed = true;
+    card._pendingWinningReveal = Boolean(isWinningFace);
+    
+    if (isWinningFace) {
+      currentRoundOutcome.pendingWinningReveals += 1;
+      const engagedWinningAfter = engagedWinningBefore + 1;
+      if (
+        !currentRoundOutcome.autoRevealTriggered &&
+        currentRoundOutcome.winningCountRequired > 0 &&
+        engagedWinningAfter >= currentRoundOutcome.winningCountRequired
+      ) {
+        currentRoundOutcome.autoRevealTriggered = true;
+        revealRemainingTiles({ exclude: [card] });
       }
     }
-    if (!started) {
-      card._pendingWinningReveal = false;
-    }
+    
     if (typeof content.playSound === "function") {
       content.playSound({ revealedByPlayer, card });
     }
+    
+    // Immediately trigger completion callback
+    const contentKey = content.key ?? face;
+    handleCardRevealComplete(card, {
+      content,
+      key: contentKey,
+      face: contentKey,
+      revealedByPlayer,
+    });
   }
 
   function handleCardRevealComplete(card, payload = {}) {
@@ -768,12 +759,14 @@ export async function createGame(mount, opts = {}) {
 
   function revealRemainingTiles({ exclude = [] } = {}) {
     currentRoundOutcome.autoRevealTriggered = true;
-    const excludedCards = new Set(
-      Array.isArray(exclude) ? exclude.filter(Boolean) : []
-    );
+    const excludedCards = new Set(Array.isArray(exclude) ? exclude.filter(Boolean) : []);
     if (excludedCards.size === 0 && isAutoRevealInProgress()) {
       return;
     }
+
+    // Instantly reveal the scratch cover
+    scene.scratchLayer?.revealAllInstant?.();
+
     const unrevealed = scene.cards.filter(
       (card) =>
         !card.revealed &&
@@ -783,12 +776,7 @@ export async function createGame(mount, opts = {}) {
         !excludedCards.has(card)
     );
     if (!unrevealed.length) return;
-    const ordered = [...unrevealed].sort((a, b) => {
-      if (a.row === b.row) {
-        return a.col - b.col;
-      }
-      return a.row - b.row;
-    });
+    const ordered = [...unrevealed].sort((a, b) => (a.row === b.row ? a.col - b.col : a.row - b.row));
 
     ordered.forEach((card, index) => {
       clearScheduledAutoReveal(card);
@@ -802,15 +790,8 @@ export async function createGame(mount, opts = {}) {
         if (card.destroyed || card.revealed) {
           return;
         }
-        const outcome = rules.revealResult({
-          row: card.row,
-          col: card.col,
-          result: assignedFace,
-        });
-        revealCard(card, outcome.face, {
-          revealedByPlayer: false,
-          forceFullIconSize: true,
-        });
+        const outcome = rules.revealResult({ row: card.row, col: card.col, result: assignedFace });
+        revealCard(card, outcome.face, { revealedByPlayer: false, forceFullIconSize: true });
         notifyStateChange();
       }, delay);
       scheduledAutoRevealTimers.add(handle);
@@ -821,46 +802,19 @@ export async function createGame(mount, opts = {}) {
   function handleCardTap(card) {
     const autoMode = isAutoModeActive(getMode);
     if (card.revealed || card._animating || rules.gameOver) return;
-
     if (autoMode) {
       return;
     }
-
     if (rules.waitingForChoice) return;
-
     card.taped = true;
     card.hover(false);
     enterWaitingState(card);
   }
 
-  function handlePointerOver(card) {
-    if (card.revealed || card._animating || rules.gameOver) return;
-    if (isAutoModeActive(getMode)) return;
-    soundManager.play("tileHover");
-    card.hover(true);
-  }
-
-  function handlePointerOut(card) {
-    if (card.revealed || card._animating) return;
-    card.hover(false);
-    if (card._pressed) {
-      card._pressed = false;
-      card.refreshTint();
-    }
-  }
-
-  function handlePointerDown(card) {
-    if (card.revealed || card._animating || rules.gameOver) return;
-    if (isAutoModeActive(getMode)) return;
-    soundManager.play("tileTapDown");
-    card.setPressed(true);
-  }
-
-  function handlePointerUp(card) {
-    if (card._pressed) {
-      card.setPressed(false);
-    }
-  }
+  function handlePointerOver(card) { /* disabled in scratch mode */ }
+  function handlePointerOut(card) { /* disabled in scratch mode */ }
+  function handlePointerDown(card) { /* disabled in scratch mode */ }
+  function handlePointerUp(card) { /* disabled in scratch mode */ }
 
   scene.buildGrid({
     interactionFactory: () => ({
@@ -869,12 +823,26 @@ export async function createGame(mount, opts = {}) {
       onPointerDown: handlePointerDown,
       onPointerUp: handlePointerUp,
       onPointerUpOutside: handlePointerUp,
-      onPointerTap: handleCardTap,
+      onPointerTap: () => {},
     }),
   });
 
   registerCards();
   soundManager.play("gameStart");
+
+  // Subscribe to scratch cover events after cards are registered
+  if (scene.scratchLayer) {
+    scene.scratchLayer.on("cardRevealed", ({ data }) => {
+      if (!data) return;
+      const key = `${data.row},${data.col}`;
+      const card = cardsByKey.get(key);
+      if (!card || card.revealed) return;
+      const assignedFace = currentAssignments.get(key) ?? null;
+      const outcome = rules.revealResult({ row: data.row, col: data.col, result: assignedFace });
+      revealCard(card, outcome.face, { revealedByPlayer: true });
+      notifyStateChange();
+    });
+  }
 
   function reset() {
     rules.reset();
@@ -890,16 +858,16 @@ export async function createGame(mount, opts = {}) {
         onPointerDown: handlePointerDown,
         onPointerUp: handlePointerUp,
         onPointerUpOutside: handlePointerUp,
-        onPointerTap: handleCardTap,
+        onPointerTap: () => {},
       }),
     });
     registerCards();
+    // Option B: persist scratch coverage until next game (do not reset cover here)
     notifyStateChange();
   }
 
   function setMines() {
-    // Mines are not used in Scratch Cards; this function exists for API
-    // compatibility with the control panel.
+    // Mines not used in scratch cards; function kept for API compatibility
   }
 
   function setRoundAssignments(assignments = [], meta = {}) {
@@ -912,8 +880,24 @@ export async function createGame(mount, opts = {}) {
       }
     }
     rules.setAssignments(currentAssignments);
+    
+    // Don't reset scratch mask - keep scratched areas visible
+    // Only reset card reveal states
+    if (scene.scratchLayer) {
+      for (const card of scene.scratchLayer._cardCenters?.values() ?? []) {
+        card.revealed = false;
+      }
+    }
+    
     for (const [key, card] of cardsByKey.entries()) {
       card._assignedContent = currentAssignments.get(key) ?? null;
+      const faceKey = currentAssignments.get(key) ?? null;
+      if (faceKey != null) {
+        const content = contentLibrary[faceKey];
+        if (content) {
+          card.setInitialIcon(content, { iconSizePercentage });
+        }
+      }
     }
     notifyStateChange();
   }
@@ -953,8 +937,7 @@ export async function createGame(mount, opts = {}) {
       return true;
     });
     if (!candidates.length) return null;
-    const card =
-      candidates[Math.floor(Math.random() * candidates.length)];
+    const card = candidates[Math.floor(Math.random() * candidates.length)];
     card._randomSelectionPending = true;
     handleCardTap(card);
     return { row: card.row, col: card.col };
