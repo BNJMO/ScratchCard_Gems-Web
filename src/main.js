@@ -2,13 +2,10 @@ import { createGame } from "./game/game.js";
 import { ControlPanel } from "./controlPanel/controlPanel.js";
 import { ServerRelay } from "./serverRelay.js";
 import { createServerDummy } from "./serverDummy/serverDummy.js";
-
-import tileTapDownSoundUrl from "../assets/sounds/TileTapDown.wav";
-import tileFlipSoundUrl from "../assets/sounds/TileFlip.wav";
-import tileHoverSoundUrl from "../assets/sounds/TileHover.wav";
-import gameStartSoundUrl from "../assets/sounds/GameStart.wav";
-import roundWinSoundUrl from "../assets/sounds/Win.wav";
-import roundLostSoundUrl from "../assets/sounds/Lost.wav";
+import {
+  DEFAULT_GAME_CONFIG,
+  resolveGameConfig,
+} from "./config/gameConfig.js";
 
 let game;
 let controlPanel;
@@ -31,7 +28,7 @@ let autoStopPending = false;
 let autoRemainingBets = 0;
 let manualRoundNeedsReset = false;
 
-const GRID_SIZE = 3;
+let gridSize = DEFAULT_GAME_CONFIG.grid ?? 3;
 let availableCardTypes = [];
 let currentBetResult = null;
 const currentRoundAssignments = new Map();
@@ -39,8 +36,9 @@ const currentRoundAssignments = new Map();
 let totalProfitMultiplierValue = 1;
 let totalProfitAmountDisplayValue = "0.00000000";
 
-const AUTO_RESET_DELAY_MS = 1000;
-let autoResetDelayMs = AUTO_RESET_DELAY_MS;
+const DEFAULT_AUTO_RESET_DELAY_MS = DEFAULT_GAME_CONFIG.autoResetDelayMs ?? 1000;
+let autoResetDelayMs = DEFAULT_AUTO_RESET_DELAY_MS;
+let gameOptions = { ...DEFAULT_GAME_CONFIG };
 
 function withRelaySuppressed(callback) {
   suppressRelay = true;
@@ -314,7 +312,7 @@ function applyMinesOption(value, { syncGame = false } = {}) {
   const maxMines = controlPanel?.getMaxMines?.();
   const mines = normalizeMinesValue(value, maxMines);
 
-  opts.mines = mines;
+  gameOptions.mines = mines;
 
   if (syncGame) {
     if (typeof game?.setMines === "function") {
@@ -524,7 +522,7 @@ function applyRoundInteractiveState(state) {
   }
 
   const revealedCount = state?.revealed ?? 0;
-  const totalTiles = state?.totalTiles ?? GRID_SIZE * GRID_SIZE;
+  const totalTiles = state?.totalTiles ?? gridSize * gridSize;
 
   if (selectionPending || state?.waitingForChoice) {
     setControlPanelBetState(false);
@@ -687,8 +685,8 @@ function shuffleArray(values = []) {
 
 function createCardPositions() {
   const positions = [];
-  for (let row = 0; row < GRID_SIZE; row += 1) {
-    for (let col = 0; col < GRID_SIZE; col += 1) {
+  for (let row = 0; row < gridSize; row += 1) {
+    for (let col = 0; col < gridSize; col += 1) {
       positions.push({ row, col });
     }
   }
@@ -898,54 +896,25 @@ function handleStartAutobetClick() {
   startAutoBetProcess();
 }
 
-const opts = {
-  size: 600,
-  backgroundColor: "#091B26",
-  fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Arial",
-  grid: GRID_SIZE,
-  mines: 1,
-  autoResetDelayMs: AUTO_RESET_DELAY_MS,
-  iconSizePercentage: 0.7,
-  iconRevealedSizeOpacity: 0.2,
-  iconRevealedSizeFactor: 0.7,
-  cardsSpawnDuration: 350,
-  revealAllIntervalDelay: 40,
-  strokeWidth: 1,
-  gapBetweenTiles: 0.013,
-  hoverEnabled: true,
-  hoverEnterDuration: 120,
-  hoverExitDuration: 200,
-  hoverTiltAxis: "x",
-  hoverSkewAmount: 0.00,
-  disableAnimations: false,
-  wiggleSelectionEnabled: true,
-  wiggleSelectionDuration: 900,
-  wiggleSelectionTimes: 15,
-  wiggleSelectionIntensity: 0.03,
-  wiggleSelectionScale: 0.005,
-  flipDelayMin: 150,
-  flipDelayMax: 500,
-  flipDuration: 300,
-  flipEaseFunction: "easeInOutSine",
-  tileTapDownSoundPath: tileTapDownSoundUrl,
-  tileFlipSoundPath: tileFlipSoundUrl,
-  tileHoverSoundPath: tileHoverSoundUrl,
-  gameStartSoundPath: gameStartSoundUrl,
-  roundWinSoundPath: roundWinSoundUrl,
-  roundLostSoundPath: roundLostSoundUrl,
-  winPopupShowDuration: 260,
-  winPopupWidth: 260,
-  winPopupHeight: 200,
-  getMode: () => controlPanelMode,
-  onCardSelected: (selection) => handleCardSelected(selection),
-  onChange: handleGameStateChange,
-};
-
 (async () => {
-  const totalTiles = opts.grid * opts.grid;
+  const gameMount = document.querySelector("#game");
+  const { config: resolvedConfig } = resolveGameConfig({ mount: gameMount });
+  gameOptions = {
+    ...resolvedConfig,
+    getMode: () => controlPanelMode,
+    onCardSelected: (selection) => handleCardSelected(selection),
+    onChange: handleGameStateChange,
+  };
+
+  gridSize = gameOptions.grid ?? gridSize;
+  autoResetDelayMs = Number(
+    gameOptions.autoResetDelayMs ?? DEFAULT_AUTO_RESET_DELAY_MS,
+  );
+
+  const totalTiles = gridSize * gridSize;
   const maxMines = Math.max(1, totalTiles - 1);
-  const initialMines = Math.max(1, Math.min(opts.mines ?? 1, maxMines));
-  opts.mines = initialMines;
+  const initialMines = Math.max(1, Math.min(gameOptions.mines ?? 1, maxMines));
+  gameOptions.mines = initialMines;
 
   // Initialize Control Panel
   try {
@@ -1054,7 +1023,7 @@ const opts = {
     });
     controlPanel.addEventListener("animationschange", (event) => {
       const enabled = Boolean(event.detail?.enabled);
-      opts.disableAnimations = !enabled;
+      gameOptions.disableAnimations = !enabled;
       game?.setAnimationsEnabled?.(enabled);
     });
     controlPanel.addEventListener("showdummyserver", () => {
@@ -1068,7 +1037,8 @@ const opts = {
     setTotalProfitMultiplierValue(0.0);
     controlPanel.setProfitOnWinDisplay("$0.00");
     setTotalProfitAmountValue("0.00000000");
-    opts.disableAnimations = !(controlPanel.getAnimationsEnabled?.() ?? true);
+    gameOptions.disableAnimations =
+      !(controlPanel.getAnimationsEnabled?.() ?? true);
     controlPanel.setDummyServerPanelVisibility(
       serverDummyUI?.isVisible?.() ?? false
     );
@@ -1079,11 +1049,11 @@ const opts = {
 
   // Initialize Game
   try {
-    game = await createGame("#game", opts);
+    game = await createGame("#game", gameOptions);
     window.game = game;
     availableCardTypes = game?.getCardContentKeys?.() ?? [];
     autoResetDelayMs = Number(
-      game?.getAutoResetDelay?.() ?? AUTO_RESET_DELAY_MS
+      game?.getAutoResetDelay?.() ?? DEFAULT_AUTO_RESET_DELAY_MS
     );
     const state = game?.getState?.();
     if (state) {
@@ -1091,7 +1061,7 @@ const opts = {
       if (totalTiles != null) {
         controlPanel?.setTotalTiles?.(totalTiles, { emit: false });
       }
-      controlPanel?.setMinesValue?.(opts.mines, { emit: false });
+      controlPanel?.setMinesValue?.(gameOptions.mines, { emit: false });
     }
     const animationsEnabled = controlPanel?.getAnimationsEnabled?.();
     if (animationsEnabled != null) {
