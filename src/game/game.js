@@ -1,13 +1,7 @@
 import { Assets } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
-import tileTapDownSoundUrl from "../../assets/sounds/TileTapDown.wav";
-import tileFlipSoundUrl from "../../assets/sounds/TileFlip.wav";
-import tileHoverSoundUrl from "../../assets/sounds/TileHover.wav";
-import gameStartSoundUrl from "../../assets/sounds/GameStart.wav";
-import roundWinSoundUrl from "../../assets/sounds/Win.wav";
-import roundLostSoundUrl from "../../assets/sounds/Lost.wav";
-import twoMatchSoundUrl from "../../assets/sounds/2Match.wav";
+import { DEFAULT_GAME_CONFIG, DEFAULT_PALETTE } from "../config/gameConfig.js";
 import sparkSpriteUrl from "../../assets/sprites/Spark.png";
 import winFrameSpriteUrl from "../../assets/sprites/winFrame.svg";
 import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
@@ -46,29 +40,6 @@ const CARD_TYPE_TEXTURES = (() => {
     };
   });
 })();
-
-const DEFAULT_PALETTE = {
-  appBg: 0x091b26,
-  tileBase: 0x223845,
-  tileInset: 0x223845,
-  tileStroke: 0x223845,
-  tileStrokeFlipped: 0x0f0f0f,
-  tileElevationBase: 0x1b2931,
-  tileElevationFlipped: 0x040c0f,
-  tileElevationHover: 0x1f3f4c,
-  tileElevationShadow: 0x091b26,
-  hover: 0x35586b,
-  pressedTint: 0x7a7a7a,
-  defaultTint: 0xffffff,
-  cardFace: 0x061217,
-  cardFaceUnrevealed: 0x061217,
-  cardInset: 0x061217,
-  cardInsetUnrevealed: 0x061217,
-  winPopupBorder: 0xeaff00,
-  winPopupBackground: 0x091b26,
-  winPopupMultiplierText: 0xeaff00,
-  winPopupSeparationLine: 0x1b2931,
-};
 
 const WIN_FACE_COLOR = 0x061217;
 
@@ -179,52 +150,89 @@ function isAutoModeActive(getMode) {
 }
 
 export async function createGame(mount, opts = {}) {
-  const GRID = 3;
+  const fallbackConfig = DEFAULT_GAME_CONFIG ?? {};
+  const GRID = Math.max(
+    2,
+    Math.min(10, Math.floor(opts.grid ?? fallbackConfig.grid ?? 3)),
+  );
   const fontFamily =
-    opts.fontFamily ?? "Inter, system-ui, -apple-system, Segoe UI, Arial";
-  const initialSize = Math.max(1, opts.size ?? 400);
+    opts.fontFamily ?? fallbackConfig.fontFamily ?? "Inter, system-ui, -apple-system, Segoe UI, Arial";
+  const initialSize = Math.max(1, opts.size ?? fallbackConfig.size ?? 400);
   const onCardSelected = opts.onCardSelected ?? (() => {});
   const onChange = opts.onChange ?? (() => {});
   const getMode =
     typeof opts.getMode === "function" ? () => opts.getMode() : () => "manual";
   const palette = {
     ...DEFAULT_PALETTE,
+    ...(fallbackConfig.palette ?? {}),
     ...(opts.palette ?? {}),
   };
 
-  const backgroundColor = opts.backgroundColor ?? palette.appBg;
+  const backgroundColor =
+    opts.backgroundColor ?? fallbackConfig.backgroundColor ?? palette.appBg;
 
-  let disableAnimations = Boolean(opts.disableAnimations ?? false);
+  let disableAnimations = Boolean(
+    opts.disableAnimations ?? fallbackConfig.disableAnimations ?? false,
+  );
 
-  const iconSizePercentage = opts.iconSizePercentage ?? 0.7;
-  const iconRevealedSizeFactor = opts.iconRevealedSizeFactor ?? 0.85;
-  const cardsSpawnDuration = opts.cardsSpawnDuration ?? 350;
-  const revealAllIntervalDelay = opts.revealAllIntervalDelay ?? 40;
-  const autoResetDelayMs = Number(opts.autoResetDelayMs ?? 1500);
-  const strokeWidth = opts.strokeWidth ?? 1;
-  const gapBetweenTiles = opts.gapBetweenTiles ?? 0.1;
-  const flipDuration = opts.flipDuration ?? 300;
-  const flipEaseFunction = opts.flipEaseFunction ?? "easeInOutSine";
+  const iconSizePercentage =
+    opts.iconSizePercentage ?? fallbackConfig.iconSizePercentage ?? 0.7;
+  const iconRevealedSizeFactor =
+    opts.iconRevealedSizeFactor ??
+    fallbackConfig.iconRevealedSizeFactor ??
+    0.7;
+  const cardsSpawnDuration =
+    opts.cardsSpawnDuration ?? fallbackConfig.cardsSpawnDuration ?? 350;
+  const revealAllIntervalDelay =
+    opts.revealAllIntervalDelay ?? fallbackConfig.revealAllIntervalDelay ?? 40;
+  const autoResetDelayMs = Number(
+    opts.autoResetDelayMs ?? fallbackConfig.autoResetDelayMs ?? 1500,
+  );
+  const strokeWidth = opts.strokeWidth ?? fallbackConfig.strokeWidth ?? 1;
+  const gapBetweenTiles =
+    opts.gapBetweenTiles ?? fallbackConfig.gapBetweenTiles ?? 0.1;
+  const flipDuration =
+    opts.flipDuration ?? fallbackConfig.flipDuration ?? 300;
+  const flipEaseFunction =
+    opts.flipEaseFunction ??
+    fallbackConfig.flipEaseFunction ??
+    "easeInOutSine";
 
   const hoverOptions = {
-    hoverEnabled: opts.hoverEnabled ?? true,
-    hoverEnterDuration: opts.hoverEnterDuration ?? 120,
-    hoverExitDuration: opts.hoverExitDuration ?? 200,
-    hoverSkewAmount: opts.hoverSkewAmount ?? 0.0,
-    hoverTiltAxis: opts.hoverTiltAxis ?? "x",
+    hoverEnabled: opts.hoverEnabled ?? fallbackConfig.hoverEnabled ?? true,
+    hoverEnterDuration:
+      opts.hoverEnterDuration ?? fallbackConfig.hoverEnterDuration ?? 120,
+    hoverExitDuration:
+      opts.hoverExitDuration ?? fallbackConfig.hoverExitDuration ?? 200,
+    hoverSkewAmount:
+      opts.hoverSkewAmount ?? fallbackConfig.hoverSkewAmount ?? 0.0,
+    hoverTiltAxis: opts.hoverTiltAxis ?? fallbackConfig.hoverTiltAxis ?? "x",
   };
 
   const wiggleOptions = {
-    wiggleSelectionEnabled: opts.wiggleSelectionEnabled ?? true,
-    wiggleSelectionDuration: opts.wiggleSelectionDuration ?? 900,
-    wiggleSelectionTimes: opts.wiggleSelectionTimes ?? 15,
-    wiggleSelectionIntensity: opts.wiggleSelectionIntensity ?? 0.03,
-    wiggleSelectionScale: opts.wiggleSelectionScale ?? 0.005,
+    wiggleSelectionEnabled:
+      opts.wiggleSelectionEnabled ??
+      fallbackConfig.wiggleSelectionEnabled ??
+      true,
+    wiggleSelectionDuration:
+      opts.wiggleSelectionDuration ??
+      fallbackConfig.wiggleSelectionDuration ??
+      900,
+    wiggleSelectionTimes:
+      opts.wiggleSelectionTimes ?? fallbackConfig.wiggleSelectionTimes ?? 15,
+    wiggleSelectionIntensity:
+      opts.wiggleSelectionIntensity ??
+      fallbackConfig.wiggleSelectionIntensity ??
+      0.03,
+    wiggleSelectionScale:
+      opts.wiggleSelectionScale ?? fallbackConfig.wiggleSelectionScale ?? 0.005,
   };
 
   const winPopupOptions = {
-    winPopupWidth: opts.winPopupWidth ?? 240,
-    winPopupHeight: opts.winPopupHeight ?? 170,
+    winPopupWidth:
+      opts.winPopupWidth ?? fallbackConfig.winPopupWidth ?? 240,
+    winPopupHeight:
+      opts.winPopupHeight ?? fallbackConfig.winPopupHeight ?? 170,
   };
 
   const root =
@@ -252,7 +260,10 @@ export async function createGame(mount, opts = {}) {
     if (Number.isFinite(absolute) && absolute > 0) {
       return absolute;
     }
-    const multiplier = Number(opts.svgRasterizationResolutionMultiplier);
+    const multiplier = Number(
+      opts.svgRasterizationResolutionMultiplier ??
+        fallbackConfig.svgRasterizationResolutionMultiplier,
+    );
     const safeMultiplier = Number.isFinite(multiplier) && multiplier > 0
       ? multiplier
       : 2;
@@ -261,13 +272,14 @@ export async function createGame(mount, opts = {}) {
   })();
 
   const soundEffectPaths = {
-    tileTapDown: opts.tileTapDownSoundPath ?? tileTapDownSoundUrl,
-    tileFlip: opts.tileFlipSoundPath ?? tileFlipSoundUrl,
-    tileHover: opts.tileHoverSoundPath ?? tileHoverSoundUrl,
-    gameStart: opts.gameStartSoundPath ?? gameStartSoundUrl,
-    roundWin: opts.roundWinSoundPath ?? roundWinSoundUrl,
-    roundLost: opts.roundLostSoundPath ?? roundLostSoundUrl,
-    twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
+    tileTapDown:
+      opts.tileTapDownSoundPath ?? fallbackConfig.tileTapDownSoundPath,
+    tileFlip: opts.tileFlipSoundPath ?? fallbackConfig.tileFlipSoundPath,
+    tileHover: opts.tileHoverSoundPath ?? fallbackConfig.tileHoverSoundPath,
+    gameStart: opts.gameStartSoundPath ?? fallbackConfig.gameStartSoundPath,
+    roundWin: opts.roundWinSoundPath ?? fallbackConfig.roundWinSoundPath,
+    roundLost: opts.roundLostSoundPath ?? fallbackConfig.roundLostSoundPath,
+    twoMatch: opts.twoMatchSoundPath ?? fallbackConfig.twoMatchSoundPath,
   };
 
   if (!CARD_TYPE_TEXTURES.length) {
@@ -294,7 +306,8 @@ export async function createGame(mount, opts = {}) {
     {}
   );
 
-  const userContentDefinitions = opts.contentDefinitions ?? {};
+  const userContentDefinitions =
+    opts.contentDefinitions ?? fallbackConfig.contentDefinitions ?? {};
   const mergedContentDefinitions = {};
   const contentKeys = new Set([
     ...Object.keys(defaultContentDefinitions),
