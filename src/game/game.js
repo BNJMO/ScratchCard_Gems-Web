@@ -900,6 +900,7 @@ export async function createGame(mount, opts = {}) {
       for (const card of scene.scratchLayer._cardCenters?.values() ?? []) {
         card.revealed = false;
       }
+      scene.scratchLayer.evaluateCardReveals?.();
     }
     
     for (const [key, card] of cardsByKey.entries()) {

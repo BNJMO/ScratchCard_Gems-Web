@@ -247,6 +247,11 @@ export class ScratchCover {
         revealed: Boolean(entry.revealed ?? false),
       });
     });
+
+    // Immediately evaluate any cards that might already be exposed due to an
+    // existing scratch pattern (for example, when the cover is reused between
+    // rounds without being reset).
+    this.evaluateCardReveals();
   }
 
   markCardRevealed(id) {
@@ -266,6 +271,10 @@ export class ScratchCover {
     }
     this.coverSprite.alpha = 1;
     this.coverSprite.visible = true;
+  }
+
+  evaluateCardReveals() {
+    this.#checkCardReveals();
   }
 
   revealAllInstant() {
