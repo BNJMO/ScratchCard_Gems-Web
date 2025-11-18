@@ -1049,6 +1049,7 @@ export async function createGame(mount, opts = {}) {
   }
 
   function setRoundAssignments(assignments = [], meta = {}) {
+    resetScratchLayer();
     currentAssignments.clear();
     applyRoundOutcomeMeta(meta, assignments);
     for (const entry of assignments) {
@@ -1058,7 +1059,6 @@ export async function createGame(mount, opts = {}) {
       }
     }
     rules.setAssignments(currentAssignments);
-    resetScratchLayer();
     for (const [key, card] of cardsByKey.entries()) {
       card._assignedContent = currentAssignments.get(key) ?? null;
       card.showFaceUpContent?.(
