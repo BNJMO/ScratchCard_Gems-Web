@@ -8,6 +8,8 @@ import {
   Sprite,
   Texture,
 } from "pixi.js";
+const ERASE_BLEND = "erase";
+const NORMAL_BLEND = "normal";
 
 const gridCoverModules = import.meta.glob(
   "../../assets/sprites/gridCover.png",
@@ -399,7 +401,7 @@ export class ScratchCover {
 
     const stroke = this._scratchStroke;
     stroke.clear();
-    stroke.blendMode = "erase";
+    stroke.blendMode = ERASE_BLEND;
 
     if (lastPoint) {
       const prevX = this.#localToMaskX(lastPoint.x);
@@ -419,13 +421,13 @@ export class ScratchCover {
     }
 
     renderer.render({ container: stroke, target: this._maskRenderTexture, clear: false });
-    stroke.blendMode = "normal";
+    stroke.blendMode = NORMAL_BLEND;
 
     const textureEntry = this.#getRandomScratchTexture();
     const stamp = this._scratchStamp;
     stamp.texture = textureEntry ?? Texture.WHITE;
     // Use erase blend mode to permanently remove alpha from the mask
-    stamp.blendMode = "erase";
+    stamp.blendMode = ERASE_BLEND;
     stamp.angle = this.options.randomRotation ? Math.random() * 360 : 0;
     // Ensure stamp is fully opaque so it erases properly
     stamp.alpha = 1;
@@ -435,7 +437,7 @@ export class ScratchCover {
     stamp.position.set(maskX, maskY);
 
     renderer.render({ container: stamp, target: this._maskRenderTexture, clear: false });
-    stamp.blendMode = "normal";
+    stamp.blendMode = NORMAL_BLEND;
     this.emit("scratch", { x: localX, y: localY });
     this.#checkCardReveals();
   }
