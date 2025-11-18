@@ -259,6 +259,7 @@ export class GameScene {
     painter.anchor.set(0.5);
     painter.width = size;
     painter.height = size;
+    painter.position.set(size / 2, size / 2);
 
     this.app.renderer.render(painter, { renderTexture, clear: true });
 
