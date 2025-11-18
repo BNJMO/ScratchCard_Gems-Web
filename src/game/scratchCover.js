@@ -170,6 +170,7 @@ export class ScratchCover {
   setScratchTextures(entries = []) {
     this.scratchTextures = entries
       .map((entry) => entry?.texture ?? entry)
+      .map((texture) => this.#createAlphaMaskTexture(texture))
       .filter(Boolean);
   }
 
@@ -435,6 +436,42 @@ export class ScratchCover {
     }
     const index = Math.floor(Math.random() * this.scratchTextures.length);
     return this.scratchTextures[index];
+  }
+
+  #createAlphaMaskTexture(texture) {
+    if (!texture || typeof document === "undefined") return texture;
+    const source = texture.baseTexture?.resource?.source;
+    if (!source || !source.width || !source.height) return texture;
+
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = source.width;
+      canvas.height = source.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return texture;
+
+      ctx.drawImage(source, 0, 0, source.width, source.height);
+      const imageData = ctx.getImageData(0, 0, source.width, source.height);
+      const data = imageData.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        // Convert brightness to inverse alpha so white borders become transparent
+        const alpha = 255 - Math.max(r, g, b);
+        data[i] = 255;
+        data[i + 1] = 255;
+        data[i + 2] = 255;
+        data[i + 3] = alpha;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      return Texture.from(canvas);
+    } catch (error) {
+      console.warn("ScratchCover mask texture normalization failed", error);
+      return texture;
+    }
   }
 
   #recreateMaskTexture(width, height) {
