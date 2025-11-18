@@ -390,8 +390,8 @@ export class ScratchCover {
     const textureEntry = this.#getRandomScratchTexture();
     const stamp = this._scratchStamp;
     stamp.texture = textureEntry ?? Texture.WHITE;
-    // Use destination-out to permanently remove alpha from the mask
-    stamp.blendMode = 'destination-out';
+    // Use erase blend mode to permanently remove alpha from the mask
+    stamp.blendMode = "erase";
     stamp.angle = this.options.randomRotation ? Math.random() * 360 : 0;
     // Ensure stamp is fully opaque so it erases properly
     stamp.alpha = 1;
@@ -407,9 +407,7 @@ export class ScratchCover {
     stamp.position.set(maskX, maskY);
 
     renderer.render({ container: stamp, target: this._maskRenderTexture, clear: false });
-
-
-    stamp.blendMode = 'normal';
+    stamp.blendMode = "normal";
     this.emit("scratch", { x: localX, y: localY });
     this.#checkCardReveals();
   }
