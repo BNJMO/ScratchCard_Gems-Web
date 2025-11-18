@@ -13,6 +13,7 @@ import winFrameSpriteUrl from "../../assets/sprites/winFrame.svg";
 import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
 import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
 import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
+import gridCoverSpriteUrl from "../../assets/sprites/gridCover.png";
 
 const optionalBackgroundSpriteModules = import.meta.glob(
   "../../assets/sprites/game_background.svg",
@@ -37,6 +38,23 @@ const CARD_TYPE_TEXTURES = (() => {
   );
   return Object.entries(modules).map(([path, mod]) => {
     const match = path.match(/cardType_([^/]+)\.svg$/i);
+    const id = match?.[1] ?? path;
+    const texturePath =
+      typeof mod === "string" ? mod : mod?.default ?? mod ?? null;
+    return {
+      key: id,
+      texturePath,
+    };
+  });
+})();
+
+const SCRATCH_MASK_TEXTURES = (() => {
+  const modules = import.meta.glob(
+    "../../assets/sprites/scratchMasks/scratchMask_*.png",
+    { eager: true }
+  );
+  return Object.entries(modules).map(([path, mod]) => {
+    const match = path.match(/scratchMask_([^/]+)\.png$/i);
     const id = match?.[1] ?? path;
     const texturePath =
       typeof mod === "string" ? mod : mod?.default ?? mod ?? null;
@@ -277,6 +295,10 @@ export async function createGame(mount, opts = {}) {
     throw new Error("No scratch card textures found under assets/sprites/cardTypes");
   }
 
+  if (!SCRATCH_MASK_TEXTURES.length) {
+    throw new Error("No scratch mask textures found under assets/sprites/scratchMasks");
+  }
+
   const defaultContentDefinitions = CARD_TYPE_TEXTURES.reduce(
     (acc, { key, texturePath }) => {
       acc[key] = {
@@ -361,6 +383,7 @@ export async function createGame(mount, opts = {}) {
     tileDefaultTexture,
     tileHoverTexture,
     tileFlippedTexture,
+    gridCoverTexture,
   ] = await Promise.all([
     loadTexture(gameBackgroundSpriteUrl, {svgResolution: svgRasterizationResolution,}),
     loadTexture(sparkSpriteUrl),
@@ -374,7 +397,18 @@ export async function createGame(mount, opts = {}) {
     loadTexture(tileFlippedSpriteUrl, {
       svgResolution: svgRasterizationResolution,
     }),
+    loadTexture(gridCoverSpriteUrl),
   ]);
+
+  const scratchMaskTextures = (
+    await Promise.all(
+      SCRATCH_MASK_TEXTURES.map(async (entry) => {
+        const texture = await loadTexture(entry.texturePath);
+        if (!texture) return null;
+        return { key: entry.key, texture };
+      })
+    )
+  ).filter(Boolean);
 
   const scene = new GameScene({
     root,
@@ -413,6 +447,7 @@ export async function createGame(mount, opts = {}) {
   });
 
   await scene.init();
+  scene.setScratchCoverTexture(gridCoverTexture);
 
   const rules = new GameRules({ gridSize: GRID });
 
@@ -435,6 +470,99 @@ export async function createGame(mount, opts = {}) {
   const manualMatchTracker = new Map();
   const manualShakingCards = new Set();
   const scheduledAutoRevealTimers = new Set();
+  const scratchState = {
+    masks: scratchMaskTextures,
+    minDistance: 6,
+    lastPoint: null,
+  };
+
+  function getScratchMaskTexture() {
+    if (!scratchState.masks?.length) return null;
+    const index = Math.floor(Math.random() * scratchState.masks.length);
+    return scratchState.masks[index]?.texture ?? null;
+  }
+
+  function calculateScratchScale(maskTexture) {
+    const layout = scene.getLastLayout();
+    const tileSize = layout?.tileSize ?? 0;
+    const baseWidth = maskTexture?.width || maskTexture?.orig?.width || 0;
+    if (!tileSize || !baseWidth) return 1;
+    const targetSize = tileSize * 0.75;
+    return targetSize / baseWidth;
+  }
+
+  function resetScratchLayer() {
+    scratchState.lastPoint = null;
+    scene.resetScratchCover();
+  }
+
+  function scratchAt(localPoint) {
+    const maskTexture = getScratchMaskTexture();
+    if (!maskTexture) return;
+    const scale = calculateScratchScale(maskTexture);
+    scene.applyScratchMask(maskTexture, {
+      x: localPoint.x,
+      y: localPoint.y,
+      scale,
+    });
+  }
+
+  function isCardCenterScratched(card) {
+    if (!card) return false;
+    const x = card.container?.x ?? 0;
+    const y = card.container?.y ?? 0;
+    return scene.isScratchClearedAt({ x, y });
+  }
+
+  function revealScratchedCards() {
+    for (const card of scene.cards) {
+      if (card.revealed || card.destroyed || card._animating) continue;
+      if (!isCardCenterScratched(card)) continue;
+      const key = `${card.row},${card.col}`;
+      const assignedFace = currentAssignments.get(key) ?? card._assignedContent;
+      const outcome = rules.revealResult({
+        row: card.row,
+        col: card.col,
+        result: assignedFace,
+      });
+      revealCard(card, outcome.face, { revealedByPlayer: true });
+    }
+  }
+
+  function handleScratchMove(event) {
+    const cover = scene.getScratchCoverDisplayObject();
+    if (!cover || cover.eventMode === "none") return;
+    const local = scene.board.toLocal(event.global);
+    const last = scratchState.lastPoint;
+    if (last) {
+      const dx = local.x - last.x;
+      const dy = local.y - last.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance < scratchState.minDistance) {
+        return;
+      }
+    }
+    scratchState.lastPoint = { x: local.x, y: local.y };
+    scratchAt(local);
+    revealScratchedCards();
+  }
+
+  function handleScratchEnter() {
+    scratchState.lastPoint = null;
+  }
+
+  function handleScratchLeave() {
+    scratchState.lastPoint = null;
+  }
+
+  function setupScratchInteraction() {
+    const cover = scene.getScratchCoverDisplayObject();
+    if (!cover) return;
+    cover.removeAllListeners?.();
+    cover.on?.("pointermove", handleScratchMove);
+    cover.on?.("pointerover", handleScratchEnter);
+    cover.on?.("pointerout", handleScratchLeave);
+  }
 
   function clearScheduledAutoReveal(card) {
     if (!card) return;
@@ -737,6 +865,7 @@ export async function createGame(mount, opts = {}) {
     const animationsCompleted = currentRoundOutcome.pendingReveals <= 0;
 
     if (allCardsRevealed) {
+      scene.revealScratchCover();
       const shouldPreserveWinShake =
         currentRoundOutcome.betResult === "win" &&
         currentRoundOutcome.winningCards.size > 0;
@@ -780,6 +909,7 @@ export async function createGame(mount, opts = {}) {
 
   function revealRemainingTiles({ exclude = [] } = {}) {
     currentRoundOutcome.autoRevealTriggered = true;
+    scene.revealScratchCover();
     const excludedCards = new Set(
       Array.isArray(exclude) ? exclude.filter(Boolean) : []
     );
@@ -885,6 +1015,8 @@ export async function createGame(mount, opts = {}) {
     }),
   });
 
+  resetScratchLayer();
+  setupScratchInteraction();
   registerCards();
   soundManager.play("gameStart");
 
@@ -905,6 +1037,8 @@ export async function createGame(mount, opts = {}) {
         onPointerTap: handleCardTap,
       }),
     });
+    resetScratchLayer();
+    setupScratchInteraction();
     registerCards();
     notifyStateChange();
   }
@@ -924,6 +1058,7 @@ export async function createGame(mount, opts = {}) {
       }
     }
     rules.setAssignments(currentAssignments);
+    resetScratchLayer();
     for (const [key, card] of cardsByKey.entries()) {
       card._assignedContent = currentAssignments.get(key) ?? null;
       card.showFaceUpContent?.(

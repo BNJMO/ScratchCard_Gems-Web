@@ -1,4 +1,12 @@
-import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
+import {
+  Application,
+  Container,
+  Graphics,
+  Rectangle,
+  RenderTexture,
+  Sprite,
+  Text,
+} from "pixi.js";
 import { Card } from "./card.js";
 
 const DEFAULT_FONT_FAMILY = "Inter, system-ui, -apple-system, Segoe UI, Arial";
@@ -67,6 +75,7 @@ export class GameScene {
     this._windowResizeListener = null;
     this._currentResolution = 1;
     this._lastLayout = null;
+    this.scratchCover = null;
   }
 
   async init() {
@@ -119,6 +128,7 @@ export class GameScene {
       card?.destroy?.();
     });
     this.cards = [];
+    this.#destroyScratchCover();
     this.app?.destroy(true);
     if (this.app?.canvas?.parentNode === this.root) {
       this.root.removeChild(this.app.canvas);
@@ -179,6 +189,7 @@ export class GameScene {
 
     this.board.position.set(centerX, centerY);
     this._lastLayout = layout;
+    this.#layoutScratchCover(layout);
   }
 
   resize() {
@@ -230,6 +241,34 @@ export class GameScene {
     );
   }
 
+  #layoutScratchCover(layout = this.#layoutSizes()) {
+    if (!this.app || !this.scratchCover || !layout) return;
+
+    const { contentSize } = layout;
+    if (!Number.isFinite(contentSize) || contentSize <= 0) return;
+
+    const { baseTexture, renderTexture, sprite } = this.scratchCover;
+    const size = Math.max(1, contentSize);
+    renderTexture.resize({
+      width: size,
+      height: size,
+      resolution: this._currentResolution,
+    });
+
+    const painter = new Sprite(baseTexture);
+    painter.anchor.set(0.5);
+    painter.width = size;
+    painter.height = size;
+
+    this.app.renderer.render(painter, { renderTexture, clear: true });
+
+    sprite.anchor.set(0.5);
+    sprite.width = size;
+    sprite.height = size;
+    sprite.position.set(0, 0);
+    sprite.visible = true;
+  }
+
   clearGrid() {
     for (const card of this.cards) {
       card?.destroy?.();
@@ -238,6 +277,10 @@ export class GameScene {
     this.boardContent?.removeChildren();
     this.cards = [];
     this._lastLayout = null;
+  }
+
+  getLastLayout() {
+    return this._lastLayout;
   }
 
   setAnimationsEnabled(enabled) {
@@ -252,6 +295,87 @@ export class GameScene {
     this.winPopup.container.visible = false;
     this.winPopup.container.scale?.set?.(0, 0);
     this.winPopup.container.alpha = 0;
+  }
+
+  #destroyScratchCover() {
+    if (!this.scratchCover) return;
+    this.scratchCover.sprite?.destroy({ children: true, texture: false });
+    this.scratchCover.renderTexture?.destroy(true);
+    this.scratchCover = null;
+  }
+
+  setScratchCoverTexture(texture) {
+    this.#destroyScratchCover();
+    if (!texture) return;
+    const renderTexture = RenderTexture.create({ width: 1, height: 1 });
+    const sprite = new Sprite(renderTexture);
+    sprite.anchor.set(0.5);
+    sprite.eventMode = "static";
+    sprite.cursor = "pointer";
+    this.scratchCover = {
+      baseTexture: texture,
+      renderTexture,
+      sprite,
+    };
+    this.board.addChild(sprite);
+    this.#layoutScratchCover(this._lastLayout ?? this.#layoutSizes());
+  }
+
+  resetScratchCover() {
+    if (!this.scratchCover) return;
+    this.scratchCover.sprite.visible = true;
+    this.scratchCover.sprite.eventMode = "static";
+    this.#layoutScratchCover(this._lastLayout ?? this.#layoutSizes());
+  }
+
+  revealScratchCover() {
+    if (!this.scratchCover) return;
+    const { renderTexture, sprite } = this.scratchCover;
+    this.app?.renderer?.render(new Graphics(), {
+      renderTexture,
+      clear: true,
+    });
+    sprite.visible = false;
+    sprite.eventMode = "none";
+  }
+
+  getScratchCoverDisplayObject() {
+    return this.scratchCover?.sprite ?? null;
+  }
+
+  applyScratchMask(maskTexture, { x = 0, y = 0, scale = 1 } = {}) {
+    if (!this.scratchCover || !maskTexture) return;
+    const { renderTexture } = this.scratchCover;
+    const brush = new Sprite(maskTexture);
+    brush.anchor.set(0.5);
+    brush.position.set(x, y);
+    brush.scale.set(scale);
+    brush.blendMode = "destination-out";
+    this.app?.renderer?.render(brush, { renderTexture, clear: false });
+  }
+
+  isScratchClearedAt({ x = 0, y = 0 } = {}) {
+    if (!this.scratchCover) return true;
+    const renderer = this.app?.renderer;
+    if (!renderer) return false;
+
+    const { renderTexture } = this.scratchCover;
+    const size = renderTexture?.width ?? 0;
+    if (!Number.isFinite(size) || size <= 0) return false;
+
+    const sampleX = Math.round(x + size / 2);
+    const sampleY = Math.round(y + size / 2);
+    if (sampleX < 0 || sampleY < 0 || sampleX >= size || sampleY >= size) {
+      return false;
+    }
+
+    const pixels = renderer.extract.pixels(
+      renderTexture,
+      new Rectangle(sampleX, sampleY, 1, 1)
+    );
+    if (!pixels || pixels.length < 4) return false;
+    const alpha = pixels[3];
+    return alpha <= 0;
   }
 
   showWinPopup({ multiplier, amount }) {
