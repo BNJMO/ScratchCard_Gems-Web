@@ -204,7 +204,7 @@ export async function createGame(mount, opts = {}) {
   const autoResetDelayMs = Number(opts.autoResetDelayMs ?? 1500);
   const strokeWidth = opts.strokeWidth ?? 1;
   const gapBetweenTiles = opts.gapBetweenTiles ?? 0.1;
-  const flipDuration = opts.flipDuration ?? 300;
+  const flipDuration = opts.flipDuration ?? 0;
   const flipEaseFunction = opts.flipEaseFunction ?? "easeInOutSine";
 
   const hoverOptions = {
@@ -347,6 +347,11 @@ export async function createGame(mount, opts = {}) {
       };
     })
   );
+
+  const getContentConfig = (key) => {
+    if (key == null) return null;
+    return contentLibrary[key] ?? null;
+  };
 
 
   const [
@@ -543,6 +548,13 @@ export async function createGame(mount, opts = {}) {
       cardsByKey.set(key, card);
       card.setDisableAnimations(disableAnimations);
       card._assignedContent = currentAssignments.get(key) ?? null;
+      card.showFaceUpContent?.(
+        getContentConfig(card._assignedContent),
+        {
+          iconSizePercentage,
+          iconRevealedSizeFactor,
+        }
+      );
       card._pendingWinningReveal = false;
       card._randomSelectionPending = false;
       clearScheduledAutoReveal(card);
@@ -914,6 +926,13 @@ export async function createGame(mount, opts = {}) {
     rules.setAssignments(currentAssignments);
     for (const [key, card] of cardsByKey.entries()) {
       card._assignedContent = currentAssignments.get(key) ?? null;
+      card.showFaceUpContent?.(
+        getContentConfig(card._assignedContent),
+        {
+          iconSizePercentage,
+          iconRevealedSizeFactor,
+        }
+      );
     }
     notifyStateChange();
   }

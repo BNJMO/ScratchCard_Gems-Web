@@ -493,62 +493,13 @@ export class Card {
 
         if (!this._swapHandled && t >= 0.5) {
           this._swapHandled = true;
-          icon.visible = true;
-          const iconSizeFactor = revealedByPlayer
-            ? 1.0
-            : iconRevealedSizeFactor ??
-              contentConfig.iconRevealedSizeFactor ??
-              this.iconOptions.revealedSizeFactor;
-          const baseSize =
-            iconSizePercentage ??
-            contentConfig.iconSizePercentage ??
-            this.iconOptions.sizePercentage;
-          const maxDimension = tileSize * baseSize * iconSizeFactor;
-
-          if (contentConfig.texture) {
-            icon.texture = contentConfig.texture;
-          }
-
-          this.#applyIconSizing(icon, maxDimension, contentConfig.texture);
-
-          contentConfig.configureIcon?.(icon, {
-            card: this,
-            revealedByPlayer,
-          });
-
-          const facePalette = this.#resolveRevealColor({
-            paletteSet: contentConfig.palette?.face,
+          this.#applyContentAppearance({
+            contentConfig,
             revealedByPlayer,
             useSelectionTint,
-            fallbackRevealed:
-              contentConfig.fallbackPalette?.face?.revealed ??
-              palette.cardFace ??
-              this.palette.cardFace ??
-              this.palette.defaultTint,
-            fallbackUnrevealed:
-              contentConfig.fallbackPalette?.face?.unrevealed ??
-              palette.cardFaceUnrevealed ??
-              this.palette.cardFaceUnrevealed ??
-              this.palette.defaultTint,
+            iconSizePercentage,
+            iconRevealedSizeFactor,
           });
-          this.flipFace(facePalette);
-
-          const insetPalette = this.#resolveRevealColor({
-            paletteSet: contentConfig.palette?.inset,
-            revealedByPlayer,
-            useSelectionTint: false,
-            fallbackRevealed:
-              contentConfig.fallbackPalette?.inset?.revealed ??
-              palette.cardInset ??
-              this.palette.cardInset ??
-              this.palette.defaultTint,
-            fallbackUnrevealed:
-              contentConfig.fallbackPalette?.inset?.unrevealed ??
-              palette.cardInsetUnrevealed ??
-              this.palette.cardInsetUnrevealed ??
-              this.palette.defaultTint,
-          });
-          this.flipInset(insetPalette);
 
           if (revealedByPlayer) {
             contentConfig.playSound?.({ card: this, revealedByPlayer });
@@ -578,6 +529,30 @@ export class Card {
     });
 
     return true;
+  }
+
+  showFaceUpContent(content, { iconSizePercentage, iconRevealedSizeFactor } = {}) {
+    if (!content) {
+      if (this._icon) {
+        this._icon.visible = false;
+      }
+      this._tileState = "default";
+      this.#updateTileTexture();
+      return;
+    }
+
+    this._tileState = "flipped";
+    this.revealed = false;
+    this._swapHandled = false;
+    this._animating = false;
+    this.#applyContentAppearance({
+      contentConfig: content,
+      revealedByPlayer: false,
+      useSelectionTint: false,
+      iconSizePercentage,
+      iconRevealedSizeFactor,
+    });
+    this.#updateTileTexture();
   }
 
   flipFace(color) {
@@ -665,6 +640,69 @@ export class Card {
     return this.animationOptions.hoverTiltAxis === "y"
       ? this._wrap.skew.y
       : this._wrap.skew.x;
+  }
+
+  #applyContentAppearance({
+    contentConfig = {},
+    revealedByPlayer = false,
+    useSelectionTint = false,
+    iconSizePercentage,
+    iconRevealedSizeFactor,
+  } = {}) {
+    const icon = this._icon;
+    const tileSize = this._tileSize;
+    if (!icon || !tileSize) return;
+
+    icon.visible = true;
+
+    const iconSizeFactor = revealedByPlayer
+      ? 1.0
+      : iconRevealedSizeFactor ??
+        contentConfig.iconRevealedSizeFactor ??
+        this.iconOptions.revealedSizeFactor;
+    const baseSize =
+      iconSizePercentage ??
+      contentConfig.iconSizePercentage ??
+      this.iconOptions.sizePercentage;
+    const maxDimension = tileSize * baseSize * iconSizeFactor;
+
+    if (contentConfig.texture) {
+      icon.texture = contentConfig.texture;
+    }
+
+    this.#applyIconSizing(icon, maxDimension, contentConfig.texture);
+
+    contentConfig.configureIcon?.(icon, { card: this, revealedByPlayer });
+
+    const facePalette = this.#resolveRevealColor({
+      paletteSet: contentConfig.palette?.face,
+      revealedByPlayer,
+      useSelectionTint,
+      fallbackRevealed:
+        contentConfig.fallbackPalette?.face?.revealed ??
+        this.palette.cardFace ??
+        this.palette.defaultTint,
+      fallbackUnrevealed:
+        contentConfig.fallbackPalette?.face?.unrevealed ??
+        this.palette.cardFaceUnrevealed ??
+        this.palette.defaultTint,
+    });
+    this.flipFace(facePalette);
+
+    const insetPalette = this.#resolveRevealColor({
+      paletteSet: contentConfig.palette?.inset,
+      revealedByPlayer,
+      useSelectionTint: false,
+      fallbackRevealed:
+        contentConfig.fallbackPalette?.inset?.revealed ??
+        this.palette.cardInset ??
+        this.palette.defaultTint,
+      fallbackUnrevealed:
+        contentConfig.fallbackPalette?.inset?.unrevealed ??
+        this.palette.cardInsetUnrevealed ??
+        this.palette.defaultTint,
+    });
+    this.flipInset(insetPalette);
   }
 
   destroy() {
