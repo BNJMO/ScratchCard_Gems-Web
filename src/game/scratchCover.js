@@ -97,6 +97,7 @@ const DEFAULT_OPTIONS = {
   randomRotation: true,
   alphaThreshold: 0.2,
   enableHover: true,
+  useRoundBrush: true,
 };
 
 function clamp(value, min, max) {
@@ -144,6 +145,7 @@ export class ScratchCover {
     this._scratchStamp = new Sprite(Texture.WHITE);
     this._scratchStamp.anchor.set(0.5);
     this._scratchStamp.visible = true; // must be visible to render into RT
+    this._roundScratchTexture = null;
     this.container = new Container();
     this.container.eventMode = "static"; // capture pointer events
     this.container.sortableChildren = false;
@@ -168,9 +170,19 @@ export class ScratchCover {
   }
 
   setScratchTextures(entries = []) {
+    if (this.options.useRoundBrush) {
+      this.scratchTextures = [this.#getRoundScratchTexture()].filter(Boolean);
+      return;
+    }
+
     this.scratchTextures = entries
       .map((entry) => entry?.texture ?? entry)
+      .map((texture) => this.#createAlphaMaskTexture(texture))
       .filter(Boolean);
+
+    if (!this.scratchTextures.length) {
+      this.scratchTextures = [this.#getRoundScratchTexture()].filter(Boolean);
+    }
   }
 
   setCoverTexture(texture) {
@@ -295,6 +307,7 @@ export class ScratchCover {
     this._destroyed = true;
     this.#removeEventBindings();
     this._scratchStamp?.destroy({ children: true, texture: false, baseTexture: false });
+    this._roundScratchTexture?.destroy(true);
     this._maskRenderTexture?.destroy(true);
     this.coverSprite?.destroy();
     this.maskSprite?.destroy();
@@ -406,7 +419,11 @@ export class ScratchCover {
     const maskY = this.#localToMaskY(localY);
     stamp.position.set(maskX, maskY);
 
-    renderer.render({ container: stamp, target: this._maskRenderTexture, clear: false });
+    renderer.render({
+      container: stamp,
+      target: this._maskRenderTexture,
+      clear: false,
+    });
 
     stamp.blendMode = "normal";
     this.emit("scratch", { x: localX, y: localY });
@@ -431,6 +448,66 @@ export class ScratchCover {
     }
     const index = Math.floor(Math.random() * this.scratchTextures.length);
     return this.scratchTextures[index];
+  }
+
+  #getRoundScratchTexture() {
+    if (this._roundScratchTexture) {
+      return this._roundScratchTexture;
+    }
+
+    const renderer = this.app?.renderer;
+    if (!renderer) return Texture.WHITE;
+
+    const diameter = 128;
+    const radius = diameter / 2;
+    const gfx = new Graphics();
+    gfx.circle(radius, radius, radius);
+    gfx.fill({ color: 0xffffff, alpha: 1 });
+
+    const texture = renderer.generateTexture(gfx, {
+      resolution: 1,
+      region: new Rectangle(0, 0, diameter, diameter),
+    });
+
+    gfx.destroy(true);
+    this._roundScratchTexture = texture;
+    return texture;
+  }
+
+  #createAlphaMaskTexture(texture) {
+    if (!texture || typeof document === "undefined") return texture;
+    const source = texture.baseTexture?.resource?.source;
+    if (!source || !source.width || !source.height) return texture;
+
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = source.width;
+      canvas.height = source.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return texture;
+
+      ctx.drawImage(source, 0, 0, source.width, source.height);
+      const imageData = ctx.getImageData(0, 0, source.width, source.height);
+      const data = imageData.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        // Convert bright pixels to transparency and dark stroke to opaque black
+        const alpha = 255 - Math.max(r, g, b);
+        data[i] = 0;
+        data[i + 1] = 0;
+        data[i + 2] = 0;
+        data[i + 3] = alpha;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      return Texture.from(canvas);
+    } catch (error) {
+      console.warn("ScratchCover mask texture normalization failed", error);
+      return texture;
+    }
   }
 
   #recreateMaskTexture(width, height) {
