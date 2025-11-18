@@ -97,6 +97,7 @@ const DEFAULT_OPTIONS = {
   randomRotation: true,
   alphaThreshold: 0.2,
   enableHover: true,
+  useRoundBrush: true,
 };
 
 function clamp(value, min, max) {
@@ -144,6 +145,7 @@ export class ScratchCover {
     this._scratchStamp = new Sprite(Texture.WHITE);
     this._scratchStamp.anchor.set(0.5);
     this._scratchStamp.visible = true; // must be visible to render into RT
+    this._roundScratchTexture = null;
     this.container = new Container();
     this.container.eventMode = "static"; // capture pointer events
     this.container.sortableChildren = false;
@@ -168,10 +170,19 @@ export class ScratchCover {
   }
 
   setScratchTextures(entries = []) {
+    if (this.options.useRoundBrush) {
+      this.scratchTextures = [this.#getRoundScratchTexture()].filter(Boolean);
+      return;
+    }
+
     this.scratchTextures = entries
       .map((entry) => entry?.texture ?? entry)
       .map((texture) => this.#createAlphaMaskTexture(texture))
       .filter(Boolean);
+
+    if (!this.scratchTextures.length) {
+      this.scratchTextures = [this.#getRoundScratchTexture()].filter(Boolean);
+    }
   }
 
   setCoverTexture(texture) {
@@ -296,6 +307,7 @@ export class ScratchCover {
     this._destroyed = true;
     this.#removeEventBindings();
     this._scratchStamp?.destroy({ children: true, texture: false, baseTexture: false });
+    this._roundScratchTexture?.destroy(true);
     this._maskRenderTexture?.destroy(true);
     this.coverSprite?.destroy();
     this.maskSprite?.destroy();
@@ -436,6 +448,30 @@ export class ScratchCover {
     }
     const index = Math.floor(Math.random() * this.scratchTextures.length);
     return this.scratchTextures[index];
+  }
+
+  #getRoundScratchTexture() {
+    if (this._roundScratchTexture) {
+      return this._roundScratchTexture;
+    }
+
+    const renderer = this.app?.renderer;
+    if (!renderer) return Texture.WHITE;
+
+    const diameter = 128;
+    const radius = diameter / 2;
+    const gfx = new Graphics();
+    gfx.circle(radius, radius, radius);
+    gfx.fill({ color: 0xffffff, alpha: 1 });
+
+    const texture = renderer.generateTexture(gfx, {
+      resolution: 1,
+      region: new Rectangle(0, 0, diameter, diameter),
+    });
+
+    gfx.destroy(true);
+    this._roundScratchTexture = texture;
+    return texture;
   }
 
   #createAlphaMaskTexture(texture) {
