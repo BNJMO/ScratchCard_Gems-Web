@@ -143,6 +143,7 @@ export class ScratchCover {
     this._scratchStamp = new Sprite(Texture.WHITE);
     this._scratchStamp.anchor.set(0.5);
     this._scratchStamp.visible = true; // must be visible to render into RT
+    this._scratchStroke = new Graphics();
 
     this.container = new Container();
     this.container.eventMode = "static"; // capture pointer events
@@ -359,7 +360,7 @@ export class ScratchCover {
     this._hovering = true;
 
     if (!this._lastScratchPoint) {
-      this.#scratchAt(localPoint.x, localPoint.y);
+      this.#scratchAt(localPoint.x, localPoint.y, null);
       this._lastScratchPoint = { x: localPoint.x, y: localPoint.y };
       return;
     }
@@ -376,16 +377,48 @@ export class ScratchCover {
       const t = i / steps;
       const x = this._lastScratchPoint.x + dx * t;
       const y = this._lastScratchPoint.y + dy * t;
-      this.#scratchAt(x, y);
+      this.#scratchAt(x, y, this._lastScratchPoint);
     }
 
     this._lastScratchPoint = { x: localPoint.x, y: localPoint.y };
   }
 
-  #scratchAt(localX, localY) {
+  #scratchAt(localX, localY, lastPoint) {
     if (!this._maskRenderTexture) return;
     const renderer = this.app?.renderer;
     if (!renderer) return;
+
+    const desiredWidth = Math.max(48, Math.round(this._maskRenderTexture.width * 0.12));
+    const [minScale, maxScale] = this.options.maskScaleRange;
+    const baseScale = desiredWidth / (this._scratchStamp.texture.width || desiredWidth);
+    const randomMultiplier = minScale + Math.random() * (maxScale - minScale);
+    const strokeWidth = baseScale * randomMultiplier * (this._scratchStamp.texture.width || desiredWidth);
+
+    const maskX = this.#localToMaskX(localX);
+    const maskY = this.#localToMaskY(localY);
+
+    const stroke = this._scratchStroke;
+    stroke.clear();
+    stroke.blendMode = "erase";
+    stroke.lineStyle({
+      width: strokeWidth,
+      color: 0xffffff,
+      alpha: 1,
+      cap: "round",
+      join: "round",
+    });
+
+    if (lastPoint) {
+      const prevX = this.#localToMaskX(lastPoint.x);
+      const prevY = this.#localToMaskY(lastPoint.y);
+      stroke.moveTo(prevX, prevY);
+      stroke.lineTo(maskX, maskY);
+    } else {
+      stroke.circle(maskX, maskY, strokeWidth / 2);
+    }
+
+    renderer.render({ container: stroke, target: this._maskRenderTexture, clear: false });
+    stroke.blendMode = "normal";
 
     const textureEntry = this.#getRandomScratchTexture();
     const stamp = this._scratchStamp;
@@ -396,14 +429,8 @@ export class ScratchCover {
     // Ensure stamp is fully opaque so it erases properly
     stamp.alpha = 1;
 
-    const desiredWidth = Math.max(48, Math.round(this._maskRenderTexture.width * 0.12));
-    const [minScale, maxScale] = this.options.maskScaleRange;
-    const baseScale = desiredWidth / (stamp.texture.width || desiredWidth);
-    const randomMultiplier = minScale + Math.random() * (maxScale - minScale);
     stamp.scale.set(baseScale * randomMultiplier);
 
-    const maskX = this.#localToMaskX(localX);
-    const maskY = this.#localToMaskY(localY);
     stamp.position.set(maskX, maskY);
 
     renderer.render({ container: stamp, target: this._maskRenderTexture, clear: false });
