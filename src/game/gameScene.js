@@ -248,12 +248,25 @@ export class GameScene {
     if (!Number.isFinite(contentSize) || contentSize <= 0) return;
 
     const { baseTexture, renderTexture, sprite } = this.scratchCover;
-    const size = Math.max(1, contentSize);
+    if (!baseTexture?.valid) {
+      baseTexture?.once?.("update", () => {
+        if (this.scratchCover?.baseTexture === baseTexture) {
+          this.#layoutScratchCover(layout);
+        }
+      });
+      return;
+    }
+
+    const size = Math.max(1, Math.round(contentSize));
     renderTexture.resize({
       width: size,
       height: size,
       resolution: this._currentResolution,
     });
+
+    if (renderTexture.width === 0 || renderTexture.height === 0) {
+      return;
+    }
 
     const painter = new Sprite(baseTexture);
     painter.anchor.set(0.5);
