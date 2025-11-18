@@ -134,6 +134,7 @@ export class ScratchCover {
     this._hovering = false;
     this._destroyed = false;
     this._hasScratched = false;
+    this._coverFadeCancel = null;
     this._alphaThreshold255 = Math.round(
       this.options.alphaThreshold * 255
     );
@@ -278,16 +279,60 @@ export class ScratchCover {
   }
 
   revealAllInstant() {
-    if (!this._maskRenderTexture) return;
-    this.#fillMaskTexture(0);
-    this.coverSprite.alpha = 0;
-    this.emit("scratch", { type: "reveal-all" });
-    for (const card of this._cardCenters.values()) {
-      if (!card.revealed) {
-        card.revealed = true;
-        this.emit("cardRevealed", { id: card.id, data: card.data });
+    this.revealAllWithFade({ duration: 0 });
+  }
+
+  revealAllWithFade({ duration = 400 } = {}) {
+    const revealDuration = Math.max(0, Math.round(duration ?? 0));
+
+    const revealCards = () => {
+      this.#fillMaskTexture(0);
+      if (this.coverSprite) {
+        this.coverSprite.alpha = 0;
       }
+      this.emit("scratch", { type: "reveal-all" });
+      for (const card of this._cardCenters.values()) {
+        if (!card.revealed) {
+          card.revealed = true;
+          this.emit("cardRevealed", { id: card.id, data: card.data });
+        }
+      }
+    };
+
+    if (typeof this._coverFadeCancel === "function") {
+      this._coverFadeCancel();
+      this._coverFadeCancel = null;
     }
+
+    if (!this.coverSprite || !this.app?.ticker || revealDuration <= 0) {
+      revealCards();
+      return;
+    }
+
+    const startAlpha = this.coverSprite.alpha ?? 1;
+    const targetAlpha = 0;
+    const startTime = performance.now();
+
+    const tick = () => {
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(1, elapsed / revealDuration);
+      const eased = t * t * (3 - 2 * t);
+      const nextAlpha = startAlpha + (targetAlpha - startAlpha) * eased;
+      this.coverSprite.alpha = clamp(nextAlpha, 0, 1);
+
+      if (t >= 1) {
+        this.app?.ticker?.remove(tick);
+        this._coverFadeCancel = null;
+        revealCards();
+      }
+    };
+
+    this._coverFadeCancel = () => {
+      this.app?.ticker?.remove(tick);
+    };
+
+    this.coverSprite.visible = true;
+    this.app.ticker.add(tick);
   }
 
   destroy() {

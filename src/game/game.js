@@ -4,9 +4,6 @@ import { GameRules } from "./gameRules.js";
 import { DEFAULT_GAME_CONFIG, DEFAULT_PALETTE } from "../config/gameConfig.js";
 import sparkSpriteUrl from "../../assets/sprites/Spark.png";
 import winFrameSpriteUrl from "../../assets/sprites/winFrame.svg";
-import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
-import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
-import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
 
 const optionalBackgroundSpriteModules = import.meta.glob(
   "../../assets/sprites/game_background.svg",
@@ -362,16 +359,10 @@ export async function createGame(mount, opts = {}) {
     gameBackgroundTexture,
     matchSparkTexture,
     winFrameTexture,
-    tileDefaultTexture,
-    tileHoverTexture,
-    tileFlippedTexture,
   ] = await Promise.all([
     loadTexture(gameBackgroundSpriteUrl, { svgResolution: svgRasterizationResolution }),
     loadTexture(sparkSpriteUrl),
     loadTexture(winFrameSpriteUrl),
-    loadTexture(tileUnflippedSpriteUrl, { svgResolution: svgRasterizationResolution }),
-    loadTexture(tileHoveredSpriteUrl, { svgResolution: svgRasterizationResolution }),
-    loadTexture(tileFlippedSpriteUrl, { svgResolution: svgRasterizationResolution }),
   ]);
 
   const scene = new GameScene({
@@ -392,11 +383,6 @@ export async function createGame(mount, opts = {}) {
         sparkDuration: 1500,
       },
       frameTexture: winFrameTexture,
-      stateTextures: {
-        default: tileDefaultTexture,
-        hover: tileHoverTexture,
-        flipped: tileFlippedTexture,
-      },
       winPopupWidth: winPopupOptions.winPopupWidth,
       winPopupHeight: winPopupOptions.winPopupHeight,
     },
@@ -777,8 +763,12 @@ export async function createGame(mount, opts = {}) {
       return;
     }
 
-    // Instantly reveal the scratch cover
-    scene.scratchLayer?.revealAllInstant?.();
+    const coverRevealDuration = disableAnimations ? 0 : 350;
+    if (scene.scratchLayer?.revealAllWithFade) {
+      scene.scratchLayer.revealAllWithFade({ duration: coverRevealDuration });
+    } else {
+      scene.scratchLayer?.revealAllInstant?.();
+    }
 
     const unrevealed = scene.cards.filter(
       (card) =>
