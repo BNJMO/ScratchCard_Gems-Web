@@ -458,11 +458,11 @@ export class ScratchCover {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
-        // Convert brightness to inverse alpha so white borders become transparent
+        // Convert bright pixels to transparency and dark stroke to opaque black
         const alpha = 255 - Math.max(r, g, b);
-        data[i] = 255;
-        data[i + 1] = 255;
-        data[i + 2] = 255;
+        data[i] = 0;
+        data[i + 1] = 0;
+        data[i + 2] = 0;
         data[i + 3] = alpha;
       }
 
