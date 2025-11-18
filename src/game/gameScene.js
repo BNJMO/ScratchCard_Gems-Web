@@ -350,7 +350,7 @@ export class GameScene {
     brush.anchor.set(0.5);
     brush.position.set(x, y);
     brush.scale.set(scale);
-    brush.blendMode = "destination-out";
+    brush.blendMode = "erase";
     this.app?.renderer?.render(brush, { renderTexture, clear: false });
   }
 
