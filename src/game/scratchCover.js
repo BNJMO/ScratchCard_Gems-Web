@@ -400,21 +400,22 @@ export class ScratchCover {
     const stroke = this._scratchStroke;
     stroke.clear();
     stroke.blendMode = "erase";
-    stroke.lineStyle({
-      width: strokeWidth,
-      color: 0xffffff,
-      alpha: 1,
-      cap: "round",
-      join: "round",
-    });
 
     if (lastPoint) {
       const prevX = this.#localToMaskX(lastPoint.x);
       const prevY = this.#localToMaskY(lastPoint.y);
       stroke.moveTo(prevX, prevY);
       stroke.lineTo(maskX, maskY);
+      stroke.stroke({
+        width: strokeWidth,
+        color: 0xffffff,
+        alpha: 1,
+        cap: "round",
+        join: "round",
+      });
     } else {
       stroke.circle(maskX, maskY, strokeWidth / 2);
+      stroke.fill({ color: 0xffffff, alpha: 1 });
     }
 
     renderer.render({ container: stroke, target: this._maskRenderTexture, clear: false });
