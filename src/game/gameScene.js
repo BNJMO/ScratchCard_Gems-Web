@@ -34,6 +34,7 @@ export class GameScene {
       frameTexture: cardOptions?.frameTexture ?? null,
       stateTextures: cardOptions?.stateTextures ?? {},
     };
+    this.gridCoverTexture = cardOptions?.gridCoverTexture ?? null;
     this.layoutOptions = {
       gapBetweenTiles: layoutOptions?.gapBetweenTiles ?? 0.012,
     };
@@ -60,9 +61,11 @@ export class GameScene {
     this.board = null;
     this.boardShadows = null;
     this.boardContent = null;
+    this.scratchLayer = null;
     this.ui = null;
     this.winPopup = null;
     this.backgroundSprite = null;
+    this.gridCoverSprite = null;
     this.resizeObserver = null;
     this._windowResizeListener = null;
     this._currentResolution = 1;
@@ -94,7 +97,9 @@ export class GameScene {
     this.boardShadows = new Container();
     this.boardShadows.eventMode = "none";
     this.boardContent = new Container();
-    this.board.addChild(this.boardShadows, this.boardContent);
+    this.scratchLayer = new Container();
+    this.scratchLayer.eventMode = "none";
+    this.board.addChild(this.boardShadows, this.boardContent, this.scratchLayer);
     this.ui = new Container();
     this.app.stage.addChild(this.board, this.ui);
 
@@ -172,6 +177,8 @@ export class GameScene {
       card.setLayout({ x, y, scale });
     }
 
+    this.#layoutGridCover(layout);
+
     const centerX =
       boardCenterX ?? (this.app?.renderer?.width ?? 0) / 2;
     const centerY =
@@ -236,6 +243,8 @@ export class GameScene {
     }
     this.boardShadows?.removeChildren();
     this.boardContent?.removeChildren();
+    this.scratchLayer?.removeChildren();
+    this.gridCoverSprite = null;
     this.cards = [];
     this._lastLayout = null;
   }
@@ -483,6 +492,37 @@ export class GameScene {
     container.addChild(border, inner, multiplierText, amountRow);
 
     return { container, multiplierText, amountText, layoutAmountRow };
+  }
+
+  createGridCover(layout = this._lastLayout ?? this.#layoutSizes()) {
+    if (!this.gridCoverTexture) return null;
+
+    const cover = new Sprite(this.gridCoverTexture);
+    cover.anchor.set(0.5);
+    cover.eventMode = "none";
+    this.#applyGridCoverLayout(cover, layout);
+
+    return cover;
+  }
+
+  #applyGridCoverLayout(sprite, layout) {
+    if (!sprite || !layout) return;
+    sprite.width = layout.contentSize;
+    sprite.height = layout.contentSize;
+    sprite.position.set(0, 0);
+  }
+
+  #layoutGridCover(layout) {
+    if (!this.scratchLayer) return;
+
+    if (!this.gridCoverSprite && this.gridCoverTexture) {
+      this.gridCoverSprite = this.createGridCover(layout);
+      if (this.gridCoverSprite) {
+        this.scratchLayer.addChild(this.gridCoverSprite);
+      }
+    } else if (this.gridCoverSprite) {
+      this.#applyGridCoverLayout(this.gridCoverSprite, layout);
+    }
   }
 }
 

@@ -9,6 +9,7 @@ import roundWinSoundUrl from "../../assets/sounds/Win.wav";
 import roundLostSoundUrl from "../../assets/sounds/Lost.wav";
 import twoMatchSoundUrl from "../../assets/sounds/2Match.wav";
 import sparkSpriteUrl from "../../assets/sprites/Spark.png";
+import gridCoverSpriteUrl from "../../assets/sprites/gridCover.png";
 import winFrameSpriteUrl from "../../assets/sprites/winFrame.svg";
 import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
 import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
@@ -352,6 +353,7 @@ export async function createGame(mount, opts = {}) {
   const [
     gameBackgroundTexture,
     matchSparkTexture,
+    gridCoverTexture,
     winFrameTexture,
     tileDefaultTexture,
     tileHoverTexture,
@@ -359,6 +361,7 @@ export async function createGame(mount, opts = {}) {
   ] = await Promise.all([
     loadTexture(gameBackgroundSpriteUrl, {svgResolution: svgRasterizationResolution,}),
     loadTexture(sparkSpriteUrl),
+    loadTexture(gridCoverSpriteUrl),
     loadTexture(winFrameSpriteUrl),
     loadTexture(tileUnflippedSpriteUrl, {
       svgResolution: svgRasterizationResolution,
@@ -388,6 +391,7 @@ export async function createGame(mount, opts = {}) {
         sparkTexture: matchSparkTexture,
         sparkDuration: 1500,
       },
+      gridCoverTexture,
       frameTexture: winFrameTexture,
       stateTextures: {
         default: tileDefaultTexture,
