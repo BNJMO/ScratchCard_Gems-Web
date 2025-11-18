@@ -406,7 +406,11 @@ export class ScratchCover {
     const maskY = this.#localToMaskY(localY);
     stamp.position.set(maskX, maskY);
 
-    renderer.render({ container: stamp, target: this._maskRenderTexture, clear: false });
+    renderer.render({
+      container: stamp,
+      renderTexture: this._maskRenderTexture,
+      clear: false,
+    });
 
     stamp.blendMode = "normal";
     this.emit("scratch", { x: localX, y: localY });
@@ -462,7 +466,7 @@ export class ScratchCover {
     gfx.fill({ color: 0xffffff, alpha: clamp(alpha, 0, 1) });
     this.app.renderer.render({
       container: gfx,
-      target: this._maskRenderTexture,
+      renderTexture: this._maskRenderTexture,
       clear: true,
     });
     gfx.destroy();
