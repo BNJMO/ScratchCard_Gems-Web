@@ -1,4 +1,4 @@
-import { Container, Sprite, Texture } from "pixi.js";
+import { AnimatedSprite, Container, Sprite, Texture } from "pixi.js";
 import Ease from "../ease.js";
 
 const AUTO_SELECTION_COLOR = 0xcfdd00;
@@ -31,6 +31,7 @@ export class Card {
     this.iconOptions = {
       sizePercentage: iconOptions?.sizePercentage ?? 0.7,
       revealedSizeFactor: iconOptions?.revealedSizeFactor ?? 0.85,
+      playAnimatedIcons: Boolean(iconOptions?.playAnimatedIcons),
     };
     this.matchEffects = {
       sparkTexture: matchEffects?.sparkTexture ?? null,
@@ -493,6 +494,8 @@ export class Card {
 
         if (!this._swapHandled && t >= 0.5) {
           this._swapHandled = true;
+          icon.stop?.();
+          icon.gotoAndStop?.(0);
           icon.visible = true;
           const iconSizeFactor = revealedByPlayer
             ? 1.0
@@ -506,15 +509,42 @@ export class Card {
           const maxDimension = tileSize * baseSize * iconSizeFactor;
 
           if (contentConfig.texture) {
+            if (Array.isArray(icon.textures)) {
+              icon.textures = [contentConfig.texture];
+            }
             icon.texture = contentConfig.texture;
           }
 
           this.#applyIconSizing(icon, maxDimension, contentConfig.texture);
 
-          contentConfig.configureIcon?.(icon, {
+          const iconShouldPlay = Boolean(
+            (contentConfig.shouldPlayIconAnimation ??
+              this.iconOptions.playAnimatedIcons) &&
+              !this.disableAnimations
+          );
+
+          const iconContext = {
             card: this,
             revealedByPlayer,
-          });
+            shouldPlayAnimation: iconShouldPlay,
+            animationHandled: false,
+          };
+
+          contentConfig.configureIcon?.(icon, iconContext);
+
+          if (!iconContext.animationHandled) {
+            if (
+              iconShouldPlay &&
+              Array.isArray(icon.textures) &&
+              icon.textures.length > 1 &&
+              typeof icon.play === "function"
+            ) {
+              icon.play();
+            } else {
+              icon.stop?.();
+              icon.gotoAndStop?.(0);
+            }
+          }
 
           const facePalette = this.#resolveRevealColor({
             paletteSet: contentConfig.palette?.face,
@@ -1103,11 +1133,15 @@ export class Card {
     tileSprite.width = tileSize;
     tileSprite.height = tileSize;
 
-    const icon = new Sprite();
+    const icon = new AnimatedSprite([Texture.EMPTY]);
     icon.anchor.set(0.5);
     icon.x = tileSize / 2;
     icon.y = tileSize / 2;
     icon.visible = false;
+    icon.loop = true;
+    icon.animationSpeed = 0;
+    icon.stop();
+    icon.gotoAndStop?.(0);
 
     const frameSprite = this.frameTexture
       ? new Sprite(this.frameTexture)
