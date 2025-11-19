@@ -74,6 +74,8 @@ export class Card {
     this._tiltDir = 1;
     this._baseX = 0;
     this._baseY = 0;
+    this._iconContentConfig = null;
+    this._iconLastRevealContext = null;
     this._shadowContainer = null;
     this._shadowWrap = null;
     this._tileSprite = null;
@@ -103,11 +105,7 @@ export class Card {
         this._frameTweenCancel?.();
         this._frameTweenCancel = null;
       }
-      const icon = this._icon;
-      if (icon) {
-        icon.stop?.();
-        icon.gotoAndStop?.(0);
-      }
+      this.stopIconAnimation({ resetToFirstFrame: true });
     }
   }
 
@@ -372,6 +370,56 @@ export class Card {
     });
   }
 
+  playIconAnimation({ startFromFirstFrame = false } = {}) {
+    if (this.disableAnimations || !this.revealed) {
+      return;
+    }
+
+    const icon = this._icon;
+    if (!icon || icon.destroyed) {
+      return;
+    }
+
+    const iconContext = {
+      card: this,
+      revealedByPlayer: this._iconLastRevealContext?.revealedByPlayer ?? false,
+      shouldPlayAnimation: true,
+      startFromFirstFrame,
+      animationHandled: false,
+    };
+
+    const configureIcon = this._iconContentConfig?.configureIcon;
+    if (typeof configureIcon === "function") {
+      configureIcon(icon, iconContext);
+    }
+
+    if (!iconContext.animationHandled && Array.isArray(icon.textures)) {
+      if (startFromFirstFrame) {
+        icon.gotoAndStop?.(0);
+        if (typeof icon._currentTime === "number") {
+          icon._currentTime = 0;
+        }
+      }
+      if (icon.textures.length > 1 && typeof icon.play === "function") {
+        icon.play();
+      }
+    }
+  }
+
+  stopIconAnimation({ resetToFirstFrame = false } = {}) {
+    const icon = this._icon;
+    if (!icon) {
+      return;
+    }
+    icon.stop?.();
+    if (resetToFirstFrame) {
+      icon.gotoAndStop?.(0);
+      if (typeof icon._currentTime === "number") {
+        icon._currentTime = 0;
+      }
+    }
+  }
+
   highlightWin({
     faceColor = 0xeaff00,
     scaleMultiplier = 1.03,
@@ -466,7 +514,10 @@ export class Card {
     const contentConfig = content ?? {};
     const contentKey =
       contentConfig.key ?? contentConfig.face ?? contentConfig.type ?? null;
-    const shouldPlayIconAnimation = !this.disableAnimations;
+    const shouldPlayIconAnimation = false;
+
+    this._iconContentConfig = contentConfig;
+    this._iconLastRevealContext = { revealedByPlayer };
 
     this.tween({
       duration: flipDuration,
@@ -521,6 +572,7 @@ export class Card {
             card: this,
             revealedByPlayer,
             shouldPlayAnimation: shouldPlayIconAnimation,
+            startFromFirstFrame: true,
             animationHandled: false,
           };
 
@@ -713,10 +765,12 @@ export class Card {
     this.container?.destroy?.({ children: true });
     this._wrap = null;
     this._tileSprite = null;
-    this._icon?.stop?.();
+    this.stopIconAnimation();
     this._icon = null;
     this._frameSprite = null;
     this._matchEffectsLayer = null;
+    this._iconContentConfig = null;
+    this._iconLastRevealContext = null;
   }
 
   fadeInWinFrame({ duration = 1000 } = {}) {

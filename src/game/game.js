@@ -532,6 +532,7 @@ export async function createGame(mount, opts = {}) {
     pendingReveals: 0,
     manualMatchPairsTriggered: 0,
     winFramesShown: false,
+    winningAnimationsStarted: false,
   };
   const manualMatchTracker = new Map();
   const manualShakingCards = new Set();
@@ -609,10 +610,12 @@ export async function createGame(mount, opts = {}) {
     currentRoundOutcome.pendingReveals = 0;
     currentRoundOutcome.manualMatchPairsTriggered = 0;
     currentRoundOutcome.winFramesShown = false;
+    currentRoundOutcome.winningAnimationsStarted = false;
     cancelPendingAutoReveals();
     resetManualMatchTracking();
     for (const card of scene.cards) {
       card?.hideWinFrame?.();
+      card?.stopIconAnimation?.({ resetToFirstFrame: true });
     }
   }
 
@@ -766,6 +769,17 @@ export async function createGame(mount, opts = {}) {
       currentRoundOutcome.winFramesShown = true;
       for (const winningCard of currentRoundOutcome.winningCards) {
         winningCard?.fadeInWinFrame?.({ duration: 250 });
+      }
+    }
+
+    if (
+      reachedWinningThreshold &&
+      !currentRoundOutcome.winningAnimationsStarted &&
+      currentRoundOutcome.winningCards.size > 0
+    ) {
+      currentRoundOutcome.winningAnimationsStarted = true;
+      for (const winningCard of currentRoundOutcome.winningCards) {
+        winningCard?.playIconAnimation?.({ startFromFirstFrame: true });
       }
     }
 
