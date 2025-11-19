@@ -1,4 +1,4 @@
-import { Container, Sprite, Texture } from "pixi.js";
+import { AnimatedSprite, Container, Sprite, Texture } from "pixi.js";
 import Ease from "../ease.js";
 
 const AUTO_SELECTION_COLOR = 0xcfdd00;
@@ -102,6 +102,11 @@ export class Card {
       if (this._frameSprite) {
         this._frameTweenCancel?.();
         this._frameTweenCancel = null;
+      }
+      const icon = this._icon;
+      if (icon) {
+        icon.stop?.();
+        icon.gotoAndStop?.(0);
       }
     }
   }
@@ -461,6 +466,7 @@ export class Card {
     const contentConfig = content ?? {};
     const contentKey =
       contentConfig.key ?? contentConfig.face ?? contentConfig.type ?? null;
+    const shouldPlayIconAnimation = !this.disableAnimations;
 
     this.tween({
       duration: flipDuration,
@@ -493,6 +499,8 @@ export class Card {
 
         if (!this._swapHandled && t >= 0.5) {
           this._swapHandled = true;
+          icon.stop?.();
+          icon.gotoAndStop?.(0);
           icon.visible = true;
           const iconSizeFactor = revealedByPlayer
             ? 1.0
@@ -509,12 +517,30 @@ export class Card {
             icon.texture = contentConfig.texture;
           }
 
-          this.#applyIconSizing(icon, maxDimension, contentConfig.texture);
-
-          contentConfig.configureIcon?.(icon, {
+          const iconContext = {
             card: this,
             revealedByPlayer,
-          });
+            shouldPlayAnimation: shouldPlayIconAnimation,
+            animationHandled: false,
+          };
+
+          contentConfig.configureIcon?.(icon, iconContext);
+
+          const referenceTexture = contentConfig.texture ?? icon.texture ?? null;
+          this.#applyIconSizing(icon, maxDimension, referenceTexture);
+
+          if (!iconContext.animationHandled && Array.isArray(icon.textures)) {
+            icon.gotoAndStop?.(0);
+            if (
+              shouldPlayIconAnimation &&
+              icon.textures.length > 1 &&
+              typeof icon.play === "function"
+            ) {
+              icon.play();
+            } else {
+              icon.stop?.();
+            }
+          }
 
           const facePalette = this.#resolveRevealColor({
             paletteSet: contentConfig.palette?.face,
@@ -687,6 +713,7 @@ export class Card {
     this.container?.destroy?.({ children: true });
     this._wrap = null;
     this._tileSprite = null;
+    this._icon?.stop?.();
     this._icon = null;
     this._frameSprite = null;
     this._matchEffectsLayer = null;
@@ -1103,11 +1130,15 @@ export class Card {
     tileSprite.width = tileSize;
     tileSprite.height = tileSize;
 
-    const icon = new Sprite();
+    const icon = new AnimatedSprite([Texture.EMPTY]);
     icon.anchor.set(0.5);
     icon.x = tileSize / 2;
     icon.y = tileSize / 2;
     icon.visible = false;
+    icon.loop = true;
+    icon.animationSpeed = 0.25;
+    icon.stop();
+    icon.gotoAndStop?.(0);
 
     const frameSprite = this.frameTexture
       ? new Sprite(this.frameTexture)

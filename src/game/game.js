@@ -1,6 +1,7 @@
 import { Assets } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
+import { loadCardTypeAnimations } from "./spritesheetProvider.js";
 import tileTapDownSoundUrl from "../../assets/sounds/TileTapDown.wav";
 import tileFlipSoundUrl from "../../assets/sounds/TileFlip.wav";
 import tileHoverSoundUrl from "../../assets/sounds/TileHover.wav";
@@ -30,22 +31,8 @@ const gameBackgroundSpriteUrl = (() => {
   return typeof module === "string" ? module : module?.default ?? null;
 })();
 
-const CARD_TYPE_TEXTURES = (() => {
-  const modules = import.meta.glob(
-    "../../assets/sprites/cardTypes/cardType_*.svg",
-    { eager: true }
-  );
-  return Object.entries(modules).map(([path, mod]) => {
-    const match = path.match(/cardType_([^/]+)\.svg$/i);
-    const id = match?.[1] ?? path;
-    const texturePath =
-      typeof mod === "string" ? mod : mod?.default ?? mod ?? null;
-    return {
-      key: id,
-      texturePath,
-    };
-  });
-})();
+const DEFAULT_CARD_ANIMATION_SPEED = 0.16;
+const MS_PER_60FPS_FRAME = 1000 / 60;
 
 const DEFAULT_PALETTE = {
   appBg: 0x091b26,
@@ -170,6 +157,109 @@ function createSoundManager(sound, soundEffectPaths) {
   };
 }
 
+function sanitizeAnimationFrames(frames) {
+  if (!Array.isArray(frames)) {
+    return [];
+  }
+  return frames.filter((texture) => Boolean(texture));
+}
+
+function createAnimatedIconConfigurator(
+  frames,
+  { animationSpeed = DEFAULT_CARD_ANIMATION_SPEED } = {}
+) {
+  const textures = sanitizeAnimationFrames(frames);
+  if (!textures.length) {
+    return null;
+  }
+
+  const hasAnimation = textures.length > 1;
+  const firstTexture = textures[0] ?? null;
+  const resolvedAnimationSpeed =
+    typeof animationSpeed === "number" ? animationSpeed : DEFAULT_CARD_ANIMATION_SPEED;
+  const shouldAnimate = hasAnimation && resolvedAnimationSpeed !== 0;
+
+  const getNow = () =>
+    typeof performance !== "undefined" && typeof performance.now === "function"
+      ? performance.now()
+      : Date.now();
+
+  const animationTimeline = {
+    anchorTime: getNow(),
+  };
+
+  const resolveSynchronizedTime = () => {
+    if (!shouldAnimate || !textures.length) {
+      return 0;
+    }
+
+    const elapsedMs = getNow() - animationTimeline.anchorTime;
+    return (elapsedMs / MS_PER_60FPS_FRAME) * resolvedAnimationSpeed;
+  };
+
+  return (icon, context = {}) => {
+    if (!icon) return;
+
+    const shouldPlayAnimation = Boolean(
+      context?.shouldPlayAnimation ?? true
+    );
+    const startFromFirstFrame = Boolean(context?.startFromFirstFrame);
+
+    if (Array.isArray(icon.textures)) {
+      const nextTextures = textures.slice();
+      icon.textures = nextTextures;
+      icon.loop = true;
+      if (typeof resolvedAnimationSpeed === "number") {
+        icon.animationSpeed = resolvedAnimationSpeed;
+      }
+      if (firstTexture) {
+        icon.texture = firstTexture;
+      }
+      const canAnimate = shouldAnimate && shouldPlayAnimation;
+      const timelineTime = canAnimate && !startFromFirstFrame
+        ? resolveSynchronizedTime()
+        : 0;
+      let frameIndex = 0;
+      if (canAnimate && textures.length > 0 && !startFromFirstFrame) {
+        frameIndex = ((Math.floor(timelineTime) % textures.length) + textures.length) % textures.length;
+      }
+
+      if (typeof icon.gotoAndStop === "function") {
+        icon.gotoAndStop(frameIndex);
+      } else if ("currentFrame" in icon) {
+        try {
+          icon.currentFrame = frameIndex;
+        } catch (error) {
+          // ignore invalid frame assignments
+        }
+      }
+
+      if (canAnimate) {
+        if (startFromFirstFrame) {
+          icon._currentTime = 0;
+        } else if (Number.isFinite(timelineTime)) {
+          icon._currentTime = timelineTime;
+        }
+      }
+
+      if (canAnimate && typeof icon.play === "function") {
+        icon.play();
+      } else {
+        icon.stop?.();
+      }
+
+      if (context && typeof context === "object") {
+        context.animationHandled = true;
+      }
+    } else if (firstTexture) {
+      icon.texture = firstTexture;
+      if (context && typeof context === "object") {
+        context.animationHandled = true;
+      }
+    }
+  };
+}
+
 function isAutoModeActive(getMode) {
   try {
     return String(getMode?.() ?? "manual").toLowerCase() === "auto";
@@ -273,14 +363,24 @@ export async function createGame(mount, opts = {}) {
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
   };
 
-  if (!CARD_TYPE_TEXTURES.length) {
-    throw new Error("No scratch card textures found under assets/sprites/cardTypes");
+  const cardTypeAnimations = await loadCardTypeAnimations();
+  if (!cardTypeAnimations.length) {
+    throw new Error(
+      "No scratch card textures found under assets/sprites/spritesheets"
+    );
   }
 
-  const defaultContentDefinitions = CARD_TYPE_TEXTURES.reduce(
-    (acc, { key, texturePath }) => {
-      acc[key] = {
-        texturePath,
+  const defaultContentDefinitions = cardTypeAnimations.reduce(
+    (acc, entry, index) => {
+      const key = entry?.key ?? `cardType_${index}`;
+      const sanitizedFrames = sanitizeAnimationFrames(entry?.frames);
+      const primaryTexture = entry?.texture ?? sanitizedFrames[0] ?? null;
+      const configureIcon = createAnimatedIconConfigurator(sanitizedFrames, {
+        animationSpeed: DEFAULT_CARD_ANIMATION_SPEED,
+      });
+
+      const definition = {
+        texture: primaryTexture,
         palette: {
           face: {
             revealed: palette.cardFace,
@@ -292,6 +392,12 @@ export async function createGame(mount, opts = {}) {
           },
         },
       };
+
+      if (configureIcon) {
+        definition.configureIcon = configureIcon;
+      }
+
+      acc[key] = definition;
       return acc;
     },
     {}
