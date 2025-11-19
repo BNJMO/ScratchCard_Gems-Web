@@ -361,7 +361,8 @@ export class ScratchCell {
         sprite.width = sprite.height = this.brushRadius * 2;
         sprite.position.set(point.x, point.y);
         sprite.rotation = Math.random() * Math.PI * 2;
-        this.renderer.render(sprite, {
+        this.renderer.render({
+          container: sprite,
           renderTexture: this.coverRenderTexture,
           clear: false,
         });
@@ -374,7 +375,8 @@ export class ScratchCell {
     g.clear();
     g.circle(0, 0, this.brushRadius).fill(0xffffff);
     g.position.set(point.x, point.y);
-    this.renderer.render(g, {
+    this.renderer.render({
+      container: g,
       renderTexture: this.coverRenderTexture,
       clear: false,
     });
@@ -399,7 +401,8 @@ export class ScratchCell {
       filler.width = this.width;
       filler.height = this.height;
       filler.position.set(0, 0);
-      this.renderer.render(filler, {
+      this.renderer.render({
+        container: filler,
         renderTexture: this.coverRenderTexture,
         clear: true,
       });
@@ -408,7 +411,8 @@ export class ScratchCell {
       this.coverGraphics.rect(0, 0, this.width, this.height);
       this.coverGraphics.position.set(0, 0);
       this.coverGraphics.fill(0xd7d7d7);
-      this.renderer.render(this.coverGraphics, {
+      this.renderer.render({
+        container: this.coverGraphics,
         renderTexture: this.coverRenderTexture,
         clear: true,
       });
@@ -444,7 +448,8 @@ export class ScratchCell {
     this.sampleSprite.width = DEFAULT_SAMPLE_SIZE;
     this.sampleSprite.height = DEFAULT_SAMPLE_SIZE;
     this.sampleSprite.position.set(0, 0);
-    this.renderer.render(this.sampleSprite, {
+    this.renderer.render({
+      container: this.sampleSprite,
       renderTexture: this.sampleTexture,
       clear: true,
     });
