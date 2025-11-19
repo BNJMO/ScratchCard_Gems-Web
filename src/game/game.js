@@ -32,7 +32,7 @@ const gameBackgroundSpriteUrl = (() => {
 
 const CARD_TYPE_TEXTURES = (() => {
   const modules = import.meta.glob(
-    "../../assets/sprites/cardTypes/cardType_*.svg",
+    "../../assets/sprites/cardTypes/static/cardType_*.svg",
     { eager: true }
   );
   return Object.entries(modules).map(([path, mod]) => {
