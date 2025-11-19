@@ -950,7 +950,7 @@ const opts = {
   // Initialize Control Panel
   try {
     controlPanel = new ControlPanel("#control-panel", {
-      gameName: "Scratch Cards - Gems",
+      gameName: "Flip Cards - Gems",
       totalTiles,
       maxMines,
       initialMines,
