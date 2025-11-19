@@ -1,6 +1,7 @@
 import { Assets } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
+import { loadCardTypeAnimations } from "./spritesheetProvider.js";
 import tileTapDownSoundUrl from "../../assets/sounds/TileTapDown.wav";
 import tileFlipSoundUrl from "../../assets/sounds/TileFlip.wav";
 import tileHoverSoundUrl from "../../assets/sounds/TileHover.wav";
@@ -72,6 +73,7 @@ const DEFAULT_PALETTE = {
 };
 
 const WIN_FACE_COLOR = 0x061217;
+const DEFAULT_CARD_ANIMATION_SPEED = 0.16;
 
 const SOUND_ALIASES = {
   tileHover: "mines.tileHover",
@@ -170,6 +172,63 @@ function createSoundManager(sound, soundEffectPaths) {
   };
 }
 
+function sanitizeAnimationFrames(frames) {
+  if (!Array.isArray(frames)) {
+    return [];
+  }
+  return frames.filter((texture) => Boolean(texture));
+}
+
+function createAnimatedIconConfigurator(
+  frames,
+  { animationSpeed = DEFAULT_CARD_ANIMATION_SPEED } = {}
+) {
+  const textures = sanitizeAnimationFrames(frames);
+  if (!textures.length) {
+    return null;
+  }
+
+  const firstTexture = textures[0] ?? null;
+  const resolvedSpeed =
+    typeof animationSpeed === "number" ? animationSpeed : DEFAULT_CARD_ANIMATION_SPEED;
+  const clampedSpeed = Number.isFinite(resolvedSpeed)
+    ? resolvedSpeed
+    : DEFAULT_CARD_ANIMATION_SPEED;
+
+  return (icon, context = {}) => {
+    if (!icon) return;
+
+    if (Array.isArray(icon.textures)) {
+      icon.textures = textures.slice();
+      icon.loop = true;
+      icon.animationSpeed = clampedSpeed;
+      if (firstTexture) {
+        icon.texture = firstTexture;
+      }
+      icon.gotoAndStop?.(0);
+
+      const shouldPlayAnimation = Boolean(context?.shouldPlayAnimation);
+      const canAnimate =
+        shouldPlayAnimation &&
+        textures.length > 1 &&
+        clampedSpeed !== 0 &&
+        typeof icon.play === "function";
+
+      if (canAnimate) {
+        icon.play();
+      } else {
+        icon.stop?.();
+      }
+
+      if (context && typeof context === "object") {
+        context.animationHandled = true;
+      }
+    } else if (firstTexture) {
+      icon.texture = firstTexture;
+    }
+  };
+}
+
 function isAutoModeActive(getMode) {
   try {
     return String(getMode?.() ?? "manual").toLowerCase() === "auto";
@@ -199,6 +258,7 @@ export async function createGame(mount, opts = {}) {
 
   const iconSizePercentage = opts.iconSizePercentage ?? 0.7;
   const iconRevealedSizeFactor = opts.iconRevealedSizeFactor ?? 0.85;
+  const useAnimatedSpritesheet = Boolean(opts.useAnimatedSpritesheet);
   const cardsSpawnDuration = opts.cardsSpawnDuration ?? 350;
   const revealAllIntervalDelay = opts.revealAllIntervalDelay ?? 40;
   const autoResetDelayMs = Number(opts.autoResetDelayMs ?? 1500);
@@ -273,29 +333,78 @@ export async function createGame(mount, opts = {}) {
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
   };
 
-  if (!CARD_TYPE_TEXTURES.length) {
-    throw new Error("No scratch card textures found under assets/sprites/cardTypes");
-  }
+  let defaultContentDefinitions = {};
 
-  const defaultContentDefinitions = CARD_TYPE_TEXTURES.reduce(
-    (acc, { key, texturePath }) => {
-      acc[key] = {
-        texturePath,
-        palette: {
-          face: {
-            revealed: palette.cardFace,
-            unrevealed: palette.cardFaceUnrevealed,
+  if (useAnimatedSpritesheet) {
+    const cardTypeAnimations = await loadCardTypeAnimations();
+    if (!cardTypeAnimations.length) {
+      throw new Error(
+        "No scratch card animations found under assets/sprites/spritesheets/animated"
+      );
+    }
+    const cardTypeAnimationSpeed = Number.isFinite(opts.cardTypeAnimationSpeed)
+      ? opts.cardTypeAnimationSpeed
+      : DEFAULT_CARD_ANIMATION_SPEED;
+
+    defaultContentDefinitions = cardTypeAnimations.reduce(
+      (acc, entry, index) => {
+        const key = entry?.key ?? `cardType_${index}`;
+        const sanitizedFrames = sanitizeAnimationFrames(entry?.frames);
+        const primaryTexture = entry?.texture ?? sanitizedFrames[0] ?? null;
+        const configureIcon = createAnimatedIconConfigurator(sanitizedFrames, {
+          animationSpeed: cardTypeAnimationSpeed,
+        });
+
+        const definition = {
+          texture: primaryTexture,
+          palette: {
+            face: {
+              revealed: palette.cardFace,
+              unrevealed: palette.cardFaceUnrevealed,
+            },
+            inset: {
+              revealed: palette.cardInset,
+              unrevealed: palette.cardInsetUnrevealed,
+            },
           },
-          inset: {
-            revealed: palette.cardInset,
-            unrevealed: palette.cardInsetUnrevealed,
+        };
+
+        if (configureIcon) {
+          definition.configureIcon = configureIcon;
+        }
+
+        acc[key] = definition;
+        return acc;
+      },
+      {}
+    );
+  } else {
+    if (!CARD_TYPE_TEXTURES.length) {
+      throw new Error(
+        "No scratch card textures found under assets/sprites/cardTypes"
+      );
+    }
+
+    defaultContentDefinitions = CARD_TYPE_TEXTURES.reduce(
+      (acc, { key, texturePath }) => {
+        acc[key] = {
+          texturePath,
+          palette: {
+            face: {
+              revealed: palette.cardFace,
+              unrevealed: palette.cardFaceUnrevealed,
+            },
+            inset: {
+              revealed: palette.cardInset,
+              unrevealed: palette.cardInsetUnrevealed,
+            },
           },
-        },
-      };
-      return acc;
-    },
-    {}
-  );
+        };
+        return acc;
+      },
+      {}
+    );
+  }
 
   const userContentDefinitions = opts.contentDefinitions ?? {};
   const mergedContentDefinitions = {};
@@ -383,6 +492,7 @@ export async function createGame(mount, opts = {}) {
       icon: {
         sizePercentage: iconSizePercentage,
         revealedSizeFactor: iconRevealedSizeFactor,
+        playAnimatedIcons: useAnimatedSpritesheet,
       },
       matchEffects: {
         sparkTexture: matchSparkTexture,

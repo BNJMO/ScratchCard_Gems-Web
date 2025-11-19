@@ -32,6 +32,7 @@ let autoRemainingBets = 0;
 let manualRoundNeedsReset = false;
 
 const GRID_SIZE = 3;
+const useAnimatedSpritesheet = true;
 let availableCardTypes = [];
 let currentBetResult = null;
 const currentRoundAssignments = new Map();
@@ -939,6 +940,7 @@ const opts = {
   getMode: () => controlPanelMode,
   onCardSelected: (selection) => handleCardSelected(selection),
   onChange: handleGameStateChange,
+  useAnimatedSpritesheet,
 };
 
 (async () => {
