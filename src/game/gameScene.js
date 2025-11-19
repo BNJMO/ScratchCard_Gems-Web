@@ -1,4 +1,13 @@
-import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
+import {
+  Application,
+  Container,
+  Graphics,
+  Point,
+  RenderTexture,
+  Sprite,
+  Text,
+  Texture,
+} from "pixi.js";
 import { Card } from "./card.js";
 
 const DEFAULT_FONT_FAMILY = "Inter, system-ui, -apple-system, Segoe UI, Arial";
@@ -35,6 +44,13 @@ export class GameScene {
       stateTextures: cardOptions?.stateTextures ?? {},
     };
     this.gridCoverTexture = cardOptions?.gridCoverTexture ?? null;
+    this.scratchMasks = Array.isArray(cardOptions?.scratchMasks)
+      ? cardOptions.scratchMasks.filter(Boolean)
+      : [];
+    this.scratchOptions = {
+      stampSpacing: Math.max(1, cardOptions?.scratchOptions?.stampSpacing ?? 10),
+      maskSizeFactor: cardOptions?.scratchOptions?.maskSizeFactor ?? 0.9,
+    };
     this.layoutOptions = {
       gapBetweenTiles: layoutOptions?.gapBetweenTiles ?? 0.012,
     };
@@ -66,10 +82,21 @@ export class GameScene {
     this.winPopup = null;
     this.backgroundSprite = null;
     this.gridCoverSprite = null;
+    this.gridCoverMaskSprite = null;
+    this.gridCoverMaskTexture = null;
     this.resizeObserver = null;
     this._windowResizeListener = null;
     this._currentResolution = 1;
     this._lastLayout = null;
+    this._scratchStampSprite = new Sprite(Texture.WHITE);
+    this._scratchStampSprite.anchor.set(0.5);
+    this._scratchStampSprite.visible = false;
+    this._scratchStampSprite.eventMode = "none";
+    this._scratchPointerActive = false;
+    this._scratchLastPoint = null;
+    this._scratchPointerId = null;
+    this._scratchHandlers = null;
+    this._scratchLocalPoint = new Point();
   }
 
   async init() {
@@ -124,6 +151,8 @@ export class GameScene {
       card?.destroy?.();
     });
     this.cards = [];
+    this.#destroyGridCoverMask();
+    this._scratchStampSprite?.destroy(true);
     this.app?.destroy(true);
     if (this.app?.canvas?.parentNode === this.root) {
       this.root.removeChild(this.app.canvas);
@@ -244,6 +273,7 @@ export class GameScene {
     this.boardShadows?.removeChildren();
     this.boardContent?.removeChildren();
     this.scratchLayer?.removeChildren();
+    this.#destroyGridCoverMask();
     this.gridCoverSprite = null;
     this.cards = [];
     this._lastLayout = null;
@@ -499,8 +529,11 @@ export class GameScene {
 
     const cover = new Sprite(this.gridCoverTexture);
     cover.anchor.set(0.5);
-    cover.eventMode = "none";
+    cover.eventMode = "static";
+    cover.cursor = "pointer";
+    cover.interactiveChildren = false;
     this.#applyGridCoverLayout(cover, layout);
+    this.#bindGridCoverScratchEvents(cover);
 
     return cover;
   }
@@ -523,6 +556,205 @@ export class GameScene {
     } else if (this.gridCoverSprite) {
       this.#applyGridCoverLayout(this.gridCoverSprite, layout);
     }
+
+    if (this.gridCoverSprite) {
+      this.#syncGridCoverMask(layout);
+    }
+  }
+
+  #syncGridCoverMask(layout) {
+    const renderer = this.app?.renderer;
+    if (!renderer || !layout) return;
+
+    const size = Math.max(1, layout.contentSize ?? 0);
+    const needsTextureResize =
+      !this.gridCoverMaskTexture ||
+      this.gridCoverMaskTexture.width !== size ||
+      this.gridCoverMaskTexture.height !== size;
+
+    if (needsTextureResize) {
+      this.gridCoverMaskTexture?.destroy(true);
+      this.gridCoverMaskTexture = RenderTexture.create({ width: size, height: size });
+      if (this.gridCoverMaskSprite && this.gridCoverMaskTexture) {
+        this.gridCoverMaskSprite.texture = this.gridCoverMaskTexture;
+      }
+    }
+
+    if (!this.gridCoverMaskSprite && this.gridCoverMaskTexture) {
+      this.gridCoverMaskSprite = new Sprite(this.gridCoverMaskTexture);
+      this.gridCoverMaskSprite.anchor.set(0.5);
+      this.gridCoverMaskSprite.eventMode = "none";
+      this.gridCoverMaskSprite.visible = false;
+      this.gridCoverMaskSprite.renderable = true;
+      this.gridCoverMaskSprite.position.set(0, 0);
+      this.gridCoverMaskSprite.width = size;
+      this.gridCoverMaskSprite.height = size;
+      this.scratchLayer?.addChild(this.gridCoverMaskSprite);
+      this.gridCoverSprite.mask = this.gridCoverMaskSprite;
+    } else if (this.gridCoverMaskSprite) {
+      this.gridCoverMaskSprite.position.set(0, 0);
+      this.gridCoverMaskSprite.width = size;
+      this.gridCoverMaskSprite.height = size;
+    }
+
+    this.#resetGridCoverMaskTexture();
+  }
+
+  #resetGridCoverMaskTexture() {
+    const renderer = this.app?.renderer;
+    if (!renderer || !this.gridCoverMaskTexture) return;
+
+    const fill = new Graphics();
+    fill.rect(0, 0, this.gridCoverMaskTexture.width, this.gridCoverMaskTexture.height).fill(
+      0xffffff
+    );
+    renderer.render(fill, { renderTexture: this.gridCoverMaskTexture, clear: true });
+    fill.destroy(true);
+  }
+
+  #destroyGridCoverMask() {
+    this._scratchPointerActive = false;
+    this._scratchPointerId = null;
+    this._scratchLastPoint = null;
+
+    if (this.gridCoverSprite && this._scratchHandlers) {
+      for (const [eventName, handler] of Object.entries(this._scratchHandlers)) {
+        this.gridCoverSprite.off(eventName, handler);
+      }
+    }
+    this._scratchHandlers = null;
+    if (this.gridCoverSprite) {
+      this.gridCoverSprite.mask = null;
+    }
+
+    this.gridCoverMaskSprite?.destroy(true);
+    this.gridCoverMaskSprite = null;
+    this.gridCoverMaskTexture?.destroy(true);
+    this.gridCoverMaskTexture = null;
+  }
+
+  #bindGridCoverScratchEvents(cover) {
+    if (!cover) return;
+    this._scratchHandlers = {
+      pointerdown: (event) => this.#handleScratchPointerDown(event),
+      pointermove: (event) => this.#handleScratchPointerMove(event),
+      pointerup: (event) => this.#handleScratchPointerUp(event),
+      pointerupoutside: (event) => this.#handleScratchPointerUp(event),
+      pointerout: (event) => this.#handleScratchPointerUp(event),
+    };
+
+    for (const [eventName, handler] of Object.entries(this._scratchHandlers)) {
+      cover.on(eventName, handler);
+    }
+  }
+
+  #handleScratchPointerDown(event) {
+    if (!this.gridCoverMaskTexture) return;
+    if (this._scratchPointerActive) return;
+    this._scratchPointerActive = true;
+    this._scratchPointerId = event?.pointerId ?? null;
+    const localPoint = this.#getScratchLocalPoint(event);
+    if (localPoint) {
+      this.#stampScratchAt(localPoint, true);
+    }
+  }
+
+  #handleScratchPointerMove(event) {
+    if (!this._scratchPointerActive) return;
+    if (
+      this._scratchPointerId !== null &&
+      event?.pointerId !== undefined &&
+      event.pointerId !== this._scratchPointerId
+    ) {
+      return;
+    }
+    const localPoint = this.#getScratchLocalPoint(event);
+    if (localPoint) {
+      this.#stampScratchAt(localPoint, false);
+    }
+  }
+
+  #handleScratchPointerUp(event) {
+    if (!this._scratchPointerActive) return;
+    if (
+      this._scratchPointerId !== null &&
+      event?.pointerId !== undefined &&
+      event.pointerId !== this._scratchPointerId
+    ) {
+      return;
+    }
+    this._scratchPointerActive = false;
+    this._scratchPointerId = null;
+    this._scratchLastPoint = null;
+  }
+
+  #getScratchLocalPoint(event) {
+    if (!event || !this.gridCoverSprite) return null;
+    const local = this.gridCoverSprite.toLocal(event.global, undefined, this._scratchLocalPoint);
+    return { x: local.x, y: local.y };
+  }
+
+  #stampScratchAt(point, force) {
+    if (!point) return;
+    if (force || !this._scratchLastPoint) {
+      this.#stampScratchMask(point);
+      this._scratchLastPoint = { x: point.x, y: point.y };
+      return;
+    }
+
+    const spacing = Math.max(1, this.scratchOptions.stampSpacing);
+    const dx = point.x - this._scratchLastPoint.x;
+    const dy = point.y - this._scratchLastPoint.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance < spacing) {
+      return;
+    }
+
+    const steps = Math.floor(distance / spacing);
+    for (let i = 1; i <= steps; i += 1) {
+      const t = (i * spacing) / distance;
+      const intermediate = {
+        x: this._scratchLastPoint.x + dx * t,
+        y: this._scratchLastPoint.y + dy * t,
+      };
+      this.#stampScratchMask(intermediate);
+    }
+
+    this._scratchLastPoint = { x: point.x, y: point.y };
+  }
+
+  #stampScratchMask(point) {
+    if (!this.gridCoverMaskTexture || !this.scratchMasks.length || !this.app?.renderer) {
+      return;
+    }
+
+    const texture = this.scratchMasks[Math.floor(Math.random() * this.scratchMasks.length)];
+    if (!texture) return;
+
+    const layout = this._lastLayout ?? this.#layoutSizes();
+    if (!layout) return;
+
+    const maskSize = this.gridCoverMaskTexture.width;
+    const x = Math.max(0, Math.min(point.x + maskSize / 2, maskSize));
+    const y = Math.max(0, Math.min(point.y + maskSize / 2, maskSize));
+
+    const desiredSize = Math.max(
+      1,
+      layout.tileSize * Math.max(0.1, this.scratchOptions.maskSizeFactor)
+    );
+    const textureWidth = texture?.orig?.width || texture?.width || 1;
+    const scale = desiredSize / textureWidth;
+
+    this._scratchStampSprite.texture = texture;
+    this._scratchStampSprite.scale.set(scale);
+    this._scratchStampSprite.position.set(x, y);
+    this._scratchStampSprite.rotation = Math.random() * Math.PI * 2;
+    this._scratchStampSprite.blendMode = "erase";
+
+    this.app.renderer.render(this._scratchStampSprite, {
+      renderTexture: this.gridCoverMaskTexture,
+      clear: false,
+    });
   }
 }
 

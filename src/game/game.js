@@ -48,6 +48,29 @@ const CARD_TYPE_TEXTURES = (() => {
   });
 })();
 
+const scratchMaskModules = import.meta.glob(
+  "../../assets/sprites/scratchMasks/scratchMask_*.png",
+  { eager: true }
+);
+
+const SCRATCH_MASK_SOURCES = Object.entries(scratchMaskModules)
+  .map(([path, mod]) => {
+    const match = path.match(/scratchMask_(\d+)\.png$/i);
+    const id = match ? Number(match[1]) : path;
+    const texturePath = typeof mod === "string" ? mod : mod?.default ?? mod ?? null;
+    if (!texturePath) return null;
+    return { id, texturePath };
+  })
+  .filter(Boolean)
+  .sort((a, b) => {
+    if (Number.isFinite(a.id) && Number.isFinite(b.id)) {
+      return a.id - b.id;
+    }
+    return String(a.id).localeCompare(String(b.id));
+  });
+
+export const scratchMasks = [];
+
 const DEFAULT_PALETTE = {
   appBg: 0x091b26,
   tileBase: 0x223845, // main tile face
@@ -229,6 +252,8 @@ export async function createGame(mount, opts = {}) {
     winPopupHeight: opts.winPopupHeight ?? 170,
   };
 
+  const scratchOptions = { ...(opts.scratchOptions ?? {}) };
+
 
   // Resolve mount element
   const root =
@@ -350,6 +375,15 @@ export async function createGame(mount, opts = {}) {
   );
 
 
+  const scratchMaskTextures = await Promise.all(
+    SCRATCH_MASK_SOURCES.map(({ texturePath }) => loadTexture(texturePath))
+  );
+  scratchMasks.splice(
+    0,
+    scratchMasks.length,
+    ...scratchMaskTextures.filter((texture) => Boolean(texture))
+  );
+
   const [
     gameBackgroundTexture,
     matchSparkTexture,
@@ -359,7 +393,9 @@ export async function createGame(mount, opts = {}) {
     tileHoverTexture,
     tileFlippedTexture,
   ] = await Promise.all([
-    loadTexture(gameBackgroundSpriteUrl, {svgResolution: svgRasterizationResolution,}),
+    loadTexture(gameBackgroundSpriteUrl, {
+      svgResolution: svgRasterizationResolution,
+    }),
     loadTexture(sparkSpriteUrl),
     loadTexture(gridCoverSpriteUrl),
     loadTexture(winFrameSpriteUrl),
@@ -392,6 +428,8 @@ export async function createGame(mount, opts = {}) {
         sparkDuration: 1500,
       },
       gridCoverTexture,
+      scratchMasks,
+      scratchOptions,
       frameTexture: winFrameTexture,
       stateTextures: {
         default: tileDefaultTexture,
