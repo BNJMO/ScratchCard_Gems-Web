@@ -60,6 +60,7 @@ export class GridCover {
   }
 
   resetMask() {
+    this.#cancelFadeTicker();
     this.cell.reset();
     this.container.visible = true;
     this.container.alpha = 1;
@@ -97,10 +98,7 @@ export class GridCover {
 
     this.disableInteraction();
 
-    if (typeof this._fadeTickerCancel === "function") {
-      this._fadeTickerCancel();
-      this._fadeTickerCancel = null;
-    }
+    this.#cancelFadeTicker();
 
     const start = performance.now();
     const initialAlpha = this.container.alpha;
@@ -133,6 +131,13 @@ export class GridCover {
       } catch (error) {
         console.error("GridCover scratch listener failed", error);
       }
+    }
+  }
+
+  #cancelFadeTicker() {
+    if (typeof this._fadeTickerCancel === "function") {
+      this._fadeTickerCancel();
+      this._fadeTickerCancel = null;
     }
   }
 }
