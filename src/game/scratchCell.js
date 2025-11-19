@@ -1,5 +1,4 @@
 import {
-  BLEND_MODES,
   Container,
   Graphics,
   Rectangle,
@@ -86,10 +85,10 @@ export class ScratchCell {
     this.coverGraphics = new Graphics();
     this.coverFillSprite = new Sprite(Texture.WHITE);
     this.brushGraphic = new Graphics();
-    this.brushGraphic.blendMode = BLEND_MODES.ERASE;
+    this.brushGraphic.blendMode = "erase";
     this.brushSprite = new Sprite(Texture.WHITE);
     this.brushSprite.anchor.set(0.5);
-    this.brushSprite.blendMode = BLEND_MODES.ERASE;
+    this.brushSprite.blendMode = "erase";
 
     this.brushPreview = new Graphics();
     this.brushPreview.circle(0, 0, this.brushRadius).stroke({

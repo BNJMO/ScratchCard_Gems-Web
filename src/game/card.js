@@ -802,12 +802,14 @@ export class Card {
       return null;
     }
 
+    const source = texture?.source ?? texture?._source ?? null;
+
     const width =
       texture?.orig?.width ??
       texture?.frame?.width ??
       texture?.trim?.width ??
-      texture?.baseTexture?.realWidth ??
-      texture?.baseTexture?.width ??
+      source?.pixelWidth ??
+      source?.width ??
       texture?.width ??
       0;
 
@@ -815,8 +817,8 @@ export class Card {
       texture?.orig?.height ??
       texture?.frame?.height ??
       texture?.trim?.height ??
-      texture?.baseTexture?.realHeight ??
-      texture?.baseTexture?.height ??
+      source?.pixelHeight ??
+      source?.height ??
       texture?.height ??
       0;
 
@@ -929,16 +931,13 @@ export class Card {
     sprite.position.set(0, 0);
     sprite.alpha = 0;
 
-    const textureWidth =
-      texture?.width ??
-      texture?.orig?.width ??
-      texture?.baseTexture?.width ??
-      1;
-    const textureHeight =
-      texture?.height ??
-      texture?.orig?.height ??
-      texture?.baseTexture?.height ??
-      1;
+    const sparkDimensions =
+      this.#getTextureDimensions(texture) ?? {
+        width: texture?.width ?? 1,
+        height: texture?.height ?? 1,
+      };
+    const textureWidth = sparkDimensions.width || 1;
+    const textureHeight = sparkDimensions.height || 1;
     const maxDimension = Math.max(1, textureWidth, textureHeight);
     const baseScale = (this._tileSize * 0.9) / maxDimension;
 
