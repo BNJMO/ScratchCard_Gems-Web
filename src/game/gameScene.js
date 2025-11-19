@@ -1,5 +1,6 @@
 import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
 import { Card } from "./card.js";
+import { GridCover } from "./gridCover.js";
 
 const DEFAULT_FONT_FAMILY = "Inter, system-ui, -apple-system, Segoe UI, Arial";
 
@@ -16,6 +17,7 @@ export class GameScene {
     cardOptions,
     layoutOptions,
     animationOptions,
+    gridCoverOptions = {},
     onResize,
   }) {
     this.root = root;
@@ -51,6 +53,12 @@ export class GameScene {
       cardsSpawnDuration: animationOptions?.cardsSpawnDuration ?? 350,
       disableAnimations: animationOptions?.disableAnimations ?? false,
     };
+    this.gridCoverOptions = {
+      texture: gridCoverOptions?.texture ?? null,
+      maskTextures: Array.isArray(gridCoverOptions?.maskTextures)
+        ? gridCoverOptions.maskTextures.filter(Boolean)
+        : [],
+    };
     this.onResize = onResize;
 
     this.cards = [];
@@ -60,9 +68,11 @@ export class GameScene {
     this.board = null;
     this.boardShadows = null;
     this.boardContent = null;
+    this.boardCoverLayer = null;
     this.ui = null;
     this.winPopup = null;
     this.backgroundSprite = null;
+    this.gridCover = null;
     this.resizeObserver = null;
     this._windowResizeListener = null;
     this._currentResolution = 1;
@@ -94,9 +104,17 @@ export class GameScene {
     this.boardShadows = new Container();
     this.boardShadows.eventMode = "none";
     this.boardContent = new Container();
-    this.board.addChild(this.boardShadows, this.boardContent);
+    this.boardCoverLayer = new Container();
+    this.boardCoverLayer.eventMode = "none";
+    this.board.addChild(
+      this.boardShadows,
+      this.boardContent,
+      this.boardCoverLayer
+    );
     this.ui = new Container();
     this.app.stage.addChild(this.board, this.ui);
+
+    this.#createGridCover();
 
     this.winPopup = this.#createWinPopup();
     this.ui.addChild(this.winPopup.container);
@@ -179,6 +197,8 @@ export class GameScene {
 
     this.board.position.set(centerX, centerY);
     this._lastLayout = layout;
+    this.gridCover?.container.position.set(0, 0);
+    this.gridCover?.setLayout({ width: contentSize, height: contentSize });
   }
 
   resize() {
@@ -238,6 +258,7 @@ export class GameScene {
     this.boardContent?.removeChildren();
     this.cards = [];
     this._lastLayout = null;
+    this.resetGridCover();
   }
 
   setAnimationsEnabled(enabled) {
@@ -427,6 +448,36 @@ export class GameScene {
     }
 
     return false;
+  }
+
+  #createGridCover() {
+    if (!this.app || this.gridCover) {
+      return;
+    }
+    this.gridCover = new GridCover({
+      app: this.app,
+      texture: this.gridCoverOptions.texture,
+      maskTextures: this.gridCoverOptions.maskTextures,
+    });
+    this.gridCover.container.visible = false;
+    this.gridCover.container.position.set(0, 0);
+    this.boardCoverLayer?.addChild(this.gridCover.container);
+  }
+
+  resetGridCover() {
+    this.gridCover?.resetMask();
+  }
+
+  fadeOutGridCover({ duration = 400, onComplete } = {}) {
+    if (!this.gridCover) {
+      onComplete?.();
+      return;
+    }
+    this.gridCover.fadeOut(duration, onComplete);
+  }
+
+  getGridCover() {
+    return this.gridCover;
   }
 
   #createWinPopup() {

@@ -62,7 +62,6 @@ export class Card {
     this._shakeActive = false;
     this._shakeTicker = null;
     this._shakeIconBase = null;
-    this._swapHandled = false;
     this._winHighlighted = false;
     this._winHighlightInterval = null;
     this._spawnTweenCancel = null;
@@ -441,139 +440,123 @@ export class Card {
     }
     this.#stopWinHighlightLoop();
     this._winHighlighted = false;
-    this.stopHover();
     this.stopWiggle();
 
-    const easeFlip = Ease[flipEaseFunction] || ((t) => t);
     const wrap = this._wrap;
-    const shadowWrap = this._shadowWrap;
-    const tileSprite = this._tileSprite;
     const icon = this._icon;
     const tileSize = this._tileSize;
-    const startScaleY = Math.max(1, wrap.scale.y);
-    const startShadowScaleY = shadowWrap?.scale
-      ? Math.max(1, shadowWrap.scale.y)
-      : null;
-    const startSkew = this.getSkew();
-    const startTilt = this._tiltDir >= 0 ? +1 : -1;
-
-    const palette = this.palette;
     const contentConfig = content ?? {};
     const contentKey =
       contentConfig.key ?? contentConfig.face ?? contentConfig.type ?? null;
+    const palette = this.palette;
 
+    const iconSizeFactor = revealedByPlayer
+      ? 1.0
+      : iconRevealedSizeFactor ??
+        contentConfig.iconRevealedSizeFactor ??
+        this.iconOptions.revealedSizeFactor;
+    const baseSize =
+      iconSizePercentage ??
+      contentConfig.iconSizePercentage ??
+      this.iconOptions.sizePercentage;
+    const maxDimension = tileSize * baseSize * iconSizeFactor;
+
+    if (contentConfig.texture) {
+      icon.texture = contentConfig.texture;
+    }
+
+    this.#applyIconSizing(icon, maxDimension, contentConfig.texture);
+
+    contentConfig.configureIcon?.(icon, {
+      card: this,
+      revealedByPlayer,
+    });
+
+    const facePalette = this.#resolveRevealColor({
+      paletteSet: contentConfig.palette?.face,
+      revealedByPlayer,
+      useSelectionTint,
+      fallbackRevealed:
+        contentConfig.fallbackPalette?.face?.revealed ??
+        palette.cardFace ??
+        this.palette.cardFace ??
+        this.palette.defaultTint,
+      fallbackUnrevealed:
+        contentConfig.fallbackPalette?.face?.unrevealed ??
+        palette.cardFaceUnrevealed ??
+        this.palette.cardFaceUnrevealed ??
+        this.palette.defaultTint,
+    });
+    this.flipFace(facePalette);
+
+    const insetPalette = this.#resolveRevealColor({
+      paletteSet: contentConfig.palette?.inset,
+      revealedByPlayer,
+      useSelectionTint: false,
+      fallbackRevealed:
+        contentConfig.fallbackPalette?.inset?.revealed ??
+        palette.cardInset ??
+        this.palette.cardInset ??
+        this.palette.defaultTint,
+      fallbackUnrevealed:
+        contentConfig.fallbackPalette?.inset?.unrevealed ??
+        palette.cardInsetUnrevealed ??
+        this.palette.cardInsetUnrevealed ??
+        this.palette.defaultTint,
+    });
+    this.flipInset(insetPalette);
+
+    if (revealedByPlayer) {
+      contentConfig.playSound?.({ card: this, revealedByPlayer });
+    }
+
+    contentConfig.onReveal?.({ card: this, revealedByPlayer });
+
+    const duration = this.disableAnimations ? 0 : Math.max(0, flipDuration ?? 0);
+    const completionPayload = {
+      content: contentConfig,
+      key: contentKey,
+      revealedByPlayer,
+    };
+    if (contentKey != null && completionPayload.face == null) {
+      completionPayload.face = contentKey;
+    }
+
+    const finishReveal = () => {
+      this._animating = false;
+      this.revealed = true;
+      icon.alpha = 1;
+      wrap.scale?.set?.(1, 1);
+      onComplete?.(this, completionPayload);
+    };
+
+    if (duration <= 0) {
+      icon.alpha = 1;
+      finishReveal();
+      return true;
+    }
+
+    icon.alpha = 0;
+    const startScale = wrap.scale?.x ?? 1;
+    const targetScale = startScale * 1.05;
     this.tween({
-      duration: flipDuration,
-      ease: (t) => easeFlip(t),
+      duration,
+      ease: (t) => Ease.easeOutCubic?.(t) ?? t,
       update: (t) => {
-        if (
-          this.destroyed ||
-          !wrap?.scale ||
-          !tileSprite ||
-          tileSprite.destroyed ||
-          !icon ||
-          icon.destroyed
-        ) {
-          return;
+        const eased = t;
+        const currentScale = startScale + (targetScale - startScale) * eased;
+        wrap.scale.x = wrap.scale.y = currentScale;
+        if (this._shadowWrap?.scale) {
+          this._shadowWrap.scale.x = this._shadowWrap.scale.y = currentScale;
         }
-        const widthFactor = Math.max(0.0001, Math.abs(Math.cos(Math.PI * t)));
-        const elev = Math.sin(Math.PI * t);
-        const popS = 1 + 0.06 * elev;
-        const biasSkew = startTilt * 0.22 * Math.sin(Math.PI * t);
-        const skewOut = startSkew * (1 - t) + biasSkew;
-
-        wrap.scale.x = widthFactor * popS;
-        wrap.scale.y = startScaleY * popS;
-        if (shadowWrap?.scale) {
-          const baseY = startShadowScaleY ?? startScaleY;
-          shadowWrap.scale.x = widthFactor * popS;
-          shadowWrap.scale.y = baseY * popS;
-        }
-        this.setSkew(skewOut);
-
-        if (!this._swapHandled && t >= 0.5) {
-          this._swapHandled = true;
-          icon.visible = true;
-          const iconSizeFactor = revealedByPlayer
-            ? 1.0
-            : iconRevealedSizeFactor ??
-              contentConfig.iconRevealedSizeFactor ??
-              this.iconOptions.revealedSizeFactor;
-          const baseSize =
-            iconSizePercentage ??
-            contentConfig.iconSizePercentage ??
-            this.iconOptions.sizePercentage;
-          const maxDimension = tileSize * baseSize * iconSizeFactor;
-
-          if (contentConfig.texture) {
-            icon.texture = contentConfig.texture;
-          }
-
-          this.#applyIconSizing(icon, maxDimension, contentConfig.texture);
-
-          contentConfig.configureIcon?.(icon, {
-            card: this,
-            revealedByPlayer,
-          });
-
-          const facePalette = this.#resolveRevealColor({
-            paletteSet: contentConfig.palette?.face,
-            revealedByPlayer,
-            useSelectionTint,
-            fallbackRevealed:
-              contentConfig.fallbackPalette?.face?.revealed ??
-              palette.cardFace ??
-              this.palette.cardFace ??
-              this.palette.defaultTint,
-            fallbackUnrevealed:
-              contentConfig.fallbackPalette?.face?.unrevealed ??
-              palette.cardFaceUnrevealed ??
-              this.palette.cardFaceUnrevealed ??
-              this.palette.defaultTint,
-          });
-          this.flipFace(facePalette);
-
-          const insetPalette = this.#resolveRevealColor({
-            paletteSet: contentConfig.palette?.inset,
-            revealedByPlayer,
-            useSelectionTint: false,
-            fallbackRevealed:
-              contentConfig.fallbackPalette?.inset?.revealed ??
-              palette.cardInset ??
-              this.palette.cardInset ??
-              this.palette.defaultTint,
-            fallbackUnrevealed:
-              contentConfig.fallbackPalette?.inset?.unrevealed ??
-              palette.cardInsetUnrevealed ??
-              this.palette.cardInsetUnrevealed ??
-              this.palette.defaultTint,
-          });
-          this.flipInset(insetPalette);
-
-          if (revealedByPlayer) {
-            contentConfig.playSound?.({ card: this, revealedByPlayer });
-          }
-
-          contentConfig.onReveal?.({ card: this, revealedByPlayer });
-        }
+        icon.alpha = Math.min(1, eased);
       },
       complete: () => {
-        if (!this.destroyed) {
-          this.forceFlatPose();
+        wrap.scale?.set?.(1, 1);
+        if (this._shadowWrap?.scale) {
+          this._shadowWrap.scale.x = this._shadowWrap.scale.y = 1;
         }
-        this._animating = false;
-        this.revealed = true;
-        this.#updateTileTexture();
-        this._swapHandled = false;
-        const completionPayload = {
-          content: contentConfig,
-          key: contentKey,
-          revealedByPlayer,
-        };
-        if (contentKey != null && completionPayload.face == null) {
-          completionPayload.face = contentKey;
-        }
-        onComplete?.(this, completionPayload);
+        finishReveal();
       },
     });
 
@@ -1137,8 +1120,8 @@ export class Card {
 
     const tile = new Container();
     tile.addChild(flipWrap);
-    tile.eventMode = "static";
-    tile.cursor = "pointer";
+    tile.eventMode = "none";
+    tile.cursor = "default";
 
     tile.row = this.row;
     tile.col = this.col;
@@ -1176,19 +1159,6 @@ export class Card {
         },
       });
     }
-
-    tile.on("pointerover", () =>
-      this.interactionCallbacks.onPointerOver?.(this)
-    );
-    tile.on("pointerout", () => this.interactionCallbacks.onPointerOut?.(this));
-    tile.on("pointerdown", () =>
-      this.interactionCallbacks.onPointerDown?.(this)
-    );
-    tile.on("pointerup", () => this.interactionCallbacks.onPointerUp?.(this));
-    tile.on("pointerupoutside", () =>
-      this.interactionCallbacks.onPointerUpOutside?.(this)
-    );
-    tile.on("pointertap", () => this.interactionCallbacks.onPointerTap?.(this));
 
     return tile;
   }

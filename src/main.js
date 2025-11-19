@@ -660,7 +660,11 @@ function revealRemainingTilesAndFinalize() {
   }
 
   markManualRoundForReset();
-  game?.revealRemainingTiles?.();
+  if (typeof game?.revealBoardViaScratchButton === "function") {
+    game.revealBoardViaScratchButton();
+  } else {
+    game?.revealRemainingTiles?.();
+  }
   finalizeRound();
 }
 
