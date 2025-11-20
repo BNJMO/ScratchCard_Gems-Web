@@ -31,6 +31,7 @@ export class Card {
     this.iconOptions = {
       sizePercentage: iconOptions?.sizePercentage ?? 0.7,
       revealedSizeFactor: iconOptions?.revealedSizeFactor ?? 0.85,
+      scaleMultiplier: Math.max(0, iconOptions?.scale ?? 1.0),
     };
     this.matchEffects = {
       sparkTexture: matchEffects?.sparkTexture ?? null,
@@ -562,7 +563,9 @@ export class Card {
             iconSizePercentage ??
             contentConfig.iconSizePercentage ??
             this.iconOptions.sizePercentage;
-          const maxDimension = tileSize * baseSize * iconSizeFactor;
+          const iconScaleMultiplier = this.iconOptions.scaleMultiplier ?? 1;
+          const maxDimension =
+            tileSize * baseSize * iconSizeFactor * iconScaleMultiplier;
 
           if (contentConfig.texture) {
             icon.texture = contentConfig.texture;

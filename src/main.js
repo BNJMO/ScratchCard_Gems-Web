@@ -14,6 +14,7 @@ let game;
 let controlPanel;
 let demoMode = true;
 const useAnimatedSpritesheets = true;
+const cardIconScale = 1.0;
 const serverRelay = new ServerRelay();
 let serverDummyUI = null;
 let suppressRelay = false;
@@ -929,6 +930,7 @@ const opts = {
   flipDuration: 300,
   flipEaseFunction: "easeInOutSine",
   useAnimatedSpritesheets,
+  cardIconScale,
   tileTapDownSoundPath: tileTapDownSoundUrl,
   tileFlipSoundPath: tileFlipSoundUrl,
   tileHoverSoundPath: tileHoverSoundUrl,
