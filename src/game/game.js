@@ -342,6 +342,11 @@ export async function createGame(mount, opts = {}) {
   const iconScaleMultiplier = Math.max(0, opts.cardIconScale ?? 1.0);
   const iconOffsetX = Number(opts.cardIconOffsetX ?? 0) || 0;
   const iconOffsetY = Number(opts.cardIconOffsetY ?? 0) || 0;
+  const cardSpritesheetAnimationSpeed = Number.isFinite(
+    opts.cardSpritesheetAnimationSpeed
+  )
+    ? opts.cardSpritesheetAnimationSpeed
+    : DEFAULT_CARD_ANIMATION_SPEED;
   const cardsSpawnDuration = opts.cardsSpawnDuration ?? 350;
   const revealAllIntervalDelay = opts.revealAllIntervalDelay ?? 40;
   const autoResetDelayMs = Number(opts.autoResetDelayMs ?? 1500);
@@ -435,7 +440,7 @@ export async function createGame(mount, opts = {}) {
       const sanitizedFrames = sanitizeAnimationFrames(entry?.frames);
       const primaryTexture = entry?.texture ?? sanitizedFrames[0] ?? null;
       const configureIcon = createAnimatedIconConfigurator(sanitizedFrames, {
-        animationSpeed: DEFAULT_CARD_ANIMATION_SPEED,
+        animationSpeed: cardSpritesheetAnimationSpeed,
       });
 
       const definition = {
