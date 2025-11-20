@@ -32,6 +32,8 @@ export class Card {
       sizePercentage: iconOptions?.sizePercentage ?? 0.7,
       revealedSizeFactor: iconOptions?.revealedSizeFactor ?? 0.85,
       scaleMultiplier: Math.max(0, iconOptions?.scale ?? 1.0),
+      offsetX: Number(iconOptions?.offsetX ?? 0) || 0,
+      offsetY: Number(iconOptions?.offsetY ?? 0) || 0,
     };
     this.matchEffects = {
       sparkTexture: matchEffects?.sparkTexture ?? null,
@@ -1189,8 +1191,8 @@ export class Card {
 
     const icon = new AnimatedSprite([Texture.EMPTY]);
     icon.anchor.set(0.5);
-    icon.x = tileSize / 2;
-    icon.y = tileSize / 2;
+    icon.x = tileSize / 2 + this.iconOptions.offsetX;
+    icon.y = tileSize / 2 + this.iconOptions.offsetY;
     icon.visible = false;
     icon.loop = true;
     icon.animationSpeed = 0.25;

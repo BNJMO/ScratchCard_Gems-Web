@@ -340,6 +340,8 @@ export async function createGame(mount, opts = {}) {
   const iconSizePercentage = opts.iconSizePercentage ?? 0.7;
   const iconRevealedSizeFactor = opts.iconRevealedSizeFactor ?? 0.85;
   const iconScaleMultiplier = Math.max(0, opts.cardIconScale ?? 1.0);
+  const iconOffsetX = Number(opts.cardIconOffsetX ?? 0) || 0;
+  const iconOffsetY = Number(opts.cardIconOffsetY ?? 0) || 0;
   const cardsSpawnDuration = opts.cardsSpawnDuration ?? 350;
   const revealAllIntervalDelay = opts.revealAllIntervalDelay ?? 40;
   const autoResetDelayMs = Number(opts.autoResetDelayMs ?? 1500);
@@ -547,6 +549,8 @@ export async function createGame(mount, opts = {}) {
         sizePercentage: iconSizePercentage,
         revealedSizeFactor: iconRevealedSizeFactor,
         scale: iconScaleMultiplier,
+        offsetX: iconOffsetX,
+        offsetY: iconOffsetY,
       },
       matchEffects: {
         sparkTexture: matchSparkTexture,

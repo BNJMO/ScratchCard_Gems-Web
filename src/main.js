@@ -15,6 +15,8 @@ let controlPanel;
 let demoMode = true;
 const useAnimatedSpritesheets = true;
 const cardIconScale = 1.0;
+const cardIconOffsetX = 0;
+const cardIconOffsetY = 0;
 const serverRelay = new ServerRelay();
 let serverDummyUI = null;
 let suppressRelay = false;
@@ -931,6 +933,8 @@ const opts = {
   flipEaseFunction: "easeInOutSine",
   useAnimatedSpritesheets,
   cardIconScale,
+  cardIconOffsetX,
+  cardIconOffsetY,
   tileTapDownSoundPath: tileTapDownSoundUrl,
   tileFlipSoundPath: tileFlipSoundUrl,
   tileHoverSoundPath: tileHoverSoundUrl,
