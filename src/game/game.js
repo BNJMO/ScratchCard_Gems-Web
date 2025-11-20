@@ -35,7 +35,7 @@ const DEFAULT_CARD_ANIMATION_SPEED = 0.16;
 const MS_PER_60FPS_FRAME = 1000 / 60;
 
 const CARD_TYPE_TEXTURE_MODULES = import.meta.glob(
-  "../../assets/sprites/cardTypes/cardType_*.svg",
+  "../../assets/sprites/cardTypes/static/cardType_*.svg",
   { eager: true }
 );
 

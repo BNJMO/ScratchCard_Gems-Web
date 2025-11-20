@@ -14,11 +14,11 @@ let game;
 let controlPanel;
 let demoMode = true;
 const useAnimatedSpritesheets = true;
-const cardIconScale = 1.0;
+const cardIconScale = 1.25;
 const cardIconOffsetX = 0;
-const cardIconOffsetY = 0;
-const cardSpritesheetAnimationSpeed = 0.16;
-const cardMatchShake = true;
+const cardIconOffsetY = -5;
+const cardSpritesheetAnimationSpeed = 0.14;
+const cardMatchShake = false;
 const serverRelay = new ServerRelay();
 let serverDummyUI = null;
 let suppressRelay = false;
@@ -924,7 +924,7 @@ const opts = {
   hoverTiltAxis: "x",
   hoverSkewAmount: 0.00,
   disableAnimations: false,
-  wiggleSelectionEnabled: true,
+  wiggleSelectionEnabled: false,
   wiggleSelectionDuration: 900,
   wiggleSelectionTimes: 15,
   wiggleSelectionIntensity: 0.03,

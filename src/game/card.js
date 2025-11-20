@@ -1043,7 +1043,7 @@ export class Card {
       texture?.baseTexture?.height ??
       1;
     const maxDimension = Math.max(1, textureWidth, textureHeight);
-    const baseScale = (this._tileSize * 0.9) / maxDimension;
+    const baseScale = (this._tileSize * 1.2) / maxDimension;
 
     const appearPortion = 0.25;
     const startScale = 0.45;

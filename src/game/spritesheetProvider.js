@@ -15,7 +15,7 @@ const SPRITESHEET_RESOLUTION_FACTOR = 0.75;
 const CARD_TYPE_COUNT = SPRITESHEET_COLUMNS * SPRITESHEET_ROWS;
 
 const SPRITESHEET_MODULES = import.meta.glob(
-  "../../assets/sprites/spritesheets/*.png",
+  "../../assets/sprites/cardTypes/animated/*.png",
   { eager: true }
 );
 
