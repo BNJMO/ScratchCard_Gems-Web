@@ -18,6 +18,7 @@ const cardIconScale = 1.0;
 const cardIconOffsetX = 0;
 const cardIconOffsetY = 0;
 const cardSpritesheetAnimationSpeed = 0.16;
+const cardMatchShake = true;
 const serverRelay = new ServerRelay();
 let serverDummyUI = null;
 let suppressRelay = false;
@@ -937,6 +938,7 @@ const opts = {
   cardIconOffsetX,
   cardIconOffsetY,
   cardSpritesheetAnimationSpeed,
+  cardMatchShake,
   tileTapDownSoundPath: tileTapDownSoundUrl,
   tileFlipSoundPath: tileFlipSoundUrl,
   tileHoverSoundPath: tileHoverSoundUrl,

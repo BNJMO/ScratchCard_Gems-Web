@@ -342,6 +342,7 @@ export async function createGame(mount, opts = {}) {
   const iconScaleMultiplier = Math.max(0, opts.cardIconScale ?? 1.0);
   const iconOffsetX = Number(opts.cardIconOffsetX ?? 0) || 0;
   const iconOffsetY = Number(opts.cardIconOffsetY ?? 0) || 0;
+  const matchShakeEnabled = opts.cardMatchShake ?? true;
   const cardSpritesheetAnimationSpeed = Number.isFinite(
     opts.cardSpritesheetAnimationSpeed
   )
@@ -887,7 +888,7 @@ export async function createGame(mount, opts = {}) {
       }
       if (eligibleForEffect) {
         for (const trackedCard of tracked.cards) {
-          if (!manualShakingCards.has(trackedCard)) {
+          if (matchShakeEnabled && !manualShakingCards.has(trackedCard)) {
             trackedCard.startMatchShake?.();
             manualShakingCards.add(trackedCard);
           }
@@ -915,7 +916,7 @@ export async function createGame(mount, opts = {}) {
       const shouldPreserveWinShake =
         currentRoundOutcome.betResult === "win" &&
         currentRoundOutcome.winningCards.size > 0;
-      if (shouldPreserveWinShake) {
+      if (shouldPreserveWinShake && matchShakeEnabled) {
         stopAllMatchShakes({ preserve: currentRoundOutcome.winningCards });
         for (const winningCard of currentRoundOutcome.winningCards) {
           if (!manualShakingCards.has(winningCard)) {
