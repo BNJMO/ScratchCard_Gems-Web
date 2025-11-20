@@ -13,6 +13,7 @@ import roundLostSoundUrl from "../assets/sounds/Lost.wav";
 let game;
 let controlPanel;
 let demoMode = true;
+const useAnimatedSpritesheets = true;
 const serverRelay = new ServerRelay();
 let serverDummyUI = null;
 let suppressRelay = false;
@@ -927,6 +928,7 @@ const opts = {
   flipDelayMax: 500,
   flipDuration: 300,
   flipEaseFunction: "easeInOutSine",
+  useAnimatedSpritesheets,
   tileTapDownSoundPath: tileTapDownSoundUrl,
   tileFlipSoundPath: tileFlipSoundUrl,
   tileHoverSoundPath: tileHoverSoundUrl,

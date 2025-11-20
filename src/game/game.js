@@ -34,6 +34,11 @@ const gameBackgroundSpriteUrl = (() => {
 const DEFAULT_CARD_ANIMATION_SPEED = 0.16;
 const MS_PER_60FPS_FRAME = 1000 / 60;
 
+const CARD_TYPE_TEXTURE_MODULES = import.meta.glob(
+  "../../assets/sprites/cardTypes/cardType_*.svg",
+  { eager: true }
+);
+
 const DEFAULT_PALETTE = {
   appBg: 0x091b26,
   tileBase: 0x223845, // main tile face
@@ -127,6 +132,51 @@ async function loadTexture(path, options = {}) {
     console.error("Texture load failed", path, error);
     return null;
   }
+}
+
+function getCardTypeTextureEntries() {
+  return Object.entries(CARD_TYPE_TEXTURE_MODULES)
+    .map(([path, mod]) => {
+      const texturePath = typeof mod === "string" ? mod : mod?.default ?? null;
+      if (!texturePath) {
+        return null;
+      }
+      const match = path.match(/cardType_(\d+)/i);
+      const order = match ? Number.parseInt(match[1], 10) : Number.NaN;
+      return {
+        path,
+        texturePath,
+        order: Number.isFinite(order) ? order : Number.POSITIVE_INFINITY,
+        key: match ? `cardType_${match[1]}` : null,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (a.order !== b.order) {
+        return a.order - b.order;
+      }
+      return a.path.localeCompare(b.path);
+    });
+}
+
+async function loadCardTypeTextures({ svgResolution } = {}) {
+  const entries = getCardTypeTextureEntries();
+  const textures = [];
+
+  for (const entry of entries) {
+    const texture = await loadTexture(entry.texturePath, { svgResolution });
+    if (!texture) {
+      continue;
+    }
+    const key = entry.key ?? `cardType_${textures.length}`;
+    textures.push({
+      key,
+      frames: [texture],
+      texture,
+    });
+  }
+
+  return textures;
 }
 
 function getSoundAlias(key) {
@@ -363,14 +413,20 @@ export async function createGame(mount, opts = {}) {
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
   };
 
-  const cardTypeAnimations = await loadCardTypeAnimations();
-  if (!cardTypeAnimations.length) {
+  const cardTypeEntries = (opts.useAnimatedSpritesheets ?? true)
+    ? await loadCardTypeAnimations()
+    : await loadCardTypeTextures({
+        svgResolution: svgRasterizationResolution,
+      });
+  if (!cardTypeEntries.length) {
     throw new Error(
-      "No scratch card textures found under assets/sprites/spritesheets"
+      opts.useAnimatedSpritesheets === false
+        ? "No scratch card textures found under assets/sprites/cardTypes"
+        : "No scratch card textures found under assets/sprites/spritesheets"
     );
   }
 
-  const defaultContentDefinitions = cardTypeAnimations.reduce(
+  const defaultContentDefinitions = cardTypeEntries.reduce(
     (acc, entry, index) => {
       const key = entry?.key ?? `cardType_${index}`;
       const sanitizedFrames = sanitizeAnimationFrames(entry?.frames);
