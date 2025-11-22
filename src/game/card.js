@@ -687,6 +687,7 @@ export class Card {
     this.container?.destroy?.({ children: true });
     this._wrap = null;
     this._tileSprite = null;
+    this._icon?.__animatedSpriteCleanup?.();
     this._icon = null;
     this._frameSprite = null;
     this._matchEffectsLayer = null;

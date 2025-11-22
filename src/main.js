@@ -2,6 +2,7 @@ import { createGame } from "./game/game.js";
 import { ControlPanel } from "./controlPanel/controlPanel.js";
 import { ServerRelay } from "./serverRelay.js";
 import { createServerDummy } from "./serverDummy/serverDummy.js";
+import { loadCardTypeAnimations } from "./game/spritesheetProvider.js";
 
 import tileTapDownSoundUrl from "../assets/sounds/TileTapDown.wav";
 import tileFlipSoundUrl from "../assets/sounds/TileFlip.wav";
@@ -41,6 +42,8 @@ let totalProfitAmountDisplayValue = "0.00000000";
 
 const AUTO_RESET_DELAY_MS = 1000;
 let autoResetDelayMs = AUTO_RESET_DELAY_MS;
+const useSpritesheet = true;
+const SPRITESHEET_FRAME_INTERVAL = 4;
 
 function withRelaySuppressed(callback) {
   suppressRelay = true;
@@ -96,6 +99,105 @@ function setTotalProfitAmountValue(value) {
   const normalized = normalizeTotalProfitAmount(value);
   totalProfitAmountDisplayValue = normalized;
   controlPanel?.setProfitValue?.(normalized);
+}
+
+function stopAnimatedIcon(icon) {
+  if (typeof icon?.__animatedSpriteCleanup === "function") {
+    icon.__animatedSpriteCleanup();
+  }
+}
+
+function applyAnimatedFramesToIcon(icon, card, frames = []) {
+  if (!icon || !card || !Array.isArray(frames) || frames.length === 0) {
+    return;
+  }
+
+  stopAnimatedIcon(icon);
+  const sanitizedFrames = frames.filter(Boolean);
+  if (!sanitizedFrames.length) {
+    return;
+  }
+
+  icon.texture = sanitizedFrames[0];
+  if (sanitizedFrames.length === 1) {
+    return;
+  }
+
+  const ticker = card?.app?.ticker;
+  if (!ticker) {
+    return;
+  }
+
+  let frameIndex = 0;
+  let elapsed = 0;
+  let cleanup = null;
+  const tick = (delta) => {
+    if (card.destroyed || icon.destroyed) {
+      cleanup?.();
+      return;
+    }
+    elapsed += delta;
+    if (elapsed < SPRITESHEET_FRAME_INTERVAL) {
+      return;
+    }
+    elapsed -= SPRITESHEET_FRAME_INTERVAL;
+    frameIndex = (frameIndex + 1) % sanitizedFrames.length;
+    const nextTexture = sanitizedFrames[frameIndex];
+    if (nextTexture && !icon.destroyed) {
+      icon.texture = nextTexture;
+    }
+  };
+
+  cleanup = () => {
+    ticker.remove(tick);
+    if (icon.__animatedSpriteCleanup === cleanup) {
+      icon.__animatedSpriteCleanup = null;
+    }
+  };
+
+  icon.__animatedSpriteCleanup = cleanup;
+  ticker.add(tick);
+}
+
+function createSpritesheetContentDefinitions(animations = []) {
+  return animations.reduce((acc, entry) => {
+    const frames = Array.isArray(entry?.frames)
+      ? entry.frames.filter(Boolean)
+      : [];
+    if (!entry?.key || frames.length === 0) {
+      return acc;
+    }
+
+    acc[entry.key] = {
+      texture: frames[0],
+      configureIcon: (icon, context = {}) => {
+        if (!icon || !context?.card) {
+          return;
+        }
+        applyAnimatedFramesToIcon(icon, context.card, frames);
+      },
+    };
+
+    return acc;
+  }, {});
+}
+
+async function applySpritesheetContentDefinitions(targetOptions) {
+  if (!useSpritesheet) {
+    return;
+  }
+  try {
+    const animations = await loadCardTypeAnimations();
+    const definitions = createSpritesheetContentDefinitions(animations);
+    if (Object.keys(definitions).length > 0) {
+      targetOptions.contentDefinitions = {
+        ...(targetOptions.contentDefinitions ?? {}),
+        ...definitions,
+      };
+    }
+  } catch (error) {
+    console.error("Animated card type sprites failed to load", error);
+  }
 }
 
 function sendRelayMessage(type, payload = {}) {
@@ -941,6 +1043,10 @@ const opts = {
   onChange: handleGameStateChange,
 };
 
+const spritesheetSetupPromise = useSpritesheet
+  ? applySpritesheetContentDefinitions(opts)
+  : Promise.resolve();
+
 (async () => {
   const totalTiles = opts.grid * opts.grid;
   const maxMines = Math.max(1, totalTiles - 1);
@@ -1079,6 +1185,7 @@ const opts = {
 
   // Initialize Game
   try {
+    await spritesheetSetupPromise;
     game = await createGame("#game", opts);
     window.game = game;
     availableCardTypes = game?.getCardContentKeys?.() ?? [];
