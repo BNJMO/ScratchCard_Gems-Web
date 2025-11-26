@@ -14,6 +14,11 @@ import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
 import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
 import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
 
+const CARD_ICON_TYPES = {
+  STATIC: "static",
+  ANIMATED: "animated",
+};
+
 const optionalBackgroundSpriteModules = import.meta.glob(
   "../../assets/sprites/game_background.svg",
   {
@@ -123,6 +128,13 @@ function resolveSvgResolution(svgResolution) {
   return Math.max(2, Math.ceil(resolution));
 }
 
+function normalizeCardIconsType(value) {
+  const normalized = typeof value === "string" ? value.toLowerCase() : value;
+  return normalized === CARD_ICON_TYPES.ANIMATED
+    ? CARD_ICON_TYPES.ANIMATED
+    : CARD_ICON_TYPES.STATIC;
+}
+
 async function loadTexture(path, options = {}) {
   if (!path) return null;
   try {
@@ -207,6 +219,11 @@ export async function createGame(mount, opts = {}) {
   const flipDuration = opts.flipDuration ?? 300;
   const flipEaseFunction = opts.flipEaseFunction ?? "easeInOutSine";
 
+  const cardIconsType = normalizeCardIconsType(
+    opts.cardIconsType ??
+      (opts.useAnimatedSpritesheets ? CARD_ICON_TYPES.ANIMATED : undefined)
+  );
+
   const hoverOptions = {
     hoverEnabled: opts.hoverEnabled ?? true,
     hoverEnterDuration: opts.hoverEnterDuration ?? 120,
@@ -273,11 +290,13 @@ export async function createGame(mount, opts = {}) {
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
   };
 
-  if (!CARD_TYPE_TEXTURES.length) {
+  const cardIconSources = CARD_TYPE_TEXTURES;
+
+  if (!cardIconSources.length) {
     throw new Error("No scratch card textures found under assets/sprites/cardTypes");
   }
 
-  const defaultContentDefinitions = CARD_TYPE_TEXTURES.reduce(
+  const defaultContentDefinitions = cardIconSources.reduce(
     (acc, { key, texturePath }) => {
       acc[key] = {
         texturePath,
@@ -995,6 +1014,10 @@ export async function createGame(mount, opts = {}) {
     return Object.keys(contentLibrary);
   }
 
+  function getCardIconsType() {
+    return cardIconsType;
+  }
+
   return {
     app: scene.app,
     reset,
@@ -1010,5 +1033,6 @@ export async function createGame(mount, opts = {}) {
     setAnimationsEnabled,
     setRoundAssignments,
     getCardContentKeys: getAvailableContentKeys,
+    getCardIconsType,
   };
 }

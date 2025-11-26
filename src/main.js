@@ -908,6 +908,7 @@ const opts = {
   iconSizePercentage: 0.7,
   iconRevealedSizeOpacity: 0.2,
   iconRevealedSizeFactor: 0.7,
+  cardIconsType: "static",
   cardsSpawnDuration: 350,
   revealAllIntervalDelay: 40,
   strokeWidth: 1,
