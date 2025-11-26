@@ -13,7 +13,7 @@ import roundLostSoundUrl from "../assets/sounds/Lost.wav";
 let game;
 let controlPanel;
 let demoMode = true;
-const useAnimatedSpritesheets = false;
+const cardIconType = "static";
 const cardIconScale = 1.00;
 const cardIconOffsetX = 0;
 const cardIconOffsetY = -5;
@@ -933,7 +933,7 @@ const opts = {
   flipDelayMax: 500,
   flipDuration: 300,
   flipEaseFunction: "easeInOutSine",
-  useAnimatedSpritesheets,
+  cardIconType,
   cardIconScale,
   cardIconOffsetX,
   cardIconOffsetY,

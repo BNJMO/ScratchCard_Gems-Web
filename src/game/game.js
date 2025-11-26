@@ -422,14 +422,17 @@ export async function createGame(mount, opts = {}) {
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
   };
 
-  const cardTypeEntries = (opts.useAnimatedSpritesheets ?? true)
+  const cardIconType = opts.cardIconType
+    ?? (opts.useAnimatedSpritesheets === false ? "static" : "animated");
+
+  const cardTypeEntries = cardIconType === "animated"
     ? await loadCardTypeAnimations()
     : await loadCardTypeTextures({
         svgResolution: svgRasterizationResolution,
       });
   if (!cardTypeEntries.length) {
     throw new Error(
-      opts.useAnimatedSpritesheets === false
+      cardIconType === "static"
         ? "No scratch card textures found under assets/sprites/cardTypes"
         : "No scratch card textures found under assets/sprites/spritesheets"
     );
