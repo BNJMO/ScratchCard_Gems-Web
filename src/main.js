@@ -32,6 +32,11 @@ let autoRemainingBets = 0;
 let manualRoundNeedsReset = false;
 
 const GRID_SIZE = 3;
+const CARD_ICON_TYPE = {
+  STATIC: "static",
+  ANIMATED: "animated",
+};
+const cardIconType = CARD_ICON_TYPE.STATIC;
 let availableCardTypes = [];
 let currentBetResult = null;
 const currentRoundAssignments = new Map();
@@ -923,6 +928,7 @@ const opts = {
   wiggleSelectionTimes: 15,
   wiggleSelectionIntensity: 0.03,
   wiggleSelectionScale: 0.005,
+  cardIconType,
   flipDelayMin: 150,
   flipDelayMax: 500,
   flipDuration: 300,
