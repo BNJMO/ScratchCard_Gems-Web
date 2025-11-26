@@ -1,5 +1,6 @@
 import { createGame } from "./game/game.js";
 import { ControlPanel } from "./controlPanel/controlPanel.js";
+import { appConfig } from "./config.js";
 import { ServerRelay } from "./serverRelay.js";
 import { createServerDummy } from "./serverDummy/serverDummy.js";
 
@@ -31,7 +32,13 @@ let autoStopPending = false;
 let autoRemainingBets = 0;
 let manualRoundNeedsReset = false;
 
-const GRID_SIZE = 3;
+const GRID_SIZE = (() => {
+  const configuredGrid = Number(appConfig?.gridSize);
+  if (Number.isFinite(configuredGrid) && configuredGrid > 0) {
+    return Math.max(1, Math.round(configuredGrid));
+  }
+  return 3;
+})();
 let availableCardTypes = [];
 let currentBetResult = null;
 const currentRoundAssignments = new Map();
@@ -41,6 +48,22 @@ let totalProfitAmountDisplayValue = "0.00000000";
 
 const AUTO_RESET_DELAY_MS = 1000;
 let autoResetDelayMs = AUTO_RESET_DELAY_MS;
+
+const GAME_NAME = appConfig?.gameName ?? "Flip Cards - Gems";
+const CARD_ICONS_TYPE =
+  typeof appConfig?.cardIconsType === "string"
+    ? appConfig.cardIconsType
+    : "static";
+const HOVER_ENABLED = appConfig?.hoverEnabled ?? true;
+const HOVER_ENTER_DURATION = (() => {
+  const configured = Number(appConfig?.hoverEnterDuration);
+  return Number.isFinite(configured) && configured >= 0 ? configured : 120;
+})();
+const HOVER_EXIT_DURATION = (() => {
+  const configured = Number(appConfig?.hoverExitDuration);
+  return Number.isFinite(configured) && configured >= 0 ? configured : 200;
+})();
+const WIGGLE_SELECTION_ENABLED = appConfig?.wiggleSelectionEnabled ?? true;
 
 function withRelaySuppressed(callback) {
   suppressRelay = true;
@@ -908,18 +931,18 @@ const opts = {
   iconSizePercentage: 0.7,
   iconRevealedSizeOpacity: 0.2,
   iconRevealedSizeFactor: 0.7,
-  cardIconsType: "static",
+  cardIconsType: CARD_ICONS_TYPE,
   cardsSpawnDuration: 350,
   revealAllIntervalDelay: 40,
   strokeWidth: 1,
   gapBetweenTiles: 0.013,
-  hoverEnabled: true,
-  hoverEnterDuration: 120,
-  hoverExitDuration: 200,
+  hoverEnabled: HOVER_ENABLED,
+  hoverEnterDuration: HOVER_ENTER_DURATION,
+  hoverExitDuration: HOVER_EXIT_DURATION,
   hoverTiltAxis: "x",
   hoverSkewAmount: 0.00,
   disableAnimations: false,
-  wiggleSelectionEnabled: true,
+  wiggleSelectionEnabled: WIGGLE_SELECTION_ENABLED,
   wiggleSelectionDuration: 900,
   wiggleSelectionTimes: 15,
   wiggleSelectionIntensity: 0.03,
@@ -951,7 +974,7 @@ const opts = {
   // Initialize Control Panel
   try {
     controlPanel = new ControlPanel("#control-panel", {
-      gameName: "Flip Cards - Gems",
+      gameName: GAME_NAME,
       totalTiles,
       maxMines,
       initialMines,

@@ -1,0 +1,9 @@
+export const appConfig = {
+  gameName: "Flip Cards - Gems",
+  gridSize: 3,
+  cardIconsType: "static",
+  hoverEnabled: true,
+  hoverEnterDuration: 120,
+  hoverExitDuration: 200,
+  wiggleSelectionEnabled: true,
+};
