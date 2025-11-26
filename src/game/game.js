@@ -14,6 +14,11 @@ import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
 import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
 import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
 
+const CARD_ICON_TYPES = {
+  STATIC: "static",
+  ANIMATED: "animated",
+};
+
 const optionalBackgroundSpriteModules = import.meta.glob(
   "../../assets/sprites/game_background.svg",
   {
@@ -46,6 +51,37 @@ const CARD_TYPE_TEXTURES = (() => {
     };
   });
 })();
+
+async function resolveCardIconSources({ cardIconsType, spritesheetProvider }) {
+  if (
+    cardIconsType === CARD_ICON_TYPES.ANIMATED &&
+    spritesheetProvider &&
+    typeof spritesheetProvider?.getCardIconSources === "function"
+  ) {
+    try {
+      const provided = await spritesheetProvider.getCardIconSources();
+      if (Array.isArray(provided) && provided.length) {
+        return provided.map((entry, index) => ({
+          key: entry?.key ?? `animated_${index}`,
+          texture: entry?.texture,
+          texturePath: entry?.texturePath,
+          palette: entry?.palette,
+          iconSizePercentage: entry?.iconSizePercentage,
+          iconRevealedSizeFactor: entry?.iconRevealedSizeFactor,
+          configureIcon: entry?.configureIcon,
+          onReveal: entry?.onReveal,
+        }));
+      }
+    } catch (error) {
+      console.warn(
+        "Falling back to static card icons. SpritesheetProvider failed to load animated assets.",
+        error
+      );
+    }
+  }
+
+  return CARD_TYPE_TEXTURES;
+}
 
 const DEFAULT_PALETTE = {
   appBg: 0x091b26,
@@ -121,6 +157,13 @@ function resolveSvgResolution(svgResolution) {
   const defaultMultiplier = 2;
   const resolution = getDevicePixelRatio() * defaultMultiplier;
   return Math.max(2, Math.ceil(resolution));
+}
+
+function normalizeCardIconsType(value) {
+  const normalized = typeof value === "string" ? value.toLowerCase() : value;
+  return normalized === CARD_ICON_TYPES.ANIMATED
+    ? CARD_ICON_TYPES.ANIMATED
+    : CARD_ICON_TYPES.STATIC;
 }
 
 async function loadTexture(path, options = {}) {
@@ -207,6 +250,11 @@ export async function createGame(mount, opts = {}) {
   const flipDuration = opts.flipDuration ?? 300;
   const flipEaseFunction = opts.flipEaseFunction ?? "easeInOutSine";
 
+  const cardIconsType = normalizeCardIconsType(
+    opts.cardIconsType ??
+      (opts.useAnimatedSpritesheets ? CARD_ICON_TYPES.ANIMATED : undefined)
+  );
+
   const hoverOptions = {
     hoverEnabled: opts.hoverEnabled ?? true,
     hoverEnterDuration: opts.hoverEnterDuration ?? 120,
@@ -273,14 +321,19 @@ export async function createGame(mount, opts = {}) {
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
   };
 
-  if (!CARD_TYPE_TEXTURES.length) {
+  const cardIconSources = await resolveCardIconSources({
+    cardIconsType,
+    spritesheetProvider: opts.spritesheetProvider,
+  });
+
+  if (!cardIconSources.length) {
     throw new Error("No scratch card textures found under assets/sprites/cardTypes");
   }
 
-  const defaultContentDefinitions = CARD_TYPE_TEXTURES.reduce(
-    (acc, { key, texturePath }) => {
+  const defaultContentDefinitions = cardIconSources.reduce(
+    (acc, { key, palette: customPalette, ...definition }) => {
       acc[key] = {
-        texturePath,
+        ...definition,
         palette: {
           face: {
             revealed: palette.cardFace,
@@ -290,6 +343,7 @@ export async function createGame(mount, opts = {}) {
             revealed: palette.cardInset,
             unrevealed: palette.cardInsetUnrevealed,
           },
+          ...(customPalette ?? {}),
         },
       };
       return acc;
@@ -995,6 +1049,10 @@ export async function createGame(mount, opts = {}) {
     return Object.keys(contentLibrary);
   }
 
+  function getCardIconsType() {
+    return cardIconsType;
+  }
+
   return {
     app: scene.app,
     reset,
@@ -1010,5 +1068,6 @@ export async function createGame(mount, opts = {}) {
     setAnimationsEnabled,
     setRoundAssignments,
     getCardContentKeys: getAvailableContentKeys,
+    getCardIconsType,
   };
 }
