@@ -2,6 +2,7 @@
   "gameName": "Flip Cards - Gems",
   "gridSize": 3,
   "cardIconsType": "static",
+  "iconSizePercentage": 0.7,
   "hoverEnabled": true,
   "hoverEnterDuration": 120,
   "hoverExitDuration": 200,

@@ -52,6 +52,37 @@ const CARD_TYPE_TEXTURES = (() => {
   });
 })();
 
+async function resolveCardIconSources({ cardIconsType, spritesheetProvider }) {
+  if (
+    cardIconsType === CARD_ICON_TYPES.ANIMATED &&
+    spritesheetProvider &&
+    typeof spritesheetProvider?.getCardIconSources === "function"
+  ) {
+    try {
+      const provided = await spritesheetProvider.getCardIconSources();
+      if (Array.isArray(provided) && provided.length) {
+        return provided.map((entry, index) => ({
+          key: entry?.key ?? `animated_${index}`,
+          texture: entry?.texture,
+          texturePath: entry?.texturePath,
+          palette: entry?.palette,
+          iconSizePercentage: entry?.iconSizePercentage,
+          iconRevealedSizeFactor: entry?.iconRevealedSizeFactor,
+          configureIcon: entry?.configureIcon,
+          onReveal: entry?.onReveal,
+        }));
+      }
+    } catch (error) {
+      console.warn(
+        "Falling back to static card icons. SpritesheetProvider failed to load animated assets.",
+        error
+      );
+    }
+  }
+
+  return CARD_TYPE_TEXTURES;
+}
+
 const DEFAULT_PALETTE = {
   appBg: 0x091b26,
   tileBase: 0x223845, // main tile face
@@ -290,16 +321,19 @@ export async function createGame(mount, opts = {}) {
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
   };
 
-  const cardIconSources = CARD_TYPE_TEXTURES;
+  const cardIconSources = await resolveCardIconSources({
+    cardIconsType,
+    spritesheetProvider: opts.spritesheetProvider,
+  });
 
   if (!cardIconSources.length) {
     throw new Error("No scratch card textures found under assets/sprites/cardTypes");
   }
 
   const defaultContentDefinitions = cardIconSources.reduce(
-    (acc, { key, texturePath }) => {
+    (acc, { key, palette: customPalette, ...definition }) => {
       acc[key] = {
-        texturePath,
+        ...definition,
         palette: {
           face: {
             revealed: palette.cardFace,
@@ -309,6 +343,7 @@ export async function createGame(mount, opts = {}) {
             revealed: palette.cardInset,
             unrevealed: palette.cardInsetUnrevealed,
           },
+          ...(customPalette ?? {}),
         },
       };
       return acc;

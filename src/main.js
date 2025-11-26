@@ -15,6 +15,7 @@ const APP_CONFIG_DEFAULTS = {
   gameName: "Flip Cards - Gems",
   gridSize: 3,
   cardIconsType: "static",
+  iconSizePercentage: 0.7,
   hoverEnabled: true,
   hoverEnterDuration: 120,
   hoverExitDuration: 200,
@@ -56,6 +57,14 @@ function normalizeCardIconsType(value) {
   return typeof value === "string" ? value : APP_CONFIG_DEFAULTS.cardIconsType;
 }
 
+function normalizeIconSizePercentage(value) {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0 && numeric <= 1) {
+    return numeric;
+  }
+  return APP_CONFIG_DEFAULTS.iconSizePercentage;
+}
+
 function normalizeBoolean(value, fallback) {
   return typeof value === "boolean" ? value : fallback;
 }
@@ -72,6 +81,9 @@ function applyConfigValues(config) {
       ? appConfig.gameName
       : APP_CONFIG_DEFAULTS.gameName;
   CARD_ICONS_TYPE = normalizeCardIconsType(appConfig?.cardIconsType);
+  ICON_SIZE_PERCENTAGE = normalizeIconSizePercentage(
+    appConfig?.iconSizePercentage
+  );
   HOVER_ENABLED = normalizeBoolean(appConfig?.hoverEnabled, true);
   HOVER_ENTER_DURATION = normalizeDuration(
     appConfig?.hoverEnterDuration,
@@ -121,6 +133,7 @@ let autoResetDelayMs = AUTO_RESET_DELAY_MS;
 
 let GAME_NAME = APP_CONFIG_DEFAULTS.gameName;
 let CARD_ICONS_TYPE = APP_CONFIG_DEFAULTS.cardIconsType;
+let ICON_SIZE_PERCENTAGE = APP_CONFIG_DEFAULTS.iconSizePercentage;
 let HOVER_ENABLED = APP_CONFIG_DEFAULTS.hoverEnabled;
 let HOVER_ENTER_DURATION = APP_CONFIG_DEFAULTS.hoverEnterDuration;
 let HOVER_EXIT_DURATION = APP_CONFIG_DEFAULTS.hoverExitDuration;
@@ -987,6 +1000,18 @@ async function bootstrap() {
   const loadedConfig = await loadAppConfig();
   applyConfigValues(loadedConfig);
 
+  const spritesheetProvider =
+    typeof window !== "undefined" && window.SpritesheetProvider
+      ? (() => {
+          try {
+            return new window.SpritesheetProvider();
+          } catch (error) {
+            console.error("Unable to initialize SpritesheetProvider", error);
+            return null;
+          }
+        })()
+      : null;
+
   opts = {
     size: 600,
     backgroundColor: "#091B26",
@@ -994,10 +1019,11 @@ async function bootstrap() {
     grid: GRID_SIZE,
     mines: 1,
     autoResetDelayMs: AUTO_RESET_DELAY_MS,
-    iconSizePercentage: 0.7,
+    iconSizePercentage: ICON_SIZE_PERCENTAGE,
     iconRevealedSizeOpacity: 0.2,
     iconRevealedSizeFactor: 0.7,
     cardIconsType: CARD_ICONS_TYPE,
+    spritesheetProvider,
     cardsSpawnDuration: 350,
     revealAllIntervalDelay: 40,
     strokeWidth: 1,
