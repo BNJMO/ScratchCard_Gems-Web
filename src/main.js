@@ -2,6 +2,7 @@ import { createGame } from "./game/game.js";
 import { ControlPanel } from "./controlPanel/controlPanel.js";
 import { ServerRelay } from "./serverRelay.js";
 import { createServerDummy } from "./serverDummy/serverDummy.js";
+import config from "./config.json";
 
 import tileTapDownSoundUrl from "../assets/sounds/TileTapDown.wav";
 import tileFlipSoundUrl from "../assets/sounds/TileFlip.wav";
@@ -10,15 +11,45 @@ import gameStartSoundUrl from "../assets/sounds/GameStart.wav";
 import roundWinSoundUrl from "../assets/sounds/Win.wav";
 import roundLostSoundUrl from "../assets/sounds/Lost.wav";
 
+const CONFIG = config ?? {};
+
+const GAME_NAME =
+  typeof CONFIG.gameName === "string" && CONFIG.gameName.trim()
+    ? CONFIG.gameName
+    : "Flip Cards - Gems";
+const GRID_SIZE = Number.isFinite(CONFIG.gridSize) ? CONFIG.gridSize : 3;
+const cardIconType =
+  CONFIG.cardIconsType === "animated" || CONFIG.cardIconsType === "static"
+    ? CONFIG.cardIconsType
+    : "static";
+const cardIconScale = Number.isFinite(CONFIG.cardIconScale)
+  ? CONFIG.cardIconScale
+  : 1.0;
+const cardIconOffsetX = Number.isFinite(CONFIG.cardIconOffsetX)
+  ? CONFIG.cardIconOffsetX
+  : 0;
+const cardIconOffsetY = Number.isFinite(CONFIG.cardIconOffsetYv)
+  ? CONFIG.cardIconOffsetYv
+  : -5;
+const cardSpritesheetAnimationSpeed = Number.isFinite(
+  CONFIG.cardSpritesheetAnimationSpeed
+)
+  ? CONFIG.cardSpritesheetAnimationSpeed
+  : 0.14;
+const cardMatchShake =
+  typeof CONFIG.cardMatchShake === "boolean" ? CONFIG.cardMatchShake : true;
+const hoverEnabled =
+  typeof CONFIG.hoverEnabled === "boolean" ? CONFIG.hoverEnabled : true;
+const hoverEnterDuration = Number.isFinite(CONFIG.hoverEnterDuration)
+  ? CONFIG.hoverEnterDuration
+  : 120;
+const hoverExitDuration = Number.isFinite(CONFIG.hoverExitDuration)
+  ? CONFIG.hoverExitDuration
+  : 200;
+
 let game;
 let controlPanel;
 let demoMode = true;
-const cardIconType = "static";
-const cardIconScale = 1.00;
-const cardIconOffsetX = 0;
-const cardIconOffsetY = -5;
-const cardSpritesheetAnimationSpeed = 0.14;
-const cardMatchShake = true;
 const serverRelay = new ServerRelay();
 let serverDummyUI = null;
 let suppressRelay = false;
@@ -37,7 +68,6 @@ let autoStopPending = false;
 let autoRemainingBets = 0;
 let manualRoundNeedsReset = false;
 
-const GRID_SIZE = 3;
 let availableCardTypes = [];
 let currentBetResult = null;
 const currentRoundAssignments = new Map();
@@ -918,9 +948,9 @@ const opts = {
   revealAllIntervalDelay: 40,
   strokeWidth: 1,
   gapBetweenTiles: 0.013,
-  hoverEnabled: true,
-  hoverEnterDuration: 120,
-  hoverExitDuration: 200,
+  hoverEnabled,
+  hoverEnterDuration,
+  hoverExitDuration,
   hoverTiltAxis: "x",
   hoverSkewAmount: 0.00,
   disableAnimations: false,
@@ -962,7 +992,7 @@ const opts = {
   // Initialize Control Panel
   try {
     controlPanel = new ControlPanel("#control-panel", {
-      gameName: "Flip Cards - Gems",
+      gameName: GAME_NAME,
       totalTiles,
       maxMines,
       initialMines,

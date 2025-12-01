@@ -1,0 +1,13 @@
+{
+  "gameName": "Flip Cards - Gems",
+  "gridSize": 3,
+  "cardIconsType": "static",
+  "cardIconScale": 1,
+  "cardIconOffsetX": 0,
+  "cardIconOffsetYv": -5,
+  "cardSpritesheetAnimationSpeed": 0.14,
+  "cardMatchShake": true,
+  "hoverEnabled": true,
+  "hoverEnterDuration": 120,
+  "hoverExitDuration": 200
+}
