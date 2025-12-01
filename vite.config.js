@@ -3,8 +3,8 @@ import { resolve } from 'path';
 import config from './src/config.json' assert { type: 'json' };
 
 const basePath =
-  typeof config?.vitePath === 'string' && config.vitePath.trim()
-    ? config.vitePath
+  typeof config?.app?.vitePath === 'string' && config.app.vitePath.trim()
+    ? config.app.vitePath
     : '/';
 
 export default defineConfig({

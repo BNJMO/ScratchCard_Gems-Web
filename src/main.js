@@ -12,39 +12,45 @@ import roundWinSoundUrl from "../assets/sounds/Win.wav";
 import roundLostSoundUrl from "../assets/sounds/Lost.wav";
 
 const CONFIG = config ?? {};
+const APP_CONFIG = CONFIG.app ?? {};
+const GAMEPLAY_CONFIG = CONFIG.gameplay ?? {};
+const HOVER_CONFIG = GAMEPLAY_CONFIG.hover ?? {};
+const CARD_CONFIG = GAMEPLAY_CONFIG.card ?? {};
 
 const GAME_NAME =
-  typeof CONFIG.gameName === "string" && CONFIG.gameName.trim()
-    ? CONFIG.gameName
+  typeof APP_CONFIG.gameName === "string" && APP_CONFIG.gameName.trim()
+    ? APP_CONFIG.gameName
     : "Flip Cards - Gems";
-const GRID_SIZE = Number.isFinite(CONFIG.gridSize) ? CONFIG.gridSize : 3;
+const GRID_SIZE = Number.isFinite(GAMEPLAY_CONFIG.gridSize)
+  ? GAMEPLAY_CONFIG.gridSize
+  : 3;
 const cardIconType =
-  CONFIG.cardIconsType === "animated" || CONFIG.cardIconsType === "static"
-    ? CONFIG.cardIconsType
+  CARD_CONFIG.iconType === "animated" || CARD_CONFIG.iconType === "static"
+    ? CARD_CONFIG.iconType
     : "static";
-const cardIconScale = Number.isFinite(CONFIG.cardIconScale)
-  ? CONFIG.cardIconScale
+const cardIconScale = Number.isFinite(CARD_CONFIG.iconScale)
+  ? CARD_CONFIG.iconScale
   : 1.0;
-const cardIconOffsetX = Number.isFinite(CONFIG.cardIconOffsetX)
-  ? CONFIG.cardIconOffsetX
+const cardIconOffsetX = Number.isFinite(CARD_CONFIG.iconOffsetX)
+  ? CARD_CONFIG.iconOffsetX
   : 0;
-const cardIconOffsetY = Number.isFinite(CONFIG.cardIconOffsetYv)
-  ? CONFIG.cardIconOffsetYv
+const cardIconOffsetY = Number.isFinite(CARD_CONFIG.offsetYv)
+  ? CARD_CONFIG.offsetYv
   : -5;
 const cardSpritesheetAnimationSpeed = Number.isFinite(
-  CONFIG.cardSpritesheetAnimationSpeed
+  CARD_CONFIG.spritesheetAnimationSpeed
 )
-  ? CONFIG.cardSpritesheetAnimationSpeed
+  ? CARD_CONFIG.spritesheetAnimationSpeed
   : 0.14;
 const cardMatchShake =
-  typeof CONFIG.cardMatchShake === "boolean" ? CONFIG.cardMatchShake : true;
+  typeof CARD_CONFIG.matchShake === "boolean" ? CARD_CONFIG.matchShake : true;
 const hoverEnabled =
-  typeof CONFIG.hoverEnabled === "boolean" ? CONFIG.hoverEnabled : true;
-const hoverEnterDuration = Number.isFinite(CONFIG.hoverEnterDuration)
-  ? CONFIG.hoverEnterDuration
+  typeof HOVER_CONFIG.enabled === "boolean" ? HOVER_CONFIG.enabled : true;
+const hoverEnterDuration = Number.isFinite(HOVER_CONFIG.enterDuration)
+  ? HOVER_CONFIG.enterDuration
   : 120;
-const hoverExitDuration = Number.isFinite(CONFIG.hoverExitDuration)
-  ? CONFIG.hoverExitDuration
+const hoverExitDuration = Number.isFinite(HOVER_CONFIG.exitDuration)
+  ? HOVER_CONFIG.exitDuration
   : 200;
 
 let game;
