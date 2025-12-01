@@ -1,0 +1,22 @@
+{
+  "app": {
+    "vitePath": "/ScratchCard_Gems-Web/",
+    "gameName": "Flip Cards - Gems"
+  },
+  "gameplay": {
+    "gridSize": 3,
+    "hover": {
+      "enabled": true,
+      "enterDuration": 120,
+      "exitDuration": 200
+    },
+    "card": {
+      "iconType": "static",
+      "iconScale": 1,
+      "iconOffsetX": 0,
+      "offsetYv": -5,
+      "spritesheetAnimationSpeed": 0.14,
+      "matchShake": true
+    }
+  }
+}
