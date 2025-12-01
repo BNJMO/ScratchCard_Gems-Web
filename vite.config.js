@@ -1,8 +1,14 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import config from './src/config.json' assert { type: 'json' };
+
+const basePath =
+  typeof config?.vitePath === 'string' && config.vitePath.trim()
+    ? config.vitePath
+    : '/';
 
 export default defineConfig({
-  base: '/ScratchCard_Gems-Web/',
+  base: basePath,
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

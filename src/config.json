@@ -9,5 +9,6 @@
   "cardMatchShake": true,
   "hoverEnabled": true,
   "hoverEnterDuration": 120,
-  "hoverExitDuration": 200
+  "hoverExitDuration": 200,
+  "vitePath": "/ScratchCard_Gems-Web/"
 }
