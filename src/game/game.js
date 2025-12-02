@@ -185,6 +185,9 @@ function getCardTypeTextureEntries() {
 function getScratchMaskEntries() {
   return Object.entries(SCRATCH_MASK_MODULES)
     .map(([path, mod]) => {
+      if (typeof path !== "string" || !path.match) {
+        return null;
+      }
       const texturePath = typeof mod === "string" ? mod : mod?.default ?? null;
       if (!texturePath) {
         return null;
