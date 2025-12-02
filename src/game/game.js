@@ -876,13 +876,16 @@ export async function createGame(mount, opts = {}) {
     };
 
     const applyScratch = (point) => {
-      if (!maskRenderTexture) return null;
+      if (!maskRenderTexture?.baseTexture) return null;
       const target = maskTextures.length
         ? maskTextures[Math.floor(Math.random() * maskTextures.length)]
         : null;
 
-      const sprite = target ? new Sprite(target) : null;
-      if (!sprite) return null;
+      if (!target?.baseTexture) {
+        return null;
+      }
+
+      const sprite = new Sprite(target);
       sprite.anchor.set(0.5);
       sprite.position.set(
         point.x + maskRenderTexture.width / 2,
