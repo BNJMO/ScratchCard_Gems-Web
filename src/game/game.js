@@ -816,6 +816,9 @@ export async function createGame(mount, opts = {}) {
     layer.addChild(coverSprite);
 
     let maskRenderTexture = RenderTexture.create({ width: 1, height: 1 });
+    if (maskRenderTexture?.baseTexture) {
+      maskRenderTexture.baseTexture.alphaMode = "no-premultiply-alpha";
+    }
     const maskSprite = new Sprite(maskRenderTexture);
     maskSprite.anchor.set(0.5);
     layer.addChild(maskSprite);
@@ -855,6 +858,9 @@ export async function createGame(mount, opts = {}) {
       const size = Math.max(1, Math.floor(layoutInfo.contentSize));
       maskRenderTexture?.destroy(true);
       maskRenderTexture = RenderTexture.create({ width: size, height: size });
+      if (maskRenderTexture?.baseTexture) {
+        maskRenderTexture.baseTexture.alphaMode = "no-premultiply-alpha";
+      }
       maskSprite.texture = maskRenderTexture;
       maskSprite.width = size;
       maskSprite.height = size;
