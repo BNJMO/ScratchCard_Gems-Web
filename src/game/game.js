@@ -164,10 +164,11 @@ function getCardTypeTextureEntries() {
       if (!texturePath) {
         return null;
       }
-      const match = path.match(/cardType_(\d+)/i);
+      const pathString = typeof path === "string" ? path : "";
+      const match = /cardType_(\d+)/i.exec(pathString);
       const order = match ? Number.parseInt(match[1], 10) : Number.NaN;
       return {
-        path,
+        path: pathString,
         texturePath,
         order: Number.isFinite(order) ? order : Number.POSITIVE_INFINITY,
         key: match ? `cardType_${match[1]}` : null,
