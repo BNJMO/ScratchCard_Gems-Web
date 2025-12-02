@@ -551,6 +551,15 @@ export async function createGame(mount, opts = {}) {
     gameMode === "scratch" ? loadTexture(scratchCoverSpriteUrl) : Promise.resolve(null),
   ]);
 
+  const scratchState = {
+    coverSprite: null,
+    mask: null,
+    holes: [],
+    lastPoint: null,
+    enabled: false,
+    listenerBound: false,
+  };
+
   const scene = new GameScene({
     root,
     backgroundColor,
@@ -593,10 +602,6 @@ export async function createGame(mount, opts = {}) {
 
   await scene.init();
 
-  if (gameMode === "scratch") {
-    resetScratchCover();
-  }
-
   const rules = new GameRules({ gridSize: GRID });
 
   const cardsByKey = new Map();
@@ -619,14 +624,10 @@ export async function createGame(mount, opts = {}) {
   const manualMatchTracker = new Map();
   const manualShakingCards = new Set();
   const scheduledAutoRevealTimers = new Set();
-  const scratchState = {
-    coverSprite: null,
-    mask: null,
-    holes: [],
-    lastPoint: null,
-    enabled: false,
-    listenerBound: false,
-  };
+
+  if (gameMode === "scratch") {
+    resetScratchCover();
+  }
 
   function getScratchLayout() {
     const layout = scene.getBoardLayout();
