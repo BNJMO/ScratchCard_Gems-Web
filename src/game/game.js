@@ -185,14 +185,15 @@ function getCardTypeTextureEntries() {
 function getScratchMaskEntries() {
   return Object.entries(SCRATCH_MASK_MODULES)
     .map(([path, mod]) => {
-      if (typeof path !== "string" || !path.match) {
+      const pathString = typeof path === "string" ? path : "";
+      if (!pathString) {
         return null;
       }
       const texturePath = typeof mod === "string" ? mod : mod?.default ?? null;
       if (!texturePath) {
         return null;
       }
-      const match = path.match(/scratchMask_(\d+)/i);
+      const match = /scratchMask_(\d+)/i.exec(pathString);
       const order = match ? Number.parseInt(match[1], 10) : Number.POSITIVE_INFINITY;
       return { texturePath, order };
     })
