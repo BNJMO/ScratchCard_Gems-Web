@@ -1,12 +1,4 @@
-import {
-  Assets,
-  BLEND_MODES,
-  Container,
-  Filter,
-  Graphics,
-  RenderTexture,
-  Sprite,
-} from "pixi.js";
+import { Assets, Container, Filter, Graphics, RenderTexture, Sprite } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
 import { loadCardTypeAnimations } from "./spritesheetProvider.js";
@@ -93,6 +85,8 @@ const DEFAULT_PALETTE = {
 };
 
 const WIN_FACE_COLOR = 0x061217;
+
+const SCRATCH_BLEND_MODE = "destination-out";
 
 const SOUND_ALIASES = {
   tileHover: "mines.tileHover",
@@ -841,7 +835,7 @@ export async function createGame(mount, opts = {}) {
     const sprite = new Sprite(maskTexture);
     sprite.anchor.set(0.5);
     sprite.position.set(local.x, local.y);
-    sprite.blendMode = BLEND_MODES.DST_OUT;
+    sprite.blendMode = SCRATCH_BLEND_MODE;
     const renderer = scene.app?.renderer;
     renderer?.render(sprite, {
       renderTexture: scratchState.maskRenderTexture,
