@@ -1,4 +1,12 @@
-import { Assets, Container, Filter, Graphics, RenderTexture, Sprite } from "pixi.js";
+import {
+  Assets,
+  BLEND_MODES,
+  Container,
+  Filter,
+  Graphics,
+  RenderTexture,
+  Sprite,
+} from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
 import { loadCardTypeAnimations } from "./spritesheetProvider.js";
@@ -53,10 +61,8 @@ uniform sampler2D uMask;
 
 void main(void) {
     vec4 color = texture2D(uSampler, vTextureCoord);
-    vec4 maskPixel = texture2D(uMask, vTextureCoord);
-    float maskLum = dot(maskPixel.rgb, vec3(0.299, 0.587, 0.114));
-    float alpha = 1.0 - maskLum;
-    gl_FragColor = vec4(color.rgb, color.a * alpha);
+    float maskAlpha = texture2D(uMask, vTextureCoord).a;
+    gl_FragColor = vec4(color.rgb, color.a * maskAlpha);
 }
 `;
 
@@ -648,6 +654,7 @@ export async function createGame(mount, opts = {}) {
     enabled: gameMode === "scratch",
     overlayContainer: null,
     coverSprite: null,
+    maskSprite: null,
     maskRenderTexture: null,
     filter: null,
     lastPoint: null,
@@ -668,18 +675,26 @@ export async function createGame(mount, opts = {}) {
     coverSprite.position.set(0, 0);
     coverSprite.eventMode = "static";
 
+    const maskSprite = new Sprite();
+    maskSprite.anchor.set(0);
+    maskSprite.position.set(0, 0);
+    maskSprite.visible = false;
+
     container.addChild(coverSprite);
+    container.addChild(maskSprite);
     container.on("pointermove", handleScratchMove);
     container.on("pointerout", () => {
       scratchState.lastPoint = null;
     });
     scratchState.overlayContainer = container;
     scratchState.coverSprite = coverSprite;
+    scratchState.maskSprite = maskSprite;
     scene.setScratchOverlay(container, { coverSprite });
   }
 
   function ensureScratchMask(layout) {
-    if (!scratchState.enabled || !scratchState.coverSprite) return null;
+    if (!scratchState.enabled || !scratchState.coverSprite || !scratchState.maskSprite)
+      return null;
     const renderer = scene.app?.renderer;
     const contentSize = layout?.contentSize ?? scratchState.coverSprite.width ?? 0;
     if (!renderer || !(contentSize > 0)) return null;
@@ -696,14 +711,18 @@ export async function createGame(mount, opts = {}) {
         height: contentSize,
         resolution: renderer.resolution || 1,
       });
+      scratchState.maskSprite.texture = scratchState.maskRenderTexture;
+      scratchState.maskSprite.width = contentSize;
+      scratchState.maskSprite.height = contentSize;
       scratchState.filter = new Filter(null, SCRATCH_FRAGMENT_SHADER, {
         uMask: scratchState.maskRenderTexture,
       });
       scratchState.coverSprite.filters = [scratchState.filter];
+      scratchState.coverSprite.mask = scratchState.maskSprite;
     }
 
     const clearGraphic = new Graphics();
-    clearGraphic.beginFill(0x000000);
+    clearGraphic.beginFill(0xffffff);
     clearGraphic.drawRect(0, 0, contentSize, contentSize);
     clearGraphic.endFill();
     renderer.render(clearGraphic, {
@@ -822,6 +841,7 @@ export async function createGame(mount, opts = {}) {
     const sprite = new Sprite(maskTexture);
     sprite.anchor.set(0.5);
     sprite.position.set(local.x, local.y);
+    sprite.blendMode = BLEND_MODES.DST_OUT;
     const renderer = scene.app?.renderer;
     renderer?.render(sprite, {
       renderTexture: scratchState.maskRenderTexture,
