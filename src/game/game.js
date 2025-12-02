@@ -700,24 +700,22 @@ export async function createGame(mount, opts = {}) {
     if (!scratchState.mask || !layout) return;
 
     const { contentSize } = layout;
-    scratchState.mask.clear();
-    scratchState.mask.beginFill(0xffffff);
-    scratchState.mask.drawRect(
-      -contentSize / 2,
-      -contentSize / 2,
-      contentSize,
-      contentSize
-    );
+    const mask = scratchState.mask;
+    mask.clear();
+    mask
+      .rect(
+        -contentSize / 2,
+        -contentSize / 2,
+        contentSize,
+        contentSize
+      )
+      .fill({ color: 0xffffff });
 
     if (scratchState.holes.length) {
-      scratchState.mask.beginHole();
       for (const hole of scratchState.holes) {
-        scratchState.mask.drawCircle(hole.x, hole.y, hole.radius);
+        mask.circle(hole.x, hole.y, hole.radius).cut();
       }
-      scratchState.mask.endHole();
     }
-
-    scratchState.mask.endFill();
   }
 
   function setScratchInteractivity(enabled) {
