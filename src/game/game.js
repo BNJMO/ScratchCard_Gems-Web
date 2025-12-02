@@ -651,14 +651,24 @@ export async function createGame(mount, opts = {}) {
       const sprite = new Sprite(scratchCoverTexture);
       sprite.anchor.set(0.5);
       sprite.eventMode = "none";
+      sprite.alpha = 1;
+      sprite.zIndex = 2;
 
       const mask = new Graphics();
       mask.eventMode = "none";
+      mask.visible = true;
+      mask.renderable = true;
+      mask.isMask = true;
+      mask.zIndex = 3;
 
       scratchState.coverSprite = sprite;
       scratchState.mask = mask;
 
-      scene.boardOverlay?.addChild(sprite, mask);
+      if (scene.boardOverlay) {
+        scene.boardOverlay.sortableChildren = true;
+        scene.boardOverlay.addChild(mask);
+        scene.boardOverlay.addChild(sprite);
+      }
       sprite.mask = mask;
 
       if (scene.boardOverlay) {
