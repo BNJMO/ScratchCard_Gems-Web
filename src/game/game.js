@@ -1,4 +1,4 @@
-import { Assets, Container, Graphics, RenderTexture, Sprite } from "pixi.js";
+import { Assets, Container, Graphics, RenderTexture, Sprite, Texture } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
 import { loadCardTypeAnimations } from "./spritesheetProvider.js";
@@ -197,11 +197,55 @@ async function loadScratchMaskTextures() {
     entries.map(async (entry) => {
       const texture = await loadTexture(entry.texturePath);
       if (texture) {
-        textures.push({ key: entry.key, texture });
+        const preparedTexture = prepareScratchMaskTexture(texture);
+        if (preparedTexture && preparedTexture !== texture) {
+          texture.destroy(true);
+        }
+        textures.push({ key: entry.key, texture: preparedTexture ?? texture });
       }
     })
   );
   return textures;
+}
+
+function prepareScratchMaskTexture(texture) {
+  if (!texture?.baseTexture) return texture;
+  const source = texture.baseTexture.resource?.source;
+  if (!source || typeof document === "undefined") {
+    return texture;
+  }
+
+  const width = source.naturalWidth || source.videoWidth || source.width || 0;
+  const height = source.naturalHeight || source.videoHeight || source.height || 0;
+  if (!width || !height) {
+    return texture;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return texture;
+
+  ctx.drawImage(source, 0, 0, width, height);
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const pixels = imageData.data;
+
+  for (let i = 0; i < pixels.length; i += 4) {
+    const r = pixels[i];
+    const g = pixels[i + 1];
+    const b = pixels[i + 2];
+    const a = pixels[i + 3];
+    const brightness = (r + g + b) / 3;
+    const shouldErase = a > 0 && brightness < 32;
+    pixels[i] = 255;
+    pixels[i + 1] = 255;
+    pixels[i + 2] = 255;
+    pixels[i + 3] = shouldErase ? 255 : 0;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return Texture.from(canvas);
 }
 
 async function loadCardTypeTextures({ svgResolution } = {}) {
