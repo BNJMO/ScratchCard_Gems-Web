@@ -1,4 +1,4 @@
-import { Assets, BLEND_MODES, Container, Graphics, RenderTexture, Sprite } from "pixi.js";
+import { Assets, Container, Graphics, RenderTexture, Sprite } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
 import { loadCardTypeAnimations } from "./spritesheetProvider.js";
@@ -889,7 +889,7 @@ export async function createGame(mount, opts = {}) {
         point.y + maskRenderTexture.height / 2
       );
       sprite.scale.set(coverScaleX, coverScaleY);
-      sprite.blendMode = BLEND_MODES.ERASE;
+      sprite.blendMode = "erase";
       renderer.render(sprite, { renderTexture: maskRenderTexture, clear: false });
       const radius =
         (Math.max(
