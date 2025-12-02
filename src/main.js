@@ -21,6 +21,8 @@ const GAME_NAME =
   typeof APP_CONFIG.gameName === "string" && APP_CONFIG.gameName.trim()
     ? APP_CONFIG.gameName
     : "Flip Cards - Gems";
+const GAME_MODE =
+  GAMEPLAY_CONFIG.gameMode === "scratch" ? "scratch" : "cardFlip";
 const GRID_SIZE = Number.isFinite(GAMEPLAY_CONFIG.gridSize)
   ? GAMEPLAY_CONFIG.gridSize
   : 3;
@@ -594,7 +596,8 @@ function prepareForNewRoundState() {
     setControlPanelBetMode("bet");
     setControlPanelBetState(false);
   } else {
-    setControlPanelBetMode("scratch");
+    const activeBetMode = GAME_MODE === "scratch" ? "scratch" : "cashout";
+    setControlPanelBetMode(activeBetMode);
     setControlPanelBetState(true);
   }
   setControlPanelRandomState(!isAutoMode);
@@ -984,6 +987,8 @@ const opts = {
   winPopupShowDuration: 260,
   winPopupWidth: 260,
   winPopupHeight: 200,
+  gameMode: GAME_MODE,
+  scratchMoveThreshold: 5,
   getMode: () => controlPanelMode,
   onCardSelected: (selection) => handleCardSelected(selection),
   onChange: handleGameStateChange,

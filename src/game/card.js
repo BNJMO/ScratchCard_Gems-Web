@@ -663,6 +663,46 @@ export class Card {
     return true;
   }
 
+  showIconPreview(
+    content,
+    { iconSizePercentage, iconRevealedSizeFactor, forceVisible = true } = {}
+  ) {
+    const icon = this._icon;
+    if (!icon) return;
+
+    const contentConfig = content ?? {};
+    this._iconContentConfig = contentConfig;
+    this._iconLastRevealContext = { revealedByPlayer: false };
+
+    const tileSize = this._tileSize;
+    const iconSizeFactor =
+      iconRevealedSizeFactor ??
+      contentConfig.iconRevealedSizeFactor ??
+      this.iconOptions.revealedSizeFactor;
+    const baseSize =
+      iconSizePercentage ??
+      contentConfig.iconSizePercentage ??
+      this.iconOptions.sizePercentage;
+    const iconScaleMultiplier = this.iconOptions.scaleMultiplier ?? 1;
+    const maxDimension = tileSize * baseSize * iconSizeFactor * iconScaleMultiplier;
+
+    const targetTexture = contentConfig.texture ?? icon.texture ?? Texture.EMPTY;
+    icon.texture = targetTexture;
+    if (Array.isArray(contentConfig.frames) && contentConfig.frames.length > 0) {
+      icon.textures = contentConfig.frames;
+    }
+
+    contentConfig.configureIcon?.(icon, {
+      revealedByPlayer: false,
+      animationHandled: false,
+    });
+
+    this.#applyIconSizing(icon, maxDimension, targetTexture);
+    if (forceVisible) {
+      icon.visible = true;
+    }
+  }
+
   flipFace(color) {
     const sprite = this._tileSprite;
     if (!sprite) return;
