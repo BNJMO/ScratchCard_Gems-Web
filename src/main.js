@@ -24,6 +24,10 @@ const GAME_NAME =
 const GRID_SIZE = Number.isFinite(GAMEPLAY_CONFIG.gridSize)
   ? GAMEPLAY_CONFIG.gridSize
   : 3;
+const GAME_MODE =
+  GAMEPLAY_CONFIG.gameMode === "scratch" || GAMEPLAY_CONFIG.gameMode === "cardFlip"
+    ? GAMEPLAY_CONFIG.gameMode
+    : "cardFlip";
 const cardIconType =
   CARD_CONFIG.iconType === "animated" || CARD_CONFIG.iconType === "static"
     ? CARD_CONFIG.iconType
@@ -945,6 +949,7 @@ const opts = {
   backgroundColor: "#091B26",
   fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Arial",
   grid: GRID_SIZE,
+  gameMode: GAME_MODE,
   mines: 1,
   autoResetDelayMs: AUTO_RESET_DELAY_MS,
   iconSizePercentage: 0.7,

@@ -5,6 +5,7 @@
   },
   "gameplay": {
     "gridSize": 3,
+    "gameMode": "cardFlip",
     "hover": {
       "enabled": true,
       "enterDuration": 120,

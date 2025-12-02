@@ -1,4 +1,4 @@
-import { Assets } from "pixi.js";
+import { Assets, BLEND_MODES, Container, Graphics, RenderTexture, Sprite } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
 import { loadCardTypeAnimations } from "./spritesheetProvider.js";
@@ -14,6 +14,7 @@ import winFrameSpriteUrl from "../../assets/sprites/winFrame.svg";
 import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
 import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
 import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
+import scratchCoverSpriteUrl from "../../assets/sprites/scratchCover.png";
 
 const optionalBackgroundSpriteModules = import.meta.glob(
   "../../assets/sprites/game_background.svg",
@@ -36,6 +37,11 @@ const MS_PER_60FPS_FRAME = 1000 / 60;
 
 const CARD_TYPE_TEXTURE_MODULES = import.meta.glob(
   "../../assets/sprites/cardTypes/static/cardType_*.svg",
+  { eager: true }
+);
+
+const SCRATCH_MASK_MODULES = import.meta.glob(
+  "../../assets/sprites/scratchMasks/scratchMask_*.png",
   { eager: true }
 );
 
@@ -157,6 +163,45 @@ function getCardTypeTextureEntries() {
       }
       return a.path.localeCompare(b.path);
     });
+}
+
+function getScratchMaskEntries() {
+  return Object.entries(SCRATCH_MASK_MODULES)
+    .map(([path, mod]) => {
+      const texturePath = typeof mod === "string" ? mod : mod?.default ?? null;
+      if (!texturePath) {
+        return null;
+      }
+      const match = path.match(/scratchMask_(\d+)/i);
+      const order = match ? Number.parseInt(match[1], 10) : Number.POSITIVE_INFINITY;
+      return {
+        path,
+        texturePath,
+        order,
+        key: match ? `scratchMask_${match[1]}` : path,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (a.order !== b.order) {
+        return a.order - b.order;
+      }
+      return a.path.localeCompare(b.path);
+    });
+}
+
+async function loadScratchMaskTextures() {
+  const entries = getScratchMaskEntries();
+  const textures = [];
+  await Promise.all(
+    entries.map(async (entry) => {
+      const texture = await loadTexture(entry.texturePath);
+      if (texture) {
+        textures.push({ key: entry.key, texture });
+      }
+    })
+  );
+  return textures;
 }
 
 async function loadCardTypeTextures({ svgResolution } = {}) {
@@ -320,7 +365,12 @@ function isAutoModeActive(getMode) {
 }
 
 export async function createGame(mount, opts = {}) {
-  const GRID = 3;
+  const GRID = Number.isFinite(opts.grid) ? opts.grid : 3;
+  const gameMode =
+    opts.gameMode === "scratch" || opts.gameMode === "cardFlip"
+      ? opts.gameMode
+      : "cardFlip";
+  const scratchRevealStep = Math.max(1, opts.scratchRevealStep ?? 10);
   const fontFamily =
     opts.fontFamily ?? "Inter, system-ui, -apple-system, Segoe UI, Arial";
   const initialSize = Math.max(1, opts.size ?? 400);
@@ -355,6 +405,7 @@ export async function createGame(mount, opts = {}) {
   const gapBetweenTiles = opts.gapBetweenTiles ?? 0.1;
   const flipDuration = opts.flipDuration ?? 300;
   const flipEaseFunction = opts.flipEaseFunction ?? "easeInOutSine";
+  const cardFlipDuration = gameMode === "scratch" ? 0 : flipDuration;
 
   const hoverOptions = {
     hoverEnabled: opts.hoverEnabled ?? true,
@@ -376,6 +427,8 @@ export async function createGame(mount, opts = {}) {
     winPopupWidth: opts.winPopupWidth ?? 240,
     winPopupHeight: opts.winPopupHeight ?? 170,
   };
+
+  const scratchModeEnabled = gameMode === "scratch";
 
 
   // Resolve mount element
@@ -530,6 +583,8 @@ export async function createGame(mount, opts = {}) {
     tileDefaultTexture,
     tileHoverTexture,
     tileFlippedTexture,
+    scratchCoverTexture,
+    scratchMaskTextures,
   ] = await Promise.all([
     loadTexture(gameBackgroundSpriteUrl, {svgResolution: svgRasterizationResolution,}),
     loadTexture(sparkSpriteUrl),
@@ -543,7 +598,11 @@ export async function createGame(mount, opts = {}) {
     loadTexture(tileFlippedSpriteUrl, {
       svgResolution: svgRasterizationResolution,
     }),
+    scratchModeEnabled ? loadTexture(scratchCoverSpriteUrl) : Promise.resolve(null),
+    scratchModeEnabled ? loadScratchMaskTextures() : Promise.resolve([]),
   ]);
+
+  let scratchCoverController = null;
 
   const scene = new GameScene({
     root,
@@ -581,6 +640,11 @@ export async function createGame(mount, opts = {}) {
       ...wiggleOptions,
       cardsSpawnDuration,
       disableAnimations,
+    },
+    onLayout: () => {
+      if (scratchCoverController) {
+        scratchCoverController.layout(scene.getLayout());
+      }
     },
   });
 
@@ -730,6 +794,210 @@ export async function createGame(mount, opts = {}) {
     }
   }
 
+  function createScratchCover() {
+    if (!scratchModeEnabled || !scratchCoverTexture) {
+      return null;
+    }
+
+    const renderer = scene?.app?.renderer;
+    if (!renderer || !scene?.board) {
+      return null;
+    }
+
+    const layer = new Container();
+    layer.eventMode = "static";
+    layer.cursor = "crosshair";
+    layer.zIndex = 50;
+    scene.board.sortableChildren = true;
+    scene.board.addChild(layer);
+
+    const coverSprite = new Sprite(scratchCoverTexture);
+    coverSprite.anchor.set(0.5);
+    layer.addChild(coverSprite);
+
+    let maskRenderTexture = RenderTexture.create({ width: 1, height: 1 });
+    const maskSprite = new Sprite(maskRenderTexture);
+    maskSprite.anchor.set(0.5);
+    layer.addChild(maskSprite);
+    coverSprite.mask = maskSprite;
+
+    const maskTextures = scratchMaskTextures
+      .map((entry) => entry?.texture)
+      .filter(Boolean);
+
+    let coverScaleX = 1;
+    let coverScaleY = 1;
+    let lastPoint = null;
+    let layoutSnapshot = scene.getLayout();
+
+    const fillMask = () => {
+      if (!maskRenderTexture) return;
+      const g = new Graphics();
+      g.beginFill(0xffffff);
+      g.drawRect(0, 0, maskRenderTexture.width, maskRenderTexture.height);
+      g.endFill();
+      renderer.render(g, { renderTexture: maskRenderTexture, clear: true });
+      g.destroy(true);
+    };
+
+    const clearMask = () => {
+      if (!maskRenderTexture) return;
+      const g = new Graphics();
+      renderer.render(g, { renderTexture: maskRenderTexture, clear: true });
+      g.destroy(true);
+    };
+
+    const layout = (layoutInfo = scene.getLayout()) => {
+      layoutSnapshot = layoutInfo;
+      if (!layoutInfo || !layoutInfo.contentSize) {
+        return;
+      }
+      const size = Math.max(1, Math.floor(layoutInfo.contentSize));
+      maskRenderTexture?.destroy(true);
+      maskRenderTexture = RenderTexture.create({ width: size, height: size });
+      maskSprite.texture = maskRenderTexture;
+      maskSprite.width = size;
+      maskSprite.height = size;
+      maskSprite.position.set(0, 0);
+      coverSprite.width = size;
+      coverSprite.height = size;
+      coverSprite.position.set(0, 0);
+      coverScaleX =
+        size /
+        (coverSprite.texture?.orig?.width ||
+          coverSprite.texture?.width ||
+          size);
+      coverScaleY =
+        size /
+        (coverSprite.texture?.orig?.height ||
+          coverSprite.texture?.height ||
+          size);
+      fillMask();
+    };
+
+    const applyScratch = (point) => {
+      if (!maskRenderTexture) return null;
+      const target = maskTextures.length
+        ? maskTextures[Math.floor(Math.random() * maskTextures.length)]
+        : null;
+
+      const sprite = target ? new Sprite(target) : null;
+      if (!sprite) return null;
+      sprite.anchor.set(0.5);
+      sprite.position.set(
+        point.x + maskRenderTexture.width / 2,
+        point.y + maskRenderTexture.height / 2
+      );
+      sprite.scale.set(coverScaleX, coverScaleY);
+      sprite.blendMode = BLEND_MODES.ERASE;
+      renderer.render(sprite, { renderTexture: maskRenderTexture, clear: false });
+      const radius =
+        (Math.max(
+          sprite.texture?.orig?.width ?? sprite.texture?.width ?? 0,
+          sprite.texture?.orig?.height ?? sprite.texture?.height ?? 0
+        ) /
+          2) * Math.max(coverScaleX, coverScaleY);
+      sprite.destroy(true);
+      return radius;
+    };
+
+    const handlePointerMove = (event) => {
+      if (!layoutSnapshot) return;
+      const local = layer.toLocal(event.global);
+      const halfSize = Math.max(1, layoutSnapshot.contentSize / 2);
+      if (Math.abs(local.x) > halfSize || Math.abs(local.y) > halfSize) {
+        lastPoint = null;
+        return;
+      }
+
+      if (lastPoint) {
+        const distance = Math.hypot(local.x - lastPoint.x, local.y - lastPoint.y);
+        if (distance < scratchRevealStep) {
+          return;
+        }
+      }
+
+      lastPoint = local;
+      const radius = applyScratch(local);
+      if (radius != null) {
+        handleScratchReveal({
+          position: local,
+          radius: Math.max(radius, scratchRevealStep),
+        });
+      }
+    };
+
+    layer.on("pointermove", handlePointerMove);
+    layer.on("pointerout", () => {
+      lastPoint = null;
+    });
+
+    layout();
+
+    return {
+      container: layer,
+      layout,
+      reset: fillMask,
+      revealAll: clearMask,
+      destroy: () => {
+        layer.off("pointermove", handlePointerMove);
+        layer.removeFromParent();
+        maskRenderTexture?.destroy(true);
+      },
+    };
+  }
+
+  function getCardCenter(card, layout = scene.getLayout()) {
+    if (!card || !layout) return null;
+    const startX = -layout.contentSize / 2;
+    const startY = -layout.contentSize / 2;
+    const offset = layout.tileSize + layout.gap;
+    return {
+      x: startX + card.col * offset + layout.tileSize / 2,
+      y: startY + card.row * offset + layout.tileSize / 2,
+    };
+  }
+
+  function handleScratchReveal({ position, radius }) {
+    if (!scratchModeEnabled) return;
+    const layout = scene.getLayout();
+    const threshold = Math.max(radius ?? 0, layout?.tileSize ? layout.tileSize * 0.2 : 0);
+    for (const card of scene.cards) {
+      if (!card || card.revealed || card._animating) continue;
+      const center = getCardCenter(card, layout);
+      if (!center) continue;
+      const distance = Math.hypot(center.x - position.x, center.y - position.y);
+      if (distance <= threshold) {
+        const key = `${card.row},${card.col}`;
+        const assigned = currentAssignments.get(key) ?? null;
+        const outcome = rules.revealResult({
+          row: card.row,
+          col: card.col,
+          result: assigned,
+        });
+        revealCard(card, outcome.face, { revealedByPlayer: true, forceFullIconSize: true });
+      }
+    }
+    notifyStateChange();
+  }
+
+  function syncScratchPreviews() {
+    if (!scratchModeEnabled) return;
+    for (const [key, card] of cardsByKey.entries()) {
+      const assignedKey = currentAssignments.get(key) ?? null;
+      const content = assignedKey != null ? contentLibrary[assignedKey] : null;
+      if (content) {
+        card.showPreviewContent({
+          content,
+          iconSizePercentage,
+          iconRevealedSizeFactor: 1,
+        });
+      } else {
+        card.hidePreviewContent();
+      }
+    }
+  }
+
   function notifyStateChange() {
     onChange(rules.getState());
   }
@@ -769,7 +1037,7 @@ export async function createGame(mount, opts = {}) {
       revealedByPlayer,
       iconSizePercentage,
       iconRevealedSizeFactor: iconRevealFactor,
-      flipDuration,
+      flipDuration: cardFlipDuration,
       flipEaseFunction,
       onComplete: (instance, payload) => {
         currentRoundOutcome.pendingReveals = Math.max(
@@ -959,6 +1227,7 @@ export async function createGame(mount, opts = {}) {
 
   function revealRemainingTiles({ exclude = [] } = {}) {
     currentRoundOutcome.autoRevealTriggered = true;
+    scratchCoverController?.revealAll?.();
     const excludedCards = new Set(
       Array.isArray(exclude) ? exclude.filter(Boolean) : []
     );
@@ -1054,17 +1323,25 @@ export async function createGame(mount, opts = {}) {
   }
 
   scene.buildGrid({
-    interactionFactory: () => ({
-      onPointerOver: handlePointerOver,
-      onPointerOut: handlePointerOut,
-      onPointerDown: handlePointerDown,
-      onPointerUp: handlePointerUp,
-      onPointerUpOutside: handlePointerUp,
-      onPointerTap: handleCardTap,
-    }),
+    interactionFactory: scratchModeEnabled
+      ? () => ({})
+      : () => ({
+          onPointerOver: handlePointerOver,
+          onPointerOut: handlePointerOut,
+          onPointerDown: handlePointerDown,
+          onPointerUp: handlePointerUp,
+          onPointerUpOutside: handlePointerUp,
+          onPointerTap: handleCardTap,
+        }),
   });
 
   registerCards();
+  if (scratchModeEnabled) {
+    scratchCoverController ??= createScratchCover();
+    scratchCoverController?.layout?.(scene.getLayout());
+    scratchCoverController?.reset?.();
+    syncScratchPreviews();
+  }
   soundManager.play("gameStart");
 
   function reset() {
@@ -1075,16 +1352,24 @@ export async function createGame(mount, opts = {}) {
     scene.hideWinPopup();
     scene.clearGrid();
     scene.buildGrid({
-      interactionFactory: () => ({
-        onPointerOver: handlePointerOver,
-        onPointerOut: handlePointerOut,
-        onPointerDown: handlePointerDown,
-        onPointerUp: handlePointerUp,
-        onPointerUpOutside: handlePointerUp,
-        onPointerTap: handleCardTap,
-      }),
+      interactionFactory: scratchModeEnabled
+        ? () => ({})
+        : () => ({
+            onPointerOver: handlePointerOver,
+            onPointerOut: handlePointerOut,
+            onPointerDown: handlePointerDown,
+            onPointerUp: handlePointerUp,
+            onPointerUpOutside: handlePointerUp,
+            onPointerTap: handleCardTap,
+          }),
     });
     registerCards();
+    if (scratchModeEnabled) {
+      scratchCoverController ??= createScratchCover();
+      scratchCoverController?.layout?.(scene.getLayout());
+      scratchCoverController?.reset?.();
+      syncScratchPreviews();
+    }
     notifyStateChange();
   }
 
@@ -1105,6 +1390,10 @@ export async function createGame(mount, opts = {}) {
     rules.setAssignments(currentAssignments);
     for (const [key, card] of cardsByKey.entries()) {
       card._assignedContent = currentAssignments.get(key) ?? null;
+    }
+    if (scratchModeEnabled) {
+      syncScratchPreviews();
+      scratchCoverController?.reset?.();
     }
     notifyStateChange();
   }
@@ -1173,6 +1462,8 @@ export async function createGame(mount, opts = {}) {
 
   function destroy() {
     scene.destroy();
+    scratchCoverController?.destroy?.();
+    scratchCoverController = null;
     cardsByKey.clear();
     resetRoundOutcome();
   }
