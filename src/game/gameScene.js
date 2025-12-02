@@ -60,6 +60,8 @@ export class GameScene {
     this.board = null;
     this.boardShadows = null;
     this.boardContent = null;
+    this.overlay = null;
+    this.overlayCover = null;
     this.ui = null;
     this.winPopup = null;
     this.backgroundSprite = null;
@@ -94,6 +96,8 @@ export class GameScene {
     this.boardShadows = new Container();
     this.boardShadows.eventMode = "none";
     this.boardContent = new Container();
+    this.overlay = null;
+    this.overlayCover = null;
     this.board.addChild(this.boardShadows, this.boardContent);
     this.ui = new Container();
     this.app.stage.addChild(this.board, this.ui);
@@ -162,8 +166,8 @@ export class GameScene {
     if (!this.cards.length) return;
 
     const { tileSize, gap, contentSize, boardCenterX, boardCenterY } = layout;
-    const startX = -contentSize / 2;
-    const startY = -contentSize / 2;
+    const startX = layout?.startX ?? -contentSize / 2;
+    const startY = layout?.startY ?? -contentSize / 2;
 
     for (const card of this.cards) {
       const scale = tileSize / card._tileSize;
@@ -178,6 +182,7 @@ export class GameScene {
       boardCenterY ?? (this.app?.renderer?.height ?? 0) / 2;
 
     this.board.position.set(centerX, centerY);
+    this.#layoutScratchOverlay(layout);
     this._lastLayout = layout;
   }
 
@@ -345,7 +350,18 @@ export class GameScene {
     const boardCenterX = horizontal + availableWidth / 2;
     const boardCenterY = vertical + availableHeight / 2;
 
-    return { tileSize, gap, contentSize, boardCenterX, boardCenterY };
+    const startX = -contentSize / 2;
+    const startY = -contentSize / 2;
+
+    return {
+      tileSize,
+      gap,
+      contentSize,
+      boardCenterX,
+      boardCenterY,
+      startX,
+      startY,
+    };
   }
 
   #positionWinPopup() {
@@ -483,6 +499,41 @@ export class GameScene {
     container.addChild(border, inner, multiplierText, amountRow);
 
     return { container, multiplierText, amountText, layoutAmountRow };
+  }
+
+  setScratchOverlay(container, { coverSprite } = {}) {
+    if (this.overlay && this.overlay !== container) {
+      this.board.removeChild(this.overlay);
+    }
+    this.overlay = container ?? null;
+    this.overlayCover = coverSprite ?? null;
+    if (this.overlay) {
+      this.board.addChild(this.overlay);
+      this.overlay.eventMode = this.overlay.eventMode ?? "static";
+    }
+    this.#layoutScratchOverlay();
+  }
+
+  #layoutScratchOverlay(layout = this._lastLayout ?? this.#layoutSizes()) {
+    if (!this.overlay) return;
+    const { contentSize, startX, startY } = layout ?? {};
+    if (!(contentSize > 0)) return;
+
+    this.overlay.position.set(startX ?? -contentSize / 2, startY ?? -contentSize / 2);
+
+    if (this.overlayCover) {
+      this.overlayCover.width = contentSize;
+      this.overlayCover.height = contentSize;
+      this.overlayCover.position.set(0, 0);
+    }
+  }
+
+  getLayoutInfo() {
+    if (this._lastLayout) {
+      return this._lastLayout;
+    }
+    this._lastLayout = this.#layoutSizes();
+    return this._lastLayout;
   }
 }
 

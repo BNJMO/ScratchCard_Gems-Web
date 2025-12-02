@@ -1,4 +1,4 @@
-import { Assets } from "pixi.js";
+import { Assets, Container, Filter, Graphics, RenderTexture, Sprite } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
 import { loadCardTypeAnimations } from "./spritesheetProvider.js";
@@ -14,6 +14,7 @@ import winFrameSpriteUrl from "../../assets/sprites/winFrame.svg";
 import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
 import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
 import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
+import scratchCoverSpriteUrl from "../../assets/sprites/scratchCover.png";
 
 const optionalBackgroundSpriteModules = import.meta.glob(
   "../../assets/sprites/game_background.svg",
@@ -38,6 +39,26 @@ const CARD_TYPE_TEXTURE_MODULES = import.meta.glob(
   "../../assets/sprites/cardTypes/static/cardType_*.svg",
   { eager: true }
 );
+
+const SCRATCH_MASK_MODULES = import.meta.glob(
+  "../../assets/sprites/scratchMasks/scratchMask_*.png",
+  { eager: true }
+);
+
+const SCRATCH_FRAGMENT_SHADER = `
+precision mediump float;
+varying vec2 vTextureCoord;
+uniform sampler2D uSampler;
+uniform sampler2D uMask;
+
+void main(void) {
+    vec4 color = texture2D(uSampler, vTextureCoord);
+    float maskAlpha = texture2D(uMask, vTextureCoord).a;
+    gl_FragColor = vec4(color.rgb, color.a * maskAlpha);
+}
+`;
+
+const DEFAULT_SCRATCH_MOVE_THRESHOLD = 5;
 
 const DEFAULT_PALETTE = {
   appBg: 0x091b26,
@@ -64,6 +85,8 @@ const DEFAULT_PALETTE = {
 };
 
 const WIN_FACE_COLOR = 0x061217;
+
+const SCRATCH_BLEND_MODE = "destination-out";
 
 const SOUND_ALIASES = {
   tileHover: "mines.tileHover",
@@ -141,10 +164,11 @@ function getCardTypeTextureEntries() {
       if (!texturePath) {
         return null;
       }
-      const match = path.match(/cardType_(\d+)/i);
+      const pathString = typeof path === "string" ? path : "";
+      const match = /cardType_(\d+)/i.exec(pathString);
       const order = match ? Number.parseInt(match[1], 10) : Number.NaN;
       return {
-        path,
+        path: pathString,
         texturePath,
         order: Number.isFinite(order) ? order : Number.POSITIVE_INFINITY,
         key: match ? `cardType_${match[1]}` : null,
@@ -157,6 +181,37 @@ function getCardTypeTextureEntries() {
       }
       return a.path.localeCompare(b.path);
     });
+}
+
+function getScratchMaskEntries() {
+  return Object.entries(SCRATCH_MASK_MODULES)
+    .map(([path, mod]) => {
+      const pathString = typeof path === "string" ? path : "";
+      if (!pathString) {
+        return null;
+      }
+      const texturePath = typeof mod === "string" ? mod : mod?.default ?? null;
+      if (!texturePath) {
+        return null;
+      }
+      const match = /scratchMask_(\d+)/i.exec(pathString);
+      const order = match ? Number.parseInt(match[1], 10) : Number.POSITIVE_INFINITY;
+      return { texturePath, order };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.order - b.order);
+}
+
+async function loadScratchMaskTextures() {
+  const entries = getScratchMaskEntries();
+  const textures = [];
+  for (const entry of entries) {
+    const texture = await loadTexture(entry.texturePath);
+    if (texture) {
+      textures.push(texture);
+    }
+  }
+  return textures;
 }
 
 async function loadCardTypeTextures({ svgResolution } = {}) {
@@ -320,7 +375,7 @@ function isAutoModeActive(getMode) {
 }
 
 export async function createGame(mount, opts = {}) {
-  const GRID = 3;
+  const GRID = Math.max(1, Math.floor(opts.grid ?? 3));
   const fontFamily =
     opts.fontFamily ?? "Inter, system-ui, -apple-system, Segoe UI, Arial";
   const initialSize = Math.max(1, opts.size ?? 400);
@@ -328,6 +383,10 @@ export async function createGame(mount, opts = {}) {
   const onChange = opts.onChange ?? (() => {});
   const getMode =
     typeof opts.getMode === "function" ? () => opts.getMode() : () => "manual";
+  const gameMode = opts.gameMode === "scratch" ? "scratch" : "cardFlip";
+  const scratchMoveThreshold = Number.isFinite(opts.scratchMoveThreshold)
+    ? opts.scratchMoveThreshold
+    : DEFAULT_SCRATCH_MOVE_THRESHOLD;
   const palette = {
     ...DEFAULT_PALETTE,
     ...(opts.palette ?? {}),
@@ -530,6 +589,7 @@ export async function createGame(mount, opts = {}) {
     tileDefaultTexture,
     tileHoverTexture,
     tileFlippedTexture,
+    scratchCoverTexture,
   ] = await Promise.all([
     loadTexture(gameBackgroundSpriteUrl, {svgResolution: svgRasterizationResolution,}),
     loadTexture(sparkSpriteUrl),
@@ -543,7 +603,10 @@ export async function createGame(mount, opts = {}) {
     loadTexture(tileFlippedSpriteUrl, {
       svgResolution: svgRasterizationResolution,
     }),
+    loadTexture(scratchCoverSpriteUrl),
   ]);
+
+  const scratchMaskTextures = await loadScratchMaskTextures();
 
   const scene = new GameScene({
     root,
@@ -585,6 +648,213 @@ export async function createGame(mount, opts = {}) {
   });
 
   await scene.init();
+
+  const scratchState = {
+    enabled: gameMode === "scratch",
+    overlayContainer: null,
+    coverSprite: null,
+    maskSprite: null,
+    maskRenderTexture: null,
+    filter: null,
+    lastPoint: null,
+    interactionEnabled: false,
+    revealedByScratch: new Set(),
+  };
+
+  function setupScratchOverlay() {
+    if (!scratchState.enabled || scratchState.overlayContainer || !scratchCoverTexture) {
+      return;
+    }
+    const container = new Container();
+    container.eventMode = "static";
+    container.cursor = "pointer";
+
+    const coverSprite = new Sprite(scratchCoverTexture);
+    coverSprite.anchor.set(0);
+    coverSprite.position.set(0, 0);
+    coverSprite.eventMode = "static";
+
+    const maskSprite = new Sprite();
+    maskSprite.anchor.set(0);
+    maskSprite.position.set(0, 0);
+    maskSprite.visible = false;
+
+    container.addChild(coverSprite);
+    container.addChild(maskSprite);
+    container.on("pointermove", handleScratchMove);
+    container.on("pointerout", () => {
+      scratchState.lastPoint = null;
+    });
+    scratchState.overlayContainer = container;
+    scratchState.coverSprite = coverSprite;
+    scratchState.maskSprite = maskSprite;
+    scene.setScratchOverlay(container, { coverSprite });
+  }
+
+  function ensureScratchMask(layout) {
+    if (!scratchState.enabled || !scratchState.coverSprite || !scratchState.maskSprite)
+      return null;
+    const renderer = scene.app?.renderer;
+    const contentSize = layout?.contentSize ?? scratchState.coverSprite.width ?? 0;
+    if (!renderer || !(contentSize > 0)) return null;
+
+    const needsRebuild =
+      !scratchState.maskRenderTexture ||
+      scratchState.maskRenderTexture.width !== contentSize ||
+      scratchState.maskRenderTexture.height !== contentSize;
+
+    if (needsRebuild) {
+      scratchState.maskRenderTexture?.destroy(true);
+      scratchState.maskRenderTexture = RenderTexture.create({
+        width: contentSize,
+        height: contentSize,
+        resolution: renderer.resolution || 1,
+      });
+      scratchState.maskSprite.texture = scratchState.maskRenderTexture;
+      scratchState.maskSprite.width = contentSize;
+      scratchState.maskSprite.height = contentSize;
+      scratchState.filter = new Filter({
+        fragment: SCRATCH_FRAGMENT_SHADER,
+        resources: {
+          uMask: {
+            texture: scratchState.maskRenderTexture,
+          },
+        },
+      });
+      scratchState.coverSprite.filters = [scratchState.filter];
+      scratchState.coverSprite.mask = null;
+    }
+
+    const clearGraphic = new Graphics();
+    clearGraphic.beginFill(0xffffff);
+    clearGraphic.drawRect(0, 0, contentSize, contentSize);
+    clearGraphic.endFill();
+    renderer.render(clearGraphic, {
+      renderTexture: scratchState.maskRenderTexture,
+      clear: true,
+    });
+    clearGraphic.destroy();
+
+    return scratchState.maskRenderTexture;
+  }
+
+  function deactivateScratchOverlay() {
+    scratchState.interactionEnabled = false;
+    scratchState.lastPoint = null;
+    scratchState.revealedByScratch.clear();
+    if (scratchState.coverSprite) {
+      scratchState.coverSprite.cursor = "default";
+    }
+  }
+
+  function resetScratchCover() {
+    if (!scratchState.enabled) return;
+    setupScratchOverlay();
+    const layout = scene.getLayoutInfo();
+    ensureScratchMask(layout);
+    scratchState.revealedByScratch.clear();
+    scratchState.lastPoint = null;
+    scratchState.interactionEnabled = !isAutoModeActive(getMode);
+    if (scratchState.coverSprite) {
+      scratchState.coverSprite.visible = true;
+      scratchState.coverSprite.cursor = "pointer";
+    }
+    if (scratchState.overlayContainer) {
+      scratchState.overlayContainer.eventMode = "static";
+    }
+  }
+
+  function hideScratchCover() {
+    if (!scratchState.enabled) return;
+    scratchState.interactionEnabled = false;
+    if (scratchState.coverSprite) {
+      scratchState.coverSprite.visible = false;
+    }
+  }
+
+  function getCardCenterInOverlay(card) {
+    const layout = scene.getLayoutInfo();
+    const tileSize = layout?.tileSize ?? 0;
+    const gap = layout?.gap ?? 0;
+    return {
+      x: card.col * (tileSize + gap) + tileSize / 2,
+      y: card.row * (tileSize + gap) + tileSize / 2,
+    };
+  }
+
+  function revealScratchedCards(localX, localY, maskTexture) {
+    if (!scratchState.enabled || rules.gameOver) return;
+    const effectiveThreshold = Math.max(
+      scratchMoveThreshold,
+      Math.min(maskTexture?.width ?? 0, maskTexture?.height ?? 0) * 0.25
+    );
+
+    for (const card of scene.cards) {
+      if (!card || card.revealed || card._animating) continue;
+      if (isAutoModeActive(getMode)) continue;
+      const center = getCardCenterInOverlay(card);
+      const dx = center.x - localX;
+      const dy = center.y - localY;
+      const distance = Math.hypot(dx, dy);
+      if (distance > effectiveThreshold) continue;
+      const key = `${card.row},${card.col}`;
+      if (scratchState.revealedByScratch.has(key)) continue;
+      const contentKey = currentAssignments.get(key) ?? card._assignedContent;
+      const outcome = rules.revealResult({
+        row: card.row,
+        col: card.col,
+        result: contentKey,
+      });
+      revealCard(card, outcome.face, {
+        revealedByPlayer: true,
+        forceFullIconSize: true,
+      });
+      scratchState.revealedByScratch.add(key);
+      notifyStateChange();
+    }
+  }
+
+  function handleScratchMove(event) {
+    if (!scratchState.enabled || !scratchState.interactionEnabled) return;
+    if (!scratchState.coverSprite || !scratchState.maskRenderTexture) return;
+    if (rules.gameOver) return;
+    const { global } = event;
+    const local = scratchState.overlayContainer.toLocal(global);
+    if (local.x < 0 || local.y < 0) return;
+    if (
+      local.x > scratchState.coverSprite.width ||
+      local.y > scratchState.coverSprite.height
+    ) {
+      return;
+    }
+
+    const last = scratchState.lastPoint;
+    if (last) {
+      const delta = Math.hypot(local.x - last.x, local.y - last.y);
+      if (delta < scratchMoveThreshold) {
+        return;
+      }
+    }
+
+    scratchState.lastPoint = { x: local.x, y: local.y };
+    if (!scratchMaskTextures.length) return;
+
+    const maskTexture =
+      scratchMaskTextures[Math.floor(Math.random() * scratchMaskTextures.length)];
+
+    const sprite = new Sprite(maskTexture);
+    sprite.anchor.set(0.5);
+    sprite.position.set(local.x, local.y);
+    sprite.blendMode = SCRATCH_BLEND_MODE;
+    const renderer = scene.app?.renderer;
+    renderer?.render(sprite, {
+      renderTexture: scratchState.maskRenderTexture,
+      clear: false,
+    });
+    sprite.destroy();
+
+    revealScratchedCards(local.x, local.y, maskTexture);
+  }
 
   const rules = new GameRules({ gridSize: GRID });
 
@@ -684,6 +954,10 @@ export async function createGame(mount, opts = {}) {
     currentRoundOutcome.winningAnimationsStarted = false;
     cancelPendingAutoReveals();
     resetManualMatchTracking();
+    if (scratchState.enabled) {
+      scratchState.revealedByScratch.clear();
+      scratchState.lastPoint = null;
+    }
     for (const card of scene.cards) {
       card?.hideWinFrame?.();
       card?.stopIconAnimation?.({ resetToFirstFrame: true });
@@ -769,7 +1043,7 @@ export async function createGame(mount, opts = {}) {
       revealedByPlayer,
       iconSizePercentage,
       iconRevealedSizeFactor: iconRevealFactor,
-      flipDuration,
+      flipDuration: scratchState.enabled ? 0 : flipDuration,
       flipEaseFunction,
       onComplete: (instance, payload) => {
         currentRoundOutcome.pendingReveals = Math.max(
@@ -863,6 +1137,10 @@ export async function createGame(mount, opts = {}) {
     }
 
     const state = rules.getState();
+
+    if (scratchState.enabled && state.gameOver) {
+      hideScratchCover();
+    }
 
     const autoModeActive = isAutoModeActive(getMode);
     if (autoModeActive) {
@@ -959,6 +1237,10 @@ export async function createGame(mount, opts = {}) {
 
   function revealRemainingTiles({ exclude = [] } = {}) {
     currentRoundOutcome.autoRevealTriggered = true;
+    if (scratchState.enabled) {
+      hideScratchCover();
+      deactivateScratchOverlay();
+    }
     const excludedCards = new Set(
       Array.isArray(exclude) ? exclude.filter(Boolean) : []
     );
@@ -1072,6 +1354,8 @@ export async function createGame(mount, opts = {}) {
     currentAssignments.clear();
     resetRoundOutcome();
     rules.setAssignments(currentAssignments);
+    deactivateScratchOverlay();
+    hideScratchCover();
     scene.hideWinPopup();
     scene.clearGrid();
     scene.buildGrid({
@@ -1105,6 +1389,18 @@ export async function createGame(mount, opts = {}) {
     rules.setAssignments(currentAssignments);
     for (const [key, card] of cardsByKey.entries()) {
       card._assignedContent = currentAssignments.get(key) ?? null;
+    }
+    if (scratchState.enabled) {
+      resetScratchCover();
+      for (const [key, card] of cardsByKey.entries()) {
+        const content = contentLibrary[card._assignedContent] ?? null;
+        if (content) {
+          card.showIconPreview(content, {
+            iconRevealedSizeFactor: 1,
+            forceVisible: true,
+          });
+        }
+      }
     }
     notifyStateChange();
   }
