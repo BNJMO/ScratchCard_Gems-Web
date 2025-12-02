@@ -706,9 +706,8 @@ export async function createGame(mount, opts = {}) {
     clearGraphic.beginFill(0x000000);
     clearGraphic.drawRect(0, 0, contentSize, contentSize);
     clearGraphic.endFill();
-    renderer.render({
-      container: clearGraphic,
-      target: scratchState.maskRenderTexture,
+    renderer.render(clearGraphic, {
+      renderTexture: scratchState.maskRenderTexture,
       clear: true,
     });
     clearGraphic.destroy();
@@ -824,9 +823,8 @@ export async function createGame(mount, opts = {}) {
     sprite.anchor.set(0.5);
     sprite.position.set(local.x, local.y);
     const renderer = scene.app?.renderer;
-    renderer?.render({
-      container: sprite,
-      target: scratchState.maskRenderTexture,
+    renderer?.render(sprite, {
+      renderTexture: scratchState.maskRenderTexture,
       clear: false,
     });
     sprite.destroy();
