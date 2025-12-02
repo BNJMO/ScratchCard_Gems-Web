@@ -708,11 +708,16 @@ export async function createGame(mount, opts = {}) {
       scratchState.maskSprite.texture = scratchState.maskRenderTexture;
       scratchState.maskSprite.width = contentSize;
       scratchState.maskSprite.height = contentSize;
-      scratchState.filter = new Filter(null, SCRATCH_FRAGMENT_SHADER, {
-        uMask: scratchState.maskRenderTexture,
+      scratchState.filter = new Filter({
+        fragment: SCRATCH_FRAGMENT_SHADER,
+        resources: {
+          uMask: {
+            texture: scratchState.maskRenderTexture,
+          },
+        },
       });
       scratchState.coverSprite.filters = [scratchState.filter];
-      scratchState.coverSprite.mask = scratchState.maskSprite;
+      scratchState.coverSprite.mask = null;
     }
 
     const clearGraphic = new Graphics();
