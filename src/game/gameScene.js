@@ -60,6 +60,7 @@ export class GameScene {
     this.board = null;
     this.boardShadows = null;
     this.boardContent = null;
+    this.boardOverlay = null;
     this.ui = null;
     this.winPopup = null;
     this.backgroundSprite = null;
@@ -94,7 +95,8 @@ export class GameScene {
     this.boardShadows = new Container();
     this.boardShadows.eventMode = "none";
     this.boardContent = new Container();
-    this.board.addChild(this.boardShadows, this.boardContent);
+    this.boardOverlay = new Container();
+    this.board.addChild(this.boardShadows, this.boardContent, this.boardOverlay);
     this.ui = new Container();
     this.app.stage.addChild(this.board, this.ui);
 
@@ -236,8 +238,16 @@ export class GameScene {
     }
     this.boardShadows?.removeChildren();
     this.boardContent?.removeChildren();
+    this.boardOverlay?.removeChildren();
     this.cards = [];
     this._lastLayout = null;
+  }
+
+  getBoardLayout() {
+    if (this._lastLayout) {
+      return this._lastLayout;
+    }
+    return this.#layoutSizes();
   }
 
   setAnimationsEnabled(enabled) {

@@ -553,85 +553,18 @@ export class Card {
 
         if (!this._swapHandled && t >= 0.5) {
           this._swapHandled = true;
-          icon.stop?.();
-          icon.gotoAndStop?.(0);
-          icon.visible = true;
-          const iconSizeFactor = revealedByPlayer
-            ? 1.0
-            : iconRevealedSizeFactor ??
-              contentConfig.iconRevealedSizeFactor ??
-              this.iconOptions.revealedSizeFactor;
-          const baseSize =
-            iconSizePercentage ??
-            contentConfig.iconSizePercentage ??
-            this.iconOptions.sizePercentage;
-          const iconScaleMultiplier = this.iconOptions.scaleMultiplier ?? 1;
-          const maxDimension =
-            tileSize * baseSize * iconSizeFactor * iconScaleMultiplier;
-
-          if (contentConfig.texture) {
-            icon.texture = contentConfig.texture;
-          }
-
-          const iconContext = {
-            card: this,
+          this.#applyIconTexture(contentConfig, {
             revealedByPlayer,
+            iconSizePercentage,
+            iconRevealedSizeFactor,
             shouldPlayAnimation: shouldPlayIconAnimation,
-            startFromFirstFrame: true,
-            animationHandled: false,
-          };
+          });
 
-          contentConfig.configureIcon?.(icon, iconContext);
-
-          const referenceTexture = contentConfig.texture ?? icon.texture ?? null;
-          this.#applyIconSizing(icon, maxDimension, referenceTexture);
-
-          if (!iconContext.animationHandled && Array.isArray(icon.textures)) {
-            icon.gotoAndStop?.(0);
-            if (
-              shouldPlayIconAnimation &&
-              icon.textures.length > 1 &&
-              typeof icon.play === "function"
-            ) {
-              icon.play();
-            } else {
-              icon.stop?.();
-            }
-          }
-
-          const facePalette = this.#resolveRevealColor({
-            paletteSet: contentConfig.palette?.face,
+          this.#applyRevealPalette({
+            contentConfig,
             revealedByPlayer,
             useSelectionTint,
-            fallbackRevealed:
-              contentConfig.fallbackPalette?.face?.revealed ??
-              palette.cardFace ??
-              this.palette.cardFace ??
-              this.palette.defaultTint,
-            fallbackUnrevealed:
-              contentConfig.fallbackPalette?.face?.unrevealed ??
-              palette.cardFaceUnrevealed ??
-              this.palette.cardFaceUnrevealed ??
-              this.palette.defaultTint,
           });
-          this.flipFace(facePalette);
-
-          const insetPalette = this.#resolveRevealColor({
-            paletteSet: contentConfig.palette?.inset,
-            revealedByPlayer,
-            useSelectionTint: false,
-            fallbackRevealed:
-              contentConfig.fallbackPalette?.inset?.revealed ??
-              palette.cardInset ??
-              this.palette.cardInset ??
-              this.palette.defaultTint,
-            fallbackUnrevealed:
-              contentConfig.fallbackPalette?.inset?.unrevealed ??
-              palette.cardInsetUnrevealed ??
-              this.palette.cardInsetUnrevealed ??
-              this.palette.defaultTint,
-          });
-          this.flipInset(insetPalette);
 
           if (revealedByPlayer) {
             contentConfig.playSound?.({ card: this, revealedByPlayer });
@@ -748,6 +681,91 @@ export class Card {
     return this.animationOptions.hoverTiltAxis === "y"
       ? this._wrap.skew.y
       : this._wrap.skew.x;
+  }
+
+  revealInstant({
+    content,
+    useSelectionTint = false,
+    revealedByPlayer = false,
+    iconSizePercentage,
+    iconRevealedSizeFactor,
+    onComplete,
+  }) {
+    if (!this._wrap || this.revealed) {
+      return false;
+    }
+
+    this.#cancelSpawnAnimation();
+    this.stopHover();
+    this.stopWiggle();
+
+    if (this.container) {
+      this.container.eventMode = "none";
+      this.container.cursor = "default";
+    }
+
+    const contentConfig = content ?? {};
+    const contentKey =
+      contentConfig.key ?? contentConfig.face ?? contentConfig.type ?? null;
+    const shouldPlayIconAnimation = false;
+
+    this._iconContentConfig = contentConfig;
+    this._iconLastRevealContext = { revealedByPlayer };
+
+    this.#applyIconTexture(contentConfig, {
+      revealedByPlayer,
+      iconSizePercentage,
+      iconRevealedSizeFactor,
+      shouldPlayAnimation: shouldPlayIconAnimation,
+    });
+
+    this.#applyRevealPalette({
+      contentConfig,
+      revealedByPlayer,
+      useSelectionTint,
+    });
+
+    if (revealedByPlayer) {
+      contentConfig.playSound?.({ card: this, revealedByPlayer });
+    }
+
+    contentConfig.onReveal?.({ card: this, revealedByPlayer });
+
+    this.revealed = true;
+    this._swapHandled = false;
+    this.#updateTileTexture();
+
+    const completionPayload = {
+      content: contentConfig,
+      key: contentKey,
+      revealedByPlayer,
+    };
+    if (contentKey != null && completionPayload.face == null) {
+      completionPayload.face = contentKey;
+    }
+    onComplete?.(this, completionPayload);
+    return true;
+  }
+
+  showContentPreview(content, {
+    iconSizePercentage,
+    iconRevealedSizeFactor,
+  } = {}) {
+    const contentConfig = content ?? {};
+    this._iconContentConfig = contentConfig;
+    this._iconLastRevealContext = { revealedByPlayer: false };
+    this.#applyIconTexture(contentConfig, {
+      revealedByPlayer: false,
+      iconSizePercentage,
+      iconRevealedSizeFactor,
+      shouldPlayAnimation: false,
+    });
+    const icon = this._icon;
+    if (icon) {
+      icon.visible = true;
+    }
+    this._tileState = this.revealed ? "flipped" : this._tileState;
+    this.#updateTileTexture();
   }
 
   destroy() {
@@ -928,6 +946,112 @@ export class Card {
     }
 
     return null;
+  }
+
+  #applyIconTexture(
+    contentConfig,
+    {
+      revealedByPlayer,
+      iconSizePercentage,
+      iconRevealedSizeFactor,
+      shouldPlayAnimation,
+      startFromFirstFrame = true,
+    }
+  ) {
+    const icon = this._icon;
+    if (!icon || this.destroyed) {
+      return;
+    }
+
+    icon.stop?.();
+    if (startFromFirstFrame) {
+      icon.gotoAndStop?.(0);
+      if (typeof icon._currentTime === "number") {
+        icon._currentTime = 0;
+      }
+    }
+
+    icon.visible = true;
+    const iconSizeFactor = revealedByPlayer
+      ? 1.0
+      : iconRevealedSizeFactor ??
+        contentConfig.iconRevealedSizeFactor ??
+        this.iconOptions.revealedSizeFactor;
+    const baseSize =
+      iconSizePercentage ??
+      contentConfig.iconSizePercentage ??
+      this.iconOptions.sizePercentage;
+    const iconScaleMultiplier = this.iconOptions.scaleMultiplier ?? 1;
+    const maxDimension =
+      this._tileSize * baseSize * iconSizeFactor * iconScaleMultiplier;
+
+    if (contentConfig.texture) {
+      icon.texture = contentConfig.texture;
+    }
+
+    const iconContext = {
+      card: this,
+      revealedByPlayer,
+      shouldPlayAnimation,
+      startFromFirstFrame,
+      animationHandled: false,
+    };
+
+    contentConfig.configureIcon?.(icon, iconContext);
+
+    const referenceTexture = contentConfig.texture ?? icon.texture ?? null;
+    this.#applyIconSizing(icon, maxDimension, referenceTexture);
+
+    if (!iconContext.animationHandled && Array.isArray(icon.textures)) {
+      icon.gotoAndStop?.(0);
+      if (
+        shouldPlayAnimation &&
+        icon.textures.length > 1 &&
+        typeof icon.play === "function"
+      ) {
+        icon.play();
+      } else {
+        icon.stop?.();
+      }
+    }
+  }
+
+  #applyRevealPalette({ contentConfig, revealedByPlayer, useSelectionTint }) {
+    const palette = this.palette;
+
+    const facePalette = this.#resolveRevealColor({
+      paletteSet: contentConfig.palette?.face,
+      revealedByPlayer,
+      useSelectionTint,
+      fallbackRevealed:
+        contentConfig.fallbackPalette?.face?.revealed ??
+        palette.cardFace ??
+        this.palette.cardFace ??
+        this.palette.defaultTint,
+      fallbackUnrevealed:
+        contentConfig.fallbackPalette?.face?.unrevealed ??
+        palette.cardFaceUnrevealed ??
+        this.palette.cardFaceUnrevealed ??
+        this.palette.defaultTint,
+    });
+    this.flipFace(facePalette);
+
+    const insetPalette = this.#resolveRevealColor({
+      paletteSet: contentConfig.palette?.inset,
+      revealedByPlayer,
+      useSelectionTint: false,
+      fallbackRevealed:
+        contentConfig.fallbackPalette?.inset?.revealed ??
+        palette.cardInset ??
+        this.palette.cardInset ??
+        this.palette.defaultTint,
+      fallbackUnrevealed:
+        contentConfig.fallbackPalette?.inset?.unrevealed ??
+        palette.cardInsetUnrevealed ??
+        this.palette.cardInsetUnrevealed ??
+        this.palette.defaultTint,
+    });
+    this.flipInset(insetPalette);
   }
 
   startMatchShake({

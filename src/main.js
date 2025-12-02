@@ -44,6 +44,8 @@ const cardSpritesheetAnimationSpeed = Number.isFinite(
   : 0.14;
 const cardMatchShake =
   typeof CARD_CONFIG.matchShake === "boolean" ? CARD_CONFIG.matchShake : true;
+const GAME_MODE =
+  GAMEPLAY_CONFIG.gameMode === "scratch" ? "scratch" : "cardFlip";
 const hoverEnabled =
   typeof HOVER_CONFIG.enabled === "boolean" ? HOVER_CONFIG.enabled : true;
 const hoverEnterDuration = Number.isFinite(HOVER_CONFIG.enterDuration)
@@ -594,8 +596,9 @@ function prepareForNewRoundState() {
     setControlPanelBetMode("bet");
     setControlPanelBetState(false);
   } else {
-    setControlPanelBetMode("scratch");
-    setControlPanelBetState(true);
+    const betMode = GAME_MODE === "scratch" ? "scratch" : "bet";
+    setControlPanelBetMode(betMode);
+    setControlPanelBetState(GAME_MODE === "scratch");
   }
   setControlPanelRandomState(!isAutoMode);
   setGameBoardInteractivity(!isAutoMode);
@@ -625,6 +628,9 @@ function finalizeRound() {
   setGameBoardInteractivity(false);
   minesSelectionLocked = false;
   setControlPanelMinesState(true);
+  if (GAME_MODE === "scratch") {
+    game?.setScratchInteractivity?.(false);
+  }
 
   if (autoRunActive) {
     setControlPanelBetState(false);
@@ -837,6 +843,10 @@ function handleBet(betResult = "lost") {
   performBet();
   game?.reset?.();
   prepareScratchRound(betResult);
+  if (GAME_MODE === "scratch") {
+    game?.resetScratchCover?.();
+    game?.setScratchInteractivity?.(true);
+  }
 }
 
 function handleGameStateChange(state) {
@@ -969,6 +979,8 @@ const opts = {
   flipDelayMax: 500,
   flipDuration: 300,
   flipEaseFunction: "easeInOutSine",
+  gameMode: GAME_MODE,
+  scratchRevealDistance: 5,
   cardIconType,
   cardIconScale,
   cardIconOffsetX,
