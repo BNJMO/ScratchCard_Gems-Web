@@ -17,6 +17,7 @@ export class GameScene {
     layoutOptions,
     animationOptions,
     onResize,
+    onLayout,
   }) {
     this.root = root;
     this.backgroundColor = backgroundColor;
@@ -52,6 +53,7 @@ export class GameScene {
       disableAnimations: animationOptions?.disableAnimations ?? false,
     };
     this.onResize = onResize;
+    this.onLayout = onLayout;
 
     this.cards = [];
     this.disableAnimations = this.animationOptions.disableAnimations;
@@ -179,6 +181,16 @@ export class GameScene {
 
     this.board.position.set(centerX, centerY);
     this._lastLayout = layout;
+    this.onLayout?.(layout);
+  }
+
+  getLayout() {
+    if (this._lastLayout) {
+      return this._lastLayout;
+    }
+    const layout = this.#layoutSizes();
+    this._lastLayout = layout;
+    return layout;
   }
 
   resize() {

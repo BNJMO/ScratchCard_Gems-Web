@@ -663,6 +663,111 @@ export class Card {
     return true;
   }
 
+  showPreviewContent({
+    content,
+    iconSizePercentage,
+    iconRevealedSizeFactor,
+  } = {}) {
+    if (!content || this.revealed) {
+      return;
+    }
+
+    const icon = this._icon;
+    if (!icon) {
+      return;
+    }
+
+    this._iconContentConfig = content;
+    this._iconLastRevealContext = { revealedByPlayer: false };
+
+    const tileSize = this._tileSize;
+    const baseSize =
+      iconSizePercentage ??
+      content.iconSizePercentage ??
+      this.iconOptions.sizePercentage;
+    const sizeFactor =
+      iconRevealedSizeFactor ??
+      content.iconRevealedSizeFactor ??
+      this.iconOptions.revealedSizeFactor;
+    const iconScaleMultiplier = this.iconOptions.scaleMultiplier ?? 1;
+    const maxDimension = tileSize * baseSize * sizeFactor * iconScaleMultiplier;
+
+    icon.anchor.set(0.5);
+    icon.position.set(
+      tileSize / 2 + this.iconOptions.offsetX,
+      tileSize / 2 + this.iconOptions.offsetY
+    );
+    icon.visible = true;
+
+    if (content.texture) {
+      icon.texture = content.texture;
+      icon.width = maxDimension;
+      icon.height = maxDimension;
+    }
+
+    const iconContext = {
+      card: this,
+      revealedByPlayer: false,
+      shouldPlayAnimation: false,
+      startFromFirstFrame: true,
+      animationHandled: false,
+    };
+    content.configureIcon?.(icon, iconContext);
+
+    const paletteSet = content.palette ?? {};
+
+    const fallbackFaceRevealed =
+      content.fallbackPalette?.face?.revealed ??
+      this.palette.cardFace ??
+      this.palette.defaultTint;
+    const fallbackFaceUnrevealed =
+      content.fallbackPalette?.face?.unrevealed ??
+      this.palette.cardFaceUnrevealed ??
+      this.palette.cardFace ??
+      this.palette.defaultTint;
+    this.flipFace(
+      paletteSet?.face?.revealed ??
+        paletteSet?.revealed ??
+        fallbackFaceRevealed,
+      paletteSet?.face?.unrevealed ??
+        paletteSet?.unrevealed ??
+        fallbackFaceUnrevealed
+    );
+
+    const fallbackInsetRevealed =
+      content.fallbackPalette?.inset?.revealed ??
+      this.palette.cardInset ??
+      this.palette.defaultTint;
+    const fallbackInsetUnrevealed =
+      content.fallbackPalette?.inset?.unrevealed ??
+      this.palette.cardInsetUnrevealed ??
+      this.palette.cardInset ??
+      this.palette.defaultTint;
+    this.flipInset(
+      paletteSet?.inset?.revealed ?? fallbackInsetRevealed,
+      paletteSet?.inset?.unrevealed ?? fallbackInsetUnrevealed
+    );
+
+    this._tileState = "flipped";
+    this.#updateTileTexture();
+    this.refreshTint();
+  }
+
+  hidePreviewContent() {
+    if (this.revealed) {
+      return;
+    }
+    this._icon?.stop?.();
+    if (this._icon) {
+      this._icon.visible = false;
+    }
+    this._iconContentConfig = null;
+    this._iconLastRevealContext = null;
+    this._tileState = "default";
+    this.#updateTileTexture();
+    this.refreshTint();
+  }
+
   flipFace(color) {
     const sprite = this._tileSprite;
     if (!sprite) return;
