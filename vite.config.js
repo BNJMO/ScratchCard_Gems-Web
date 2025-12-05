@@ -1,11 +1,8 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import config from './src/config.json' assert { type: 'json' };
+import buildConfig from './buildConfig.json' assert { type: 'json' };
 
-const basePath =
-  typeof config?.app?.vitePath === 'string' && config.app.vitePath.trim()
-    ? config.app.vitePath
-    : '/';
+const basePath = buildConfig?.vite?.vitePath ?? '/Mines-Demo/';
 
 export default defineConfig({
   base: basePath,
@@ -28,4 +25,3 @@ export default defineConfig({
     },
   },
 });
-

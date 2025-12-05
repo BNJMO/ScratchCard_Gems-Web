@@ -1,10 +1,11 @@
 {
   "app": {
     "vitePath": "/ScratchCard_Gems-Web/",
-    "gameName": "Flip Cards - Gems"
+    "gameName": "Flipping Gems"
   },
   "gameplay": {
     "gridSize": 3,
+    "gameMode": "flip",
     "hover": {
       "enabled": true,
       "enterDuration": 120,

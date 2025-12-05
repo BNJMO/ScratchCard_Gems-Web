@@ -75,16 +75,10 @@ body {
   }
 
   .app-container {
-    --app-container-vertical-padding: 48px;
     flex-direction: column;
     align-items: stretch;
     padding: 24px;
     gap: 24px;
-  }
-}
-
-@media (orientation: portrait) {
-  .app-container {
     --app-container-vertical-padding: 32px;
     padding: 16px;
     height: auto;
