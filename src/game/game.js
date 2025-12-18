@@ -14,6 +14,7 @@ import winFrameSpriteUrl from "../../assets/sprites/winFrame.svg";
 import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
 import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
 import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
+import scratchCoverSpriteUrl from "../../assets/sprites/scratchCover.png";
 
 const optionalBackgroundSpriteModules = import.meta.glob(
   "../../assets/sprites/game_background.svg",
@@ -530,6 +531,7 @@ export async function createGame(mount, opts = {}) {
     tileDefaultTexture,
     tileHoverTexture,
     tileFlippedTexture,
+    scratchCoverTexture,
   ] = await Promise.all([
     loadTexture(gameBackgroundSpriteUrl, {svgResolution: svgRasterizationResolution,}),
     loadTexture(sparkSpriteUrl),
@@ -543,6 +545,7 @@ export async function createGame(mount, opts = {}) {
     loadTexture(tileFlippedSpriteUrl, {
       svgResolution: svgRasterizationResolution,
     }),
+    loadTexture(scratchCoverSpriteUrl),
   ]);
 
   const scene = new GameScene({
@@ -571,6 +574,7 @@ export async function createGame(mount, opts = {}) {
         hover: tileHoverTexture,
         flipped: tileFlippedTexture,
       },
+      scratchCoverTexture,
       winPopupWidth: winPopupOptions.winPopupWidth,
       winPopupHeight: winPopupOptions.winPopupHeight,
     },

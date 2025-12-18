@@ -1,5 +1,6 @@
 import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
 import { Card } from "./card.js";
+import { CoverScratch } from "./coverScratch.js";
 
 const DEFAULT_FONT_FAMILY = "Inter, system-ui, -apple-system, Segoe UI, Arial";
 
@@ -67,6 +68,8 @@ export class GameScene {
     this._windowResizeListener = null;
     this._currentResolution = 1;
     this._lastLayout = null;
+    this.scratchCoverTexture = cardOptions?.scratchCoverTexture ?? null;
+    this.scratchCover = null;
   }
 
   async init() {
@@ -98,6 +101,15 @@ export class GameScene {
     this.ui = new Container();
     this.app.stage.addChild(this.board, this.ui);
 
+    if (this.scratchCoverTexture) {
+      this.scratchCover = new CoverScratch({
+        app: this.app,
+        texture: this.scratchCoverTexture,
+      });
+      this.scratchCover.init();
+      this.ui.addChild(this.scratchCover.displayObject);
+    }
+
     this.winPopup = this.#createWinPopup();
     this.ui.addChild(this.winPopup.container);
 
@@ -119,6 +131,8 @@ export class GameScene {
       card?.destroy?.();
     });
     this.cards = [];
+    this.scratchCover?.destroy();
+    this.scratchCover = null;
     this.app?.destroy(true);
     if (this.app?.canvas?.parentNode === this.root) {
       this.root.removeChild(this.app.canvas);
@@ -179,6 +193,7 @@ export class GameScene {
 
     this.board.position.set(centerX, centerY);
     this._lastLayout = layout;
+    this.scratchCover?.updateLayout(layout);
   }
 
   resize() {
@@ -201,6 +216,9 @@ export class GameScene {
     }
 
     this.#positionWinPopup();
+    if (this._lastLayout) {
+      this.scratchCover?.updateLayout(this._lastLayout);
+    }
     this.onResize?.(size);
   }
 
@@ -485,4 +503,3 @@ export class GameScene {
     return { container, multiplierText, amountText, layoutAmountRow };
   }
 }
-
