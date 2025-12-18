@@ -1,5 +1,6 @@
-import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
+import { Application, Container, Sprite } from "pixi.js";
 import { Card } from "./card.js";
+import { WinPopup } from "./winPopup.js";
 
 const DEFAULT_FONT_FAMILY = "Inter, system-ui, -apple-system, Segoe UI, Arial";
 
@@ -60,7 +61,6 @@ export class GameScene {
     this.board = null;
     this.boardShadows = null;
     this.boardContent = null;
-    this.ui = null;
     this.winPopup = null;
     this.backgroundSprite = null;
     this.resizeObserver = null;
@@ -95,14 +95,28 @@ export class GameScene {
     this.boardShadows.eventMode = "none";
     this.boardContent = new Container();
     this.board.addChild(this.boardShadows, this.boardContent);
-    this.ui = new Container();
-    this.app.stage.addChild(this.board, this.ui);
-
-    this.winPopup = this.#createWinPopup();
-    this.ui.addChild(this.winPopup.container);
+    this.app.stage.addChild(this.board);
 
     this.root.innerHTML = "";
     this.root.appendChild(this.app.canvas);
+
+    const accentColor = this.#colorToHex(
+      this.palette?.winPopupBorder,
+      "#EAFF00"
+    );
+    const backgroundColor = this.#colorToHex(
+      this.palette?.winPopupBackground,
+      "#0B1E29"
+    );
+
+    this.winPopup = new WinPopup({
+      parent: this.root,
+      fontFamily: this.fontFamily,
+      accentColor,
+      backgroundColor,
+      width: this.cardOptions.winPopupWidth,
+      height: this.cardOptions.winPopupHeight,
+    });
 
     this.#setupRootSizing();
     this.#setupWindowResizeListener();
@@ -123,6 +137,7 @@ export class GameScene {
     if (this.app?.canvas?.parentNode === this.root) {
       this.root.removeChild(this.app.canvas);
     }
+    this.winPopup?.destroy?.();
   }
 
   buildGrid({ interactionFactory }) {
@@ -200,8 +215,18 @@ export class GameScene {
       this.layoutCards();
     }
 
-    this.#positionWinPopup();
     this.onResize?.(size);
+  }
+
+  #colorToHex(value, fallback = "#000000") {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      const hex = value.toString(16).padStart(6, "0");
+      return `#${hex}`;
+    }
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+    return fallback;
   }
 
   #layoutBackgroundSprite() {
@@ -248,21 +273,15 @@ export class GameScene {
   }
 
   hideWinPopup() {
-    if (!this.winPopup) return;
-    this.winPopup.container.visible = false;
-    this.winPopup.container.scale?.set?.(0, 0);
-    this.winPopup.container.alpha = 0;
+    this.winPopup?.hide?.();
   }
 
-  showWinPopup({ multiplier, amount }) {
-    if (!this.winPopup) return;
-    const { container, multiplierText, amountText, layoutAmountRow } = this.winPopup;
-    multiplierText.text = multiplier ?? "1.00×";
-    amountText.text = amount ?? "0.00";
-    layoutAmountRow();
-    container.visible = true;
-    container.alpha = 1;
-    container.scale?.set?.(1, 1);
+  showWinPopup({ amount } = {}) {
+    this.winPopup?.show?.({ amount });
+  }
+
+  setWinPopupAmount(amount) {
+    this.winPopup?.setAmount?.(amount);
   }
 
   #setupRootSizing() {
@@ -348,16 +367,6 @@ export class GameScene {
     return { tileSize, gap, contentSize, boardCenterX, boardCenterY };
   }
 
-  #positionWinPopup() {
-    if (!this.winPopup) return;
-    const layout = this._lastLayout;
-    const fallbackWidth = this.app?.renderer?.width ?? 0;
-    const fallbackHeight = this.app?.renderer?.height ?? 0;
-    const centerX = layout?.boardCenterX ?? fallbackWidth / 2;
-    const centerY = layout?.boardCenterY ?? fallbackHeight / 2;
-    this.winPopup.container.position.set(centerX, centerY);
-  }
-
   #getGridPadding() {
     if (!this.app?.renderer) {
       return { horizontal: 0, vertical: 0 };
@@ -428,61 +437,4 @@ export class GameScene {
 
     return false;
   }
-
-  #createWinPopup() {
-    const width = this.cardOptions.winPopupWidth ?? 240;
-    const height = this.cardOptions.winPopupHeight ?? 170;
-
-    const container = new Container();
-    container.visible = false;
-    container.scale.set(0);
-    container.eventMode = "none";
-    container.zIndex = 1000;
-
-    const border = new Graphics();
-    border
-      .roundRect(-width / 2 - 10, -height / 2 - 10, width + 20, height + 20, 32)
-      .fill(this.palette.winPopupBorder);
-
-    const inner = new Graphics();
-    inner
-      .roundRect(-width / 2, -height / 2, width, height, 28)
-      .fill(this.palette.winPopupBackground);
-
-    const multiplierText = new Text({
-      text: "1.00×",
-      style: {
-        fill: this.palette.winPopupMultiplierText,
-        fontFamily: this.fontFamily,
-        fontSize: 36,
-        fontWeight: "700",
-        align: "center",
-      },
-    });
-    multiplierText.anchor.set(0.5);
-    multiplierText.position.set(0, -height / 2 + height * 0.28);
-
-    const amountRow = new Container();
-    const amountText = new Text({
-      text: "0.00",
-      style: {
-        fill: 0xffffff,
-        fontFamily: this.fontFamily,
-        fontSize: 24,
-        fontWeight: "600",
-        align: "center",
-      },
-    });
-    amountText.anchor.set(0.5);
-    amountRow.addChild(amountText);
-
-    const layoutAmountRow = () => {
-      amountRow.position.set(0, height / 2 - height * 0.25);
-    };
-
-    container.addChild(border, inner, multiplierText, amountRow);
-
-    return { container, multiplierText, amountText, layoutAmountRow };
-  }
 }
-

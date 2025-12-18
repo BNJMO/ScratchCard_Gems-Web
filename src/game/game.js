@@ -608,6 +608,7 @@ export async function createGame(mount, opts = {}) {
   const manualMatchTracker = new Map();
   const manualShakingCards = new Set();
   const scheduledAutoRevealTimers = new Set();
+  let winPopupAmountValue = 0;
 
   function clearScheduledAutoReveal(card) {
     if (!card) return;
@@ -688,6 +689,13 @@ export async function createGame(mount, opts = {}) {
       card?.hideWinFrame?.();
       card?.stopIconAnimation?.({ resetToFirstFrame: true });
     }
+  }
+
+  function setWinPopupAmount(value) {
+    const numeric = Number(value);
+    const normalized = Number.isFinite(numeric) ? Math.max(0, numeric) : 0;
+    winPopupAmountValue = normalized;
+    scene.setWinPopupAmount?.(normalized);
   }
 
   function applyRoundOutcomeMeta(meta = {}, assignments = []) {
@@ -949,6 +957,10 @@ export async function createGame(mount, opts = {}) {
         }
       }
 
+      if (currentRoundOutcome.betResult === "win") {
+        scene.showWinPopup?.({ amount: winPopupAmountValue });
+      }
+
       currentRoundOutcome.winningCards.clear();
 
       if (currentRoundOutcome.soundKey) {
@@ -1200,6 +1212,7 @@ export async function createGame(mount, opts = {}) {
     getAutoResetDelay: () => autoResetDelayMs,
     setAnimationsEnabled,
     setRoundAssignments,
+    setWinPopupAmount,
     getCardContentKeys: getAvailableContentKeys,
   };
 }

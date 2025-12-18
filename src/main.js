@@ -148,6 +148,8 @@ function setTotalProfitAmountValue(value) {
   const normalized = normalizeTotalProfitAmount(value);
   totalProfitAmountDisplayValue = normalized;
   controlPanel?.setProfitValue?.(normalized);
+  const numeric = coerceNumericValue(normalized);
+  game?.setWinPopupAmount?.(numeric != null ? numeric : 0);
 }
 
 function sendRelayMessage(type, payload = {}) {
