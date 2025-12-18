@@ -1099,6 +1099,7 @@ export async function createGame(mount, opts = {}) {
       }),
     });
     coverScratch?.syncWithLayout();
+    coverScratch?.reset();
     registerCards();
     notifyStateChange();
   }

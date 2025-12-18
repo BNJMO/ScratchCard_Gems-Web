@@ -1,8 +1,11 @@
-import { BlurFilter, Graphics, Rectangle, SCALE_MODES, Sprite } from "pixi.js";
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-}
+import {
+  BLEND_MODES,
+  BlurFilter,
+  Graphics,
+  Rectangle,
+  RenderTexture,
+  Sprite,
+} from "pixi.js";
 
 export class CoverScratch {
   constructor({ scene, radius, blurSize, padding = 16 } = {}) {
@@ -11,7 +14,9 @@ export class CoverScratch {
     this.blurSizeOption = blurSize;
     this.padding = Math.max(0, Number(padding) || 0);
 
-    this.focusSprite = null;
+    this.coverSprite = null;
+    this.coverTexture = null;
+    this.brush = null;
     this.coverBounds = new Rectangle();
     this._currentRadius = null;
     this._currentBlur = null;
@@ -23,8 +28,8 @@ export class CoverScratch {
     const app = this.scene?.app;
     if (!app || !this.scene?.board) return;
 
-    if (!this.focusSprite) {
-      this.#rebuildFocus();
+    if (!this.brush) {
+      this.#rebuildBrush();
     }
 
     if (!this._initialized) {
@@ -34,20 +39,19 @@ export class CoverScratch {
       this._initialized = true;
     }
 
-    this.#applyMask();
     this.syncWithLayout();
   }
 
   syncWithLayout() {
     const layout = this.scene?.getBoardLayout?.();
     const app = this.scene?.app;
-    if (!layout || !app || !this.scene?.board || !this.focusSprite) return;
+    if (!layout || !app || !this.scene?.board) return;
 
     const contentSize = layout.contentSize ?? 0;
     const half = contentSize / 2;
 
-    this.coverBounds.x = (layout.boardCenterX ?? 0) - half - this.padding;
-    this.coverBounds.y = (layout.boardCenterY ?? 0) - half - this.padding;
+    this.coverBounds.x = -half - this.padding;
+    this.coverBounds.y = -half - this.padding;
     this.coverBounds.width = contentSize + this.padding * 2;
     this.coverBounds.height = contentSize + this.padding * 2;
 
@@ -55,14 +59,15 @@ export class CoverScratch {
     const targetBlur = this.blurSizeOption ?? Math.max(8, Math.floor(targetRadius * 0.25));
 
     if (targetRadius !== this._currentRadius || targetBlur !== this._currentBlur) {
-      this.#rebuildFocus(targetRadius, targetBlur);
+      this.#rebuildBrush(targetRadius, targetBlur);
     }
 
-    app.stage.hitArea = app.screen;
+    const sizeChanged = this.#ensureCoverTexture();
+    this.#positionCoverSprite();
 
-    const centerX = layout.boardCenterX ?? app.screen.width / 2;
-    const centerY = layout.boardCenterY ?? app.screen.height / 2;
-    this.#positionFocus(centerX, centerY);
+    if (sizeChanged) {
+      this.reset();
+    }
   }
 
   destroy() {
@@ -71,92 +76,121 @@ export class CoverScratch {
       app.stage.off("pointermove", this._pointerMoveHandler);
     }
 
-    if (this.scene?.board && this.scene.board.mask === this.focusSprite) {
-      this.scene.board.mask = null;
+    if (this.coverSprite?.parent) {
+      this.coverSprite.parent.removeChild(this.coverSprite);
     }
 
-    if (this.focusSprite?.parent) {
-      this.focusSprite.parent.removeChild(this.focusSprite);
-    }
-
-    this.focusSprite?.destroy({ texture: true, baseTexture: true });
-    this.focusSprite = null;
+    this.coverSprite?.destroy({ texture: false, baseTexture: false });
+    this.coverTexture?.destroy(true);
+    this.brush?.destroy();
+    this.coverSprite = null;
+    this.coverTexture = null;
+    this.brush = null;
     this._initialized = false;
   }
 
-  #applyMask() {
-    if (!this.scene?.board || !this.focusSprite) return;
-    this.scene.board.mask = this.focusSprite;
+  reset() {
+    this.#fillCover();
   }
 
-  #rebuildFocus(radius = 96, blurSize = 24) {
+  #ensureCoverTexture() {
     const app = this.scene?.app;
-    if (!app) return;
+    if (!app) return false;
 
-    if (this.focusSprite) {
-      if (this.scene?.board?.mask === this.focusSprite) {
-        this.scene.board.mask = null;
-      }
+    const width = Math.max(1, Math.ceil(this.coverBounds.width));
+    const height = Math.max(1, Math.ceil(this.coverBounds.height));
 
-      if (this.focusSprite.parent) {
-        this.focusSprite.parent.removeChild(this.focusSprite);
-      }
+    const needsNewTexture =
+      !this.coverTexture ||
+      this.coverTexture.width !== width ||
+      this.coverTexture.height !== height;
 
-      this.focusSprite.destroy({ texture: true, baseTexture: true });
-      this.focusSprite = null;
+    if (!needsNewTexture) {
+      return false;
     }
 
-    const circle = new Graphics()
-      .circle(radius + blurSize, radius + blurSize, radius)
-      .fill({ color: 0xeaff00 });
-
-    circle.filters = [new BlurFilter(blurSize)];
-
-    const bounds = new Rectangle(
-      0,
-      0,
-      (radius + blurSize) * 2,
-      (radius + blurSize) * 2
-    );
-
-    const texture = app.renderer.generateTexture({
-      target: circle,
-      style: { scaleMode: SCALE_MODES.NEAREST },
-      resolution: 1,
-      frame: bounds,
+    this.coverTexture?.destroy(true);
+    this.coverTexture = RenderTexture.create({
+      width,
+      height,
+      resolution: app.renderer.resolution ?? 1,
     });
 
-    circle.destroy();
+    if (!this.coverSprite) {
+      this.coverSprite = new Sprite(this.coverTexture);
+      this.coverSprite.eventMode = "none";
+      this.coverSprite.renderable = true;
+      this.scene?.board?.addChild(this.coverSprite);
+    } else {
+      this.coverSprite.texture = this.coverTexture;
+    }
 
-    const focus = new Sprite(texture);
-    focus.eventMode = "none";
-    focus.renderable = true;
-
-    this.focusSprite = focus;
-    this._currentRadius = radius;
-    this._currentBlur = blurSize;
-
-    this.#applyMask();
-    app.stage.addChild(focus);
+    return true;
   }
 
-  #positionFocus(x, y) {
-    if (!this.focusSprite) return;
+  #positionCoverSprite() {
+    if (!this.coverSprite) return;
+    this.coverSprite.position.set(this.coverBounds.x, this.coverBounds.y);
+  }
 
-    const bounds = this.coverBounds;
-    if (!(bounds.width > 0 && bounds.height > 0)) return;
+  #rebuildBrush(radius = 96, blurSize = 24) {
+    this.brush?.destroy();
 
-    const clampedX = clamp(x, bounds.x, bounds.x + bounds.width);
-    const clampedY = clamp(y, bounds.y, bounds.y + bounds.height);
+    const brush = new Graphics()
+      .circle(0, 0, radius)
+      .fill({ color: 0xeaff00 });
 
-    this.focusSprite.position.set(
-      clampedX - this.focusSprite.width / 2,
-      clampedY - this.focusSprite.height / 2
-    );
+    brush.blendMode = BLEND_MODES.DST_OUT;
+    brush.filters = [new BlurFilter(blurSize)];
+
+    this.brush = brush;
+    this._currentRadius = radius;
+    this._currentBlur = blurSize;
+  }
+
+  #fillCover() {
+    const app = this.scene?.app;
+    if (!app || !this.coverTexture) return;
+
+    const filler = new Graphics()
+      .rect(0, 0, this.coverTexture.width, this.coverTexture.height)
+      .fill({ color: 0xeaff00 });
+
+    app.renderer.render(filler, {
+      renderTexture: this.coverTexture,
+      clear: true,
+    });
+
+    filler.destroy();
+  }
+
+  #scratch(globalX, globalY) {
+    if (!this.brush || !this.coverTexture || !this.scene?.board) return;
+
+    const localPoint = this.scene.board.toLocal({ x: globalX, y: globalY });
+
+    if (
+      localPoint.x < this.coverBounds.x ||
+      localPoint.x > this.coverBounds.x + this.coverBounds.width ||
+      localPoint.y < this.coverBounds.y ||
+      localPoint.y > this.coverBounds.y + this.coverBounds.height
+    ) {
+      return;
+    }
+
+    const localX = localPoint.x - this.coverBounds.x;
+    const localY = localPoint.y - this.coverBounds.y;
+
+    this.brush.position.set(localX, localY);
+
+    this.scene?.app?.renderer?.render(this.brush, {
+      renderTexture: this.coverTexture,
+      clear: false,
+    });
   }
 
   #handlePointerMove(event) {
     if (!event || !event.global) return;
-    this.#positionFocus(event.global.x, event.global.y);
+    this.#scratch(event.global.x, event.global.y);
   }
 }
