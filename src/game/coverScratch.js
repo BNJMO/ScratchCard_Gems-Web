@@ -1,12 +1,4 @@
-import {
-  BlurFilter,
-  Container,
-  Graphics,
-  MaskFilter,
-  Rectangle,
-  SCALE_MODES,
-  Sprite,
-} from "pixi.js";
+import { BlurFilter, Container, Graphics, Rectangle, SCALE_MODES, Sprite } from "pixi.js";
 
 export class CoverScratch {
   constructor({
@@ -32,7 +24,6 @@ export class CoverScratch {
 
     this.coverSprite = null;
     this.revealSprite = null;
-    this.maskFilter = null;
     this.hitArea = null;
   }
 
@@ -53,14 +44,8 @@ export class CoverScratch {
     this.revealSprite.eventMode = "none";
     this.revealSprite.renderable = false;
     this.revealSprite.zIndex = 2;
+    this.revealSprite.blendMode = "erase";
     this.container.addChild(this.revealSprite);
-
-    this.maskFilter = new MaskFilter({
-      sprite: this.revealSprite,
-      inverse: true,
-    });
-    this.maskFilter.enabled = false;
-    this.coverSprite.filters = [this.maskFilter];
 
     if (!this.app.stage.eventMode || this.app.stage.eventMode === "none") {
       this.app.stage.eventMode = "static";
@@ -135,14 +120,13 @@ export class CoverScratch {
   }
 
   #handlePointerMove = (event) => {
-    if (!this.hitArea || !this.revealSprite || !this.maskFilter) {
+    if (!this.hitArea || !this.revealSprite) {
       return;
     }
 
     const localPosition = this.container.toLocal(event.global);
     const inside = this.hitArea.contains(localPosition.x, localPosition.y);
 
-    this.maskFilter.enabled = inside;
     this.revealSprite.renderable = inside;
 
     if (!inside) {
@@ -153,9 +137,6 @@ export class CoverScratch {
   };
 
   #handlePointerLeave = () => {
-    if (this.maskFilter) {
-      this.maskFilter.enabled = false;
-    }
     if (this.revealSprite) {
       this.revealSprite.renderable = false;
     }
@@ -169,7 +150,6 @@ export class CoverScratch {
     }
 
     this.container?.destroy({ children: true });
-    this.maskFilter?.destroy();
     this.coverSprite = null;
     this.revealSprite = null;
     this.hitArea = null;
