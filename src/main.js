@@ -3,7 +3,7 @@ import { createGame } from "./game/game.js";
 import { ControlPanel } from "./controlPanel/controlPanel.js";
 import { ServerRelay } from "./serverRelay.js";
 import { createServerDummy } from "./serverDummy/serverDummy.js";
-import config from "./config.json";
+import localConfig from "./config.json";
 
 import tileTapDownSoundUrl from "../assets/sounds/TileTapDown.wav";
 import tileFlipSoundUrl from "../assets/sounds/TileFlip.wav";
@@ -21,7 +21,34 @@ console.info(`🚀 Build: ${buildId}`);
 console.info(`📅 Date: ${buildDate}`);
 console.info(`🌐 Environment: ${buildEnvironment}`);
 
-const CONFIG = config ?? {};
+async function loadRuntimeConfig() {
+  const fallback = localConfig ?? {};
+  const configPath = `${import.meta.env.BASE_URL ?? "/"}config.json`;
+  const configUrl = new URL(configPath, window.location.origin).toString();
+
+  try {
+    const response = await fetch(configUrl, { cache: "no-store" });
+
+    if (!response.ok) {
+      console.warn(
+        `[CONFIG] Failed to load runtime config from ${configUrl}. Using bundled defaults.`
+      );
+      return fallback;
+    }
+
+    const runtimeConfig = await response.json();
+    return runtimeConfig ?? fallback;
+  } catch (error) {
+    console.warn(
+      `[CONFIG] Error while loading runtime config from ${configUrl}. Using bundled defaults.`,
+      error
+    );
+    return fallback;
+  }
+}
+
+async function startApp(config) {
+  const CONFIG = config ?? {};
 const APP_CONFIG = CONFIG.app ?? {};
 const GAMEPLAY_CONFIG = CONFIG.gameplay ?? {};
 const HOVER_CONFIG = GAMEPLAY_CONFIG.hover ?? {};
@@ -999,7 +1026,6 @@ const opts = {
   onChange: handleGameStateChange,
 };
 
-(async () => {
   const totalTiles = opts.grid * opts.grid;
   const maxMines = Math.max(1, totalTiles - 1);
   const initialMines = Math.max(1, Math.min(opts.mines ?? 1, maxMines));
@@ -1169,4 +1195,14 @@ const opts = {
       `;
     }
   }
-})();
+}
+
+loadRuntimeConfig()
+  .then(startApp)
+  .catch((error) => {
+    console.error(
+      "[CONFIG] Falling back to bundled defaults after runtime load failed.",
+      error
+    );
+    startApp(localConfig ?? {});
+  });
