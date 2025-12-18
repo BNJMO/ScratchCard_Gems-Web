@@ -1,8 +1,8 @@
 import dollarIconUrl from "../../assets/sprites/dollarWinPopup.svg";
 
 const DEFAULT_OPTIONS = {
-  width: 280,
-  height: 112,
+  width: 310,
+  height: 106,
   maxWidth: 360,
   minWidth: 220,
   paddingX: 24,
