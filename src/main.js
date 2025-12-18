@@ -8,7 +8,6 @@ import localConfig from "./config.json";
 import tileTapDownSoundUrl from "../assets/sounds/TileTapDown.wav";
 import tileFlipSoundUrl from "../assets/sounds/TileFlip.wav";
 import tileHoverSoundUrl from "../assets/sounds/TileHover.wav";
-import gameStartSoundUrl from "../assets/sounds/GameStart.wav";
 import roundWinSoundUrl from "../assets/sounds/Win.wav";
 import roundLostSoundUrl from "../assets/sounds/Lost.wav";
 
@@ -1015,7 +1014,6 @@ const opts = {
   tileTapDownSoundPath: tileTapDownSoundUrl,
   tileFlipSoundPath: tileFlipSoundUrl,
   tileHoverSoundPath: tileHoverSoundUrl,
-  gameStartSoundPath: gameStartSoundUrl,
   roundWinSoundPath: roundWinSoundUrl,
   roundLostSoundPath: roundLostSoundUrl,
   winPopupShowDuration: 260,
