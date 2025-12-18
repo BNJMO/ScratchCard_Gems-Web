@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
+import { Application, Container, Graphics, Rectangle, Sprite, Text } from "pixi.js";
 import { Card } from "./card.js";
 
 const DEFAULT_FONT_FAMILY = "Inter, system-ui, -apple-system, Segoe UI, Arial";
@@ -348,6 +348,30 @@ export class GameScene {
     return { tileSize, gap, contentSize, boardCenterX, boardCenterY };
   }
 
+  getBoardLayout() {
+    const layout = this._lastLayout;
+    if (!layout) return null;
+
+    return {
+      ...layout,
+    };
+  }
+
+  getBoardBounds() {
+    const layout = this._lastLayout;
+    if (!layout) return null;
+
+    const contentSize = layout.contentSize ?? 0;
+    const half = contentSize / 2;
+
+    return new Rectangle(
+      (layout.boardCenterX ?? 0) - half,
+      (layout.boardCenterY ?? 0) - half,
+      contentSize,
+      contentSize
+    );
+  }
+
   #positionWinPopup() {
     if (!this.winPopup) return;
     const layout = this._lastLayout;
@@ -485,4 +509,3 @@ export class GameScene {
     return { container, multiplierText, amountText, layoutAmountRow };
   }
 }
-

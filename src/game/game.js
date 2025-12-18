@@ -2,6 +2,7 @@ import { Assets } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
 import { loadCardTypeAnimations } from "./spritesheetProvider.js";
+import { CoverScratch } from "./coverScratch.js";
 import tileTapDownSoundUrl from "../../assets/sounds/TileTapDown.wav";
 import tileFlipSoundUrl from "../../assets/sounds/TileFlip.wav";
 import tileHoverSoundUrl from "../../assets/sounds/TileHover.wav";
@@ -492,6 +493,8 @@ export async function createGame(mount, opts = {}) {
   const sound = await loadSoundLibrary();
   const soundManager = createSoundManager(sound, soundEffectPaths);
 
+  let coverScratch = null;
+
   const contentLibrary = {};
   await Promise.all(
     Object.entries(mergedContentDefinitions).map(async ([key, definition]) => {
@@ -581,6 +584,9 @@ export async function createGame(mount, opts = {}) {
       ...wiggleOptions,
       cardsSpawnDuration,
       disableAnimations,
+    },
+    onResize: () => {
+      coverScratch?.syncWithLayout();
     },
   });
 
@@ -1064,6 +1070,14 @@ export async function createGame(mount, opts = {}) {
     }),
   });
 
+  coverScratch = new CoverScratch({
+    scene,
+    radius: opts.coverRevealRadius,
+    blurSize: opts.coverRevealBlurSize,
+    padding: opts.coverRevealPadding,
+  });
+  coverScratch.init();
+
   registerCards();
   soundManager.play("gameStart");
 
@@ -1084,6 +1098,7 @@ export async function createGame(mount, opts = {}) {
         onPointerTap: handleCardTap,
       }),
     });
+    coverScratch?.syncWithLayout();
     registerCards();
     notifyStateChange();
   }
@@ -1172,6 +1187,8 @@ export async function createGame(mount, opts = {}) {
   }
 
   function destroy() {
+    coverScratch?.destroy();
+    coverScratch = null;
     scene.destroy();
     cardsByKey.clear();
     resetRoundOutcome();
