@@ -28,7 +28,7 @@ export class CoverScratch {
     }
 
     if (!this._initialized) {
-      app.stage.eventMode = app.stage.eventMode === "none" ? "static" : app.stage.eventMode ?? "static";
+      app.stage.eventMode = "static";
       app.stage.hitArea = app.screen;
       app.stage.on("pointermove", this._pointerMoveHandler);
       this._initialized = true;
@@ -108,7 +108,7 @@ export class CoverScratch {
 
     const circle = new Graphics()
       .circle(radius + blurSize, radius + blurSize, radius)
-      .fill({ color: 0xffffff });
+      .fill({ color: 0xeaff00 });
 
     circle.filters = [new BlurFilter(blurSize)];
 
