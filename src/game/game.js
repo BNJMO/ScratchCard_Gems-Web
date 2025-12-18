@@ -5,7 +5,6 @@ import { loadCardTypeAnimations } from "./spritesheetProvider.js";
 import tileTapDownSoundUrl from "../../assets/sounds/TileTapDown.wav";
 import tileFlipSoundUrl from "../../assets/sounds/TileFlip.wav";
 import tileHoverSoundUrl from "../../assets/sounds/TileHover.wav";
-import gameStartSoundUrl from "../../assets/sounds/GameStart.wav";
 import roundWinSoundUrl from "../../assets/sounds/Win.wav";
 import roundLostSoundUrl from "../../assets/sounds/Lost.wav";
 import twoMatchSoundUrl from "../../assets/sounds/2Match.wav";
@@ -69,7 +68,6 @@ const SOUND_ALIASES = {
   tileHover: "mines.tileHover",
   tileTapDown: "mines.tileTapDown",
   tileFlip: "mines.tileFlip",
-  gameStart: "mines.gameStart",
   roundWin: "mines.roundWin",
   roundLost: "mines.roundLost",
   twoMatch: "mines.twoMatch",
@@ -416,7 +414,6 @@ export async function createGame(mount, opts = {}) {
     tileTapDown: opts.tileTapDownSoundPath ?? tileTapDownSoundUrl,
     tileFlip: opts.tileFlipSoundPath ?? tileFlipSoundUrl,
     tileHover: opts.tileHoverSoundPath ?? tileHoverSoundUrl,
-    gameStart: opts.gameStartSoundPath ?? gameStartSoundUrl,
     roundWin: opts.roundWinSoundPath ?? roundWinSoundUrl,
     roundLost: opts.roundLostSoundPath ?? roundLostSoundUrl,
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
@@ -1065,7 +1062,6 @@ export async function createGame(mount, opts = {}) {
   });
 
   registerCards();
-  soundManager.play("gameStart");
 
   function reset() {
     rules.reset();
