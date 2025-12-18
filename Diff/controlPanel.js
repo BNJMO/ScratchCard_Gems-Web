@@ -54,8 +54,7 @@ export class ControlPanel extends EventTarget {
       minesLabel: options.minesLabel ?? "Mines",
       gemsLabel: options.gemsLabel ?? "Gems",
       animationsLabel: options.animationsLabel ?? "Animations",
-      showDummyServerLabel:
-        options.showDummyServerLabel ?? "Show Dummy Server",
+      showServerLabel: options.showServerLabel ?? "Show Server",
       initialAnimationsEnabled:
         options.initialAnimationsEnabled ?? true,
       initialMines: options.initialMines ?? 1,
@@ -74,10 +73,10 @@ export class ControlPanel extends EventTarget {
     this.betButtonState = "clickable";
     this.randomPickButtonState = "clickable";
     this.minesSelectState = "clickable";
-    this.autoStartButtonState = "non-clickable";
+    this.autoStartButtonState = "clickable";
     this.autoStartButtonMode = "start";
-    this.showDummyServerPanelVisible = false;
-    this.showDummyServerButtonLocked = false;
+    this.showServerPanelVisible = false;
+    this.showServerButtonLocked = false;
 
     this.totalProfitMultiplier = 1;
 
@@ -117,7 +116,7 @@ export class ControlPanel extends EventTarget {
     this.buildBetAmountDisplay();
     this.buildBetControls();
     this.buildModeSections();
-    // this.buildFooter();
+    this.buildFooter();
 
     this.setBetAmountDisplay(this.options.initialBetAmountDisplay);
     this.setProfitOnWinDisplay(this.options.initialProfitOnWinDisplay);
@@ -144,7 +143,14 @@ export class ControlPanel extends EventTarget {
     this.manualButton.type = "button";
     this.manualButton.className = "control-toggle-btn";
     this.manualButton.textContent = "Manual";
-    this.manualButton.addEventListener("click", () => this.setMode("manual"));
+    this.manualButton.addEventListener("click", () => {
+      const isAutoMode = this.mode === "auto";
+      const isAutoBetRunning = this.getAutoStartButtonMode?.() === "stop";
+      if (isAutoMode && isAutoBetRunning) {
+        this.dispatchEvent(new CustomEvent("stopautobet"));
+      }
+      this.setMode("manual");
+    });
 
     this.autoButton = document.createElement("button");
     this.autoButton.type = "button";
@@ -318,7 +324,6 @@ export class ControlPanel extends EventTarget {
     this.scrollContainer.appendChild(this.manualSection);
 
     this.buildBetButton();
-    this.buildRandomPickButton();
     this.buildProfitOnWinDisplay();
     this.buildProfitDisplay();
 
@@ -463,7 +468,11 @@ export class ControlPanel extends EventTarget {
       "control-bet-btn control-start-autobet-btn";
     this.autoStartButton.textContent = "Start Autobet";
     this.autoStartButton.addEventListener("click", () => {
-      this.dispatchEvent(new CustomEvent("startautobet"));
+      if (this.autoStartButtonMode === "stop") {
+        this.dispatchEvent(new CustomEvent("stopautobet"));
+      } else if (this.autoStartButtonMode === "start") {
+        this.dispatchEvent(new CustomEvent("startautobet"));
+      }
     });
 
     this.container.appendChild(this.autoStartButton);
@@ -829,19 +838,19 @@ export class ControlPanel extends EventTarget {
     );
     this.animationToggleWrapper.appendChild(this.animationToggleButton);
 
-    this.showDummyServerButton = document.createElement("button");
-    this.showDummyServerButton.type = "button";
-    this.showDummyServerButton.className = "control-show-dummy-server";
-    this.showDummyServerButton.textContent = this.options.showDummyServerLabel;
-    this.showDummyServerButton.addEventListener("click", () => {
-      if (this.showDummyServerButton.disabled) {
+    this.showServerButton = document.createElement("button");
+    this.showServerButton.type = "button";
+    this.showServerButton.className = "control-show-server";
+    this.showServerButton.textContent = this.options.showServerLabel;
+    this.showServerButton.addEventListener("click", () => {
+      if (this.showServerButton.disabled) {
         return;
       }
-      this.dispatchEvent(new CustomEvent("showdummyserver"));
+      this.dispatchEvent(new CustomEvent("showserver"));
     });
-    //this.footerActions.appendChild(this.showDummyServerButton);
+    //this.footerActions.appendChild(this.showServerButton);
 
-    this.updateShowDummyServerButtonState();
+    this.updateShowServerButtonState();
   }
 
   setMode(mode) {
@@ -890,30 +899,7 @@ export class ControlPanel extends EventTarget {
   }
 
   updateResponsiveLayout() {
-    if (!this.container || !this.scrollContainer) return;
-    const isPortrait = Boolean(this._layoutMediaQuery?.matches);
-    this.container.classList.toggle("is-portrait", isPortrait);
-
-    if (this.autoStartButton) {
-      if (isPortrait && this.scrollContainer) {
-        this.container.insertBefore(this.autoStartButton, this.scrollContainer);
-      } else {
-        const referenceNode = this.footer ?? null;
-        this.container.insertBefore(this.autoStartButton, referenceNode);
-      }
-    }
-
-    if (this.toggleWrapper) {
-      if (isPortrait) {
-        const referenceNode = this.footer ?? null;
-        this.container.insertBefore(this.toggleWrapper, referenceNode);
-      } else {
-      this.scrollContainer.insertBefore(
-        this.toggleWrapper,
-        this.scrollContainer.firstChild
-      );
-      }
-    }
+  
   }
 
   sanitizeNumberOfBets() {
@@ -1297,34 +1283,28 @@ export class ControlPanel extends EventTarget {
     );
   }
 
-  setDummyServerPanelVisibility(isVisible) {
-    this.showDummyServerPanelVisible = Boolean(isVisible);
-    this.updateShowDummyServerButtonState();
+  setServerPanelVisibility(isVisible) {
+    this.showServerPanelVisible = Boolean(isVisible);
+    this.updateShowServerButtonState();
   }
 
-  updateShowDummyServerButtonState() {
-    if (!this.showDummyServerButton) return;
-    const panelVisible = Boolean(this.showDummyServerPanelVisible);
-    const locked = Boolean(this.showDummyServerButtonLocked);
+  updateShowServerButtonState() {
+    if (!this.showServerButton) return;
+    const panelVisible = Boolean(this.showServerPanelVisible);
+    const locked = Boolean(this.showServerButtonLocked);
     const disabled = panelVisible || locked;
-    this.showDummyServerButton.disabled = disabled;
-    this.showDummyServerButton.classList.toggle("is-disabled", panelVisible);
-    this.showDummyServerButton.classList.toggle("is-non-clickable", locked);
-    this.showDummyServerButton.setAttribute("aria-disabled", String(disabled));
+    this.showServerButton.disabled = disabled;
+    this.showServerButton.classList.toggle("is-disabled", panelVisible);
+    this.showServerButton.classList.toggle("is-non-clickable", locked);
+    this.showServerButton.setAttribute("aria-disabled", String(disabled));
   }
 
   setBetButtonMode(mode) {
     if (!this.betButton) return;
-    const normalized =
-      mode === "cashout" ? "cashout" : mode === "scratch" ? "scratch" : "bet";
+    const normalized = mode === "cashout" ? "cashout" : "bet";
     this.betButtonMode = normalized;
-    let label = "Bet";
-    if (normalized === "cashout") {
-      label = "Cashout";
-    } else if (normalized === "scratch") {
-      label = "Scratch";
-    }
-    this.betButton.textContent = label;
+    this.betButton.textContent =
+      normalized === "cashout" ? "Cashout" : "Bet";
     this.betButton.dataset.mode = normalized;
   }
 
@@ -1402,13 +1382,14 @@ export class ControlPanel extends EventTarget {
     this.setBetButtonState(clickable ? "clickable" : "non-clickable");
     this.setRandomPickState(clickable ? "clickable" : "non-clickable");
     this.setAutoStartButtonState(clickable ? "clickable" : "non-clickable");
+    this.setMinesSelectState(clickable ? "clickable" : "non-clickable");
     this.setNumberOfBetsClickable(clickable);
     this.setAdvancedToggleClickable(clickable);
     this.setAdvancedStrategyControlsClickable(clickable);
     this.setStopOnProfitClickable(clickable);
     this.setStopOnLossClickable(clickable);
     this.setAnimationsToggleClickable(clickable);
-    this.setShowDummyServerButtonClickable(clickable);
+    this.setShowServerButtonClickable(clickable);
   }
 
   setModeToggleClickable(isClickable) {
@@ -1483,9 +1464,9 @@ export class ControlPanel extends EventTarget {
     }
   }
 
-  setShowDummyServerButtonClickable(isClickable) {
-    this.showDummyServerButtonLocked = !Boolean(isClickable);
-    this.updateShowDummyServerButtonState();
+  setShowServerButtonClickable(isClickable) {
+    this.showServerButtonLocked = !Boolean(isClickable);
+    this.updateShowServerButtonState();
   }
 
   setAdvancedToggleClickable(isClickable) {
@@ -1528,6 +1509,50 @@ export class ControlPanel extends EventTarget {
     if (this.autoStopOnLossField?.stepper?.setClickable) {
       this.autoStopOnLossField.stepper.setClickable(clickable);
     }
+  }
+
+  isAutoAdvancedEnabled() {
+    return Boolean(this.isAdvancedEnabled);
+  }
+
+  getOnWinMode() {
+    return this.onWinMode === "increase" ? "increase" : "reset";
+  }
+
+  getOnLossMode() {
+    return this.onLossMode === "increase" ? "increase" : "reset";
+  }
+
+  getOnWinIncreaseValue() {
+    return this.parseStrategyValue(this.onWinInput?.value);
+  }
+
+  getOnLossIncreaseValue() {
+    return this.parseStrategyValue(this.onLossInput?.value);
+  }
+
+  getStopOnProfitValue() {
+    if (!this.autoStopOnProfitField?.input) return 0;
+    const numeric = this.parseBetValue(this.autoStopOnProfitField.input.value);
+    return Number.isFinite(numeric) ? Math.max(0, numeric) : 0;
+  }
+
+  getStopOnLossValue() {
+    if (!this.autoStopOnLossField?.input) return 0;
+    const numeric = this.parseBetValue(this.autoStopOnLossField.input.value);
+    return Number.isFinite(numeric) ? Math.max(0, numeric) : 0;
+  }
+
+  parseStrategyValue(value) {
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? Math.max(0, value) : 0;
+    }
+    if (typeof value !== "string") {
+      return 0;
+    }
+    const sanitized = value.replace(/[^0-9.]/g, "");
+    const numeric = Number.parseFloat(sanitized);
+    return Number.isFinite(numeric) ? Math.max(0, numeric) : 0;
   }
 
   getMode() {

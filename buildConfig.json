@@ -1,9 +1,9 @@
 {
-  "buildId": "0.1.2",
-  "buildDate": "12/5/2025, 8:17:59 PM",
+  "buildId": "0.1.3",
+  "buildDate": "12/16/2025, 12:55:52 PM",
   "environment": "Production",
   "vite": {
-    "vitePath": "/_Games/mine_crash/clients/gems/",
+    "vitePath": "/ScratchCard_Gems-Web/",
     "localVitePath": "/ScratchCard_Gems-Web/",
     "exportVitePath": "/_Games/mine_crash/clients/gems/"
   }
