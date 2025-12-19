@@ -1,4 +1,5 @@
 import {
+  BLEND_MODES,
   BlurFilter,
   Graphics,
   Rectangle,
@@ -165,7 +166,7 @@ export class CoverScratch {
 
     const brush = new Sprite(texture);
     brush.anchor.set(0.5);
-    brush.blendMode = "erase";
+    brush.blendMode = BLEND_MODES.ERASE;
 
     this.brushTexture = texture;
     this.brush = brush;
