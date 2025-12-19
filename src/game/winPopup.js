@@ -66,6 +66,10 @@ export class WinPopup {
       fontFamily: fontFamily || DEFAULT_OPTIONS.fontFamily,
       ...rest,
     };
+    this.baseSize = {
+      width: DEFAULT_OPTIONS.width,
+      height: DEFAULT_OPTIONS.height,
+    };
     this.parent = parent ?? null;
     this.visible = false;
     this._hideTimer = null;
@@ -130,6 +134,14 @@ export class WinPopup {
     container.style.transition = `opacity ${animationDuration}ms ${easing}, transform ${animationDuration}ms ${easing}`;
     container.style.display = "none";
 
+    const content = document.createElement("div");
+    content.style.display = "flex";
+    content.style.flexDirection = "column";
+    content.style.alignItems = "center";
+    content.style.justifyContent = "center";
+    content.style.gap = `${gap}px`;
+    content.style.transformOrigin = "center";
+
     const title = document.createElement("div");
     title.textContent = "YOU WON";
     title.style.fontSize = `${titleFontSize}px`;
@@ -137,7 +149,6 @@ export class WinPopup {
     title.style.lineHeight = "1.2";
     title.style.letterSpacing = "0.2px";
     title.style.color = titleColor;
-    title.style.marginBottom = `${gap}px`;
 
     const amountRow = document.createElement("div");
     amountRow.style.display = "inline-flex";
@@ -161,12 +172,15 @@ export class WinPopup {
 
     amountRow.append(amountValue, icon);
 
-    container.append(title, amountRow);
+    content.append(title, amountRow);
+    container.append(content);
 
     this.amountNode = amountValue;
+    this.contentNode = content;
     this.container = container;
     this.scaleVisible = scaleVisible;
     this.scaleHidden = scaleHidden;
+    this.#updateContentScale();
 
     return container;
   }
@@ -198,6 +212,15 @@ export class WinPopup {
     this.container.style.height = `${nextHeight}px`;
     this.container.style.minWidth = `${nextWidth}px`;
     this.container.style.maxWidth = `${nextWidth}px`;
+    this.#updateContentScale();
+  }
+
+  #updateContentScale() {
+    if (!this.contentNode) return;
+    const widthScale = this.options.width / this.baseSize.width;
+    const heightScale = this.options.height / this.baseSize.height;
+    const scale = Math.min(widthScale, heightScale);
+    this.contentNode.style.transform = `scale(${scale})`;
   }
 
   show({ amount } = {}) {
