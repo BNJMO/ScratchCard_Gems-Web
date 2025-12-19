@@ -186,6 +186,20 @@ export class WinPopup {
     }
   }
 
+  setSize({ width, height } = {}) {
+    const nextWidth = Number.isFinite(width) ? width : this.options.width;
+    const nextHeight = Number.isFinite(height) ? height : this.options.height;
+    this.options.width = nextWidth;
+    this.options.height = nextHeight;
+    this.options.minWidth = nextWidth;
+    this.options.maxWidth = nextWidth;
+    if (!this.container) return;
+    this.container.style.width = `${nextWidth}px`;
+    this.container.style.height = `${nextHeight}px`;
+    this.container.style.minWidth = `${nextWidth}px`;
+    this.container.style.maxWidth = `${nextWidth}px`;
+  }
+
   show({ amount } = {}) {
     if (amount != null) {
       this.setAmount(amount);
