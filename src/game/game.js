@@ -2,6 +2,7 @@ import { Assets } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
 import { loadCardTypeAnimations } from "./spritesheetProvider.js";
+import { GridCover } from "./gridCover.js";
 import tileTapDownSoundUrl from "../../assets/sounds/TileTapDown.wav";
 import tileFlipSoundUrl from "../../assets/sounds/TileFlip.wav";
 import tileHoverSoundUrl from "../../assets/sounds/TileHover.wav";
@@ -542,6 +543,8 @@ export async function createGame(mount, opts = {}) {
     }),
   ]);
 
+  let gridCover = null;
+
   const scene = new GameScene({
     root,
     backgroundColor,
@@ -579,9 +582,33 @@ export async function createGame(mount, opts = {}) {
       cardsSpawnDuration,
       disableAnimations,
     },
+    onResize: () => {
+      syncGridCoverLayout();
+    },
   });
 
   await scene.init();
+
+  function ensureGridCover() {
+    if (!gridCover) {
+      gridCover = new GridCover({ parent: scene.boardContent });
+    } else if (gridCover.cover.parent !== scene.boardContent) {
+      scene.boardContent.addChild(gridCover.cover);
+    }
+    if (gridCover.mask.parent !== scene.boardContent) {
+      scene.boardContent.addChild(gridCover.mask);
+    }
+  }
+
+  function syncGridCoverLayout() {
+    if (!gridCover) return;
+    const layout = scene.getGridLayout?.();
+    if (!layout) return;
+    const { contentSize } = layout;
+    const startX = -contentSize / 2;
+    const startY = -contentSize / 2;
+    gridCover.setLayout({ x: startX, y: startY, size: contentSize });
+  }
 
   const rules = new GameRules({ gridSize: GRID });
 
@@ -1072,6 +1099,8 @@ export async function createGame(mount, opts = {}) {
       onPointerTap: handleCardTap,
     }),
   });
+  ensureGridCover();
+  syncGridCoverLayout();
 
   registerCards();
 
@@ -1092,6 +1121,8 @@ export async function createGame(mount, opts = {}) {
         onPointerTap: handleCardTap,
       }),
     });
+    ensureGridCover();
+    syncGridCoverLayout();
     registerCards();
     notifyStateChange();
   }

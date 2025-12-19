@@ -286,6 +286,10 @@ export class GameScene {
     this.winPopup?.setAmount?.(amount);
   }
 
+  getGridLayout() {
+    return this._lastLayout ?? this.#layoutSizes();
+  }
+
   #setupRootSizing() {
     if (!this.root) return;
     this.root.style.position = this.root.style.position || "relative";
