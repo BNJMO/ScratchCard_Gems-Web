@@ -149,8 +149,9 @@ export class CoverScratch {
       .rect(0, 0, this.coverTexture.width, this.coverTexture.height)
       .fill({ color: 0xeaff00 });
 
-    app.renderer.render(filler, {
-      renderTexture: this.coverTexture,
+    app.renderer.render({
+      container: filler,
+      target: this.coverTexture,
       clear: true,
     });
 
@@ -176,8 +177,9 @@ export class CoverScratch {
 
     this.brush.position.set(localX, localY);
 
-    this.scene?.app?.renderer?.render(this.brush, {
-      renderTexture: this.coverTexture,
+    this.scene?.app?.renderer?.render({
+      container: this.brush,
+      target: this.coverTexture,
       clear: false,
     });
   }
