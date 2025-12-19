@@ -1,11 +1,4 @@
-import {
-  BLEND_MODES,
-  BlurFilter,
-  Graphics,
-  Rectangle,
-  RenderTexture,
-  Sprite,
-} from "pixi.js";
+import { BlurFilter, Graphics, Rectangle, RenderTexture, Sprite } from "pixi.js";
 
 export class CoverScratch {
   constructor({ scene, radius, blurSize, padding = 16 } = {}) {
@@ -140,7 +133,7 @@ export class CoverScratch {
       .circle(0, 0, radius)
       .fill({ color: 0xeaff00 });
 
-    brush.blendMode = BLEND_MODES.DST_OUT;
+    brush.blendMode = "erase";
     brush.filters = [new BlurFilter(blurSize)];
 
     this.brush = brush;
