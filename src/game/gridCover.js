@@ -1,4 +1,4 @@
-import { BLEND_MODES, BlurFilter, Container, Graphics } from "pixi.js";
+import { BlurFilter, Container, Graphics } from "pixi.js";
 
 const DEFAULT_COLOR = 0xEAFF00;
 const DEFAULT_RADIUS = 100;
@@ -21,7 +21,7 @@ export function createGridCover({
   cover.cursor = "pointer";
 
   const eraser = new Graphics();
-  eraser.blendMode = BLEND_MODES.ERASE;
+  eraser.blendMode = "erase";
   eraser.filters = [new BlurFilter({ strength: blurSize })];
 
   coverContainer.addChild(cover, eraser);
