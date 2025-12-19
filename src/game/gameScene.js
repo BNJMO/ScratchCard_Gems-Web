@@ -213,8 +213,8 @@ export class GameScene {
       this.layoutCards();
     }
 
-    const winPopupWidth = size * 0.5;
-    const winPopupHeight = size * 0.18;
+    const winPopupWidth = size * 0.40;
+    const winPopupHeight = size * 0.15;
     this.winPopup?.setSize?.({ width: winPopupWidth, height: winPopupHeight });
 
     this.onResize?.(size);

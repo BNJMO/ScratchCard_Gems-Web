@@ -15,16 +15,17 @@ const DEFAULT_OPTIONS = {
   fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Arial",
   titleFontSize: 22,
   amountFontSize: 16,
-  gap: 8,
+  gap: 2,
   iconSize: 18,
   outlineWidth: 2,
   shadowBlur: 20,
   shadowSpread: 6,
   shadowOpacity: 0.78,
-  animationDuration: 1000,
+  animationDuration: 200,
   easing: "cubic-bezier(0.445, 0.05, 0.55, 0.95)", // easeInOutSine
   scaleHidden: 0.9,
   scaleVisible: 1,
+  contentScaleFactor: 1.4,
   zIndex: 10,
 };
 
@@ -106,6 +107,7 @@ export class WinPopup {
       easing,
       scaleHidden,
       scaleVisible,
+      contentScaleFactor,
       zIndex,
     } = this.options;
 
@@ -145,9 +147,9 @@ export class WinPopup {
     const title = document.createElement("div");
     title.textContent = "YOU WON";
     title.style.fontSize = `${titleFontSize}px`;
-    title.style.fontWeight = "800";
+    title.style.fontWeight = "600";
     title.style.lineHeight = "1.2";
-    title.style.letterSpacing = "0.2px";
+    title.style.letterSpacing = "0.0px";
     title.style.color = titleColor;
 
     const amountRow = document.createElement("div");
@@ -157,7 +159,7 @@ export class WinPopup {
     amountRow.style.gap = "8px";
     amountRow.style.color = amountColor;
     amountRow.style.fontSize = `${amountFontSize}px`;
-    amountRow.style.fontWeight = "700";
+    amountRow.style.fontWeight = "600";
 
     const amountValue = document.createElement("span");
     amountValue.textContent = formatCurrency(0);
@@ -219,7 +221,7 @@ export class WinPopup {
     if (!this.contentNode) return;
     const widthScale = this.options.width / this.baseSize.width;
     const heightScale = this.options.height / this.baseSize.height;
-    const scale = Math.min(widthScale, heightScale);
+    const scale = Math.min(widthScale, heightScale) * this.options.contentScaleFactor;
     this.contentNode.style.transform = `scale(${scale})`;
   }
 
