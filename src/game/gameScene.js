@@ -114,8 +114,6 @@ export class GameScene {
       fontFamily: this.fontFamily,
       accentColor,
       backgroundColor,
-      width: this.cardOptions.winPopupWidth,
-      height: this.cardOptions.winPopupHeight,
     });
 
     this.#setupRootSizing();

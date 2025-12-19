@@ -54,10 +54,17 @@ function colorWithOpacity(color, opacity = 1) {
 
 export class WinPopup {
   constructor({ parent, fontFamily, ...options } = {}) {
+    const {
+      width: _width,
+      height: _height,
+      maxWidth: _maxWidth,
+      minWidth: _minWidth,
+      ...rest
+    } = options;
     this.options = {
       ...DEFAULT_OPTIONS,
       fontFamily: fontFamily || DEFAULT_OPTIONS.fontFamily,
-      ...options,
+      ...rest,
     };
     this.parent = parent ?? null;
     this.visible = false;
