@@ -1,4 +1,10 @@
-import { BlurFilter, Graphics, Rectangle, RenderTexture, Sprite } from "pixi.js";
+import {
+  BlurFilter,
+  Graphics,
+  Rectangle,
+  RenderTexture,
+  Sprite,
+} from "pixi.js";
 
 export class CoverScratch {
   constructor({ scene, radius, blurSize, padding = 16 } = {}) {
@@ -10,6 +16,7 @@ export class CoverScratch {
     this.coverSprite = null;
     this.coverTexture = null;
     this.brush = null;
+    this.brushTexture = null;
     this.coverBounds = new Rectangle();
     this._currentRadius = null;
     this._currentBlur = null;
@@ -75,10 +82,12 @@ export class CoverScratch {
 
     this.coverSprite?.destroy({ texture: false, baseTexture: false });
     this.coverTexture?.destroy(true);
-    this.brush?.destroy();
+    this.brush?.destroy({ texture: false, baseTexture: false });
+    this.brushTexture?.destroy(true);
     this.coverSprite = null;
     this.coverTexture = null;
     this.brush = null;
+    this.brushTexture = null;
     this._initialized = false;
   }
 
@@ -127,15 +136,38 @@ export class CoverScratch {
   }
 
   #rebuildBrush(radius = 96, blurSize = 24) {
-    this.brush?.destroy();
+    const app = this.scene?.app;
+    if (!app) return;
 
-    const brush = new Graphics()
-      .circle(0, 0, radius)
-      .fill({ color: 0xeaff00 });
+    this.brush?.destroy({ texture: false, baseTexture: false });
+    this.brushTexture?.destroy(true);
 
+    const circle = new Graphics()
+      .circle(radius + blurSize, radius + blurSize, radius)
+      .fill({ color: 0xffffff });
+
+    circle.filters = [new BlurFilter(blurSize)];
+
+    const bounds = new Rectangle(
+      0,
+      0,
+      (radius + blurSize) * 2,
+      (radius + blurSize) * 2
+    );
+
+    const texture = app.renderer.generateTexture({
+      target: circle,
+      frame: bounds,
+      resolution: 1,
+    });
+
+    circle.destroy();
+
+    const brush = new Sprite(texture);
+    brush.anchor.set(0.5);
     brush.blendMode = "erase";
-    brush.filters = [new BlurFilter(blurSize)];
 
+    this.brushTexture = texture;
     this.brush = brush;
     this._currentRadius = radius;
     this._currentBlur = blurSize;
