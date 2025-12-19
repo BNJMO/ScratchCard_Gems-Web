@@ -1,4 +1,4 @@
-import { BlurFilter, Graphics } from "pixi.js";
+import { BlurFilter, Graphics, Rectangle } from "pixi.js";
 
 const DEFAULT_COLOR = 0xeaff00;
 const DEFAULT_RADIUS = 100;
@@ -22,6 +22,7 @@ export class GridCover {
     this.cover = new Graphics();
     this.mask = new Graphics();
     this.mask.filters = [new BlurFilter(this.blur)];
+    this.mask.eventMode = "none";
     this.cover.setMask({
       mask: this.mask,
       inverse: true,
@@ -29,6 +30,7 @@ export class GridCover {
 
     this.cover.eventMode = "static";
     this.cover.cursor = "pointer";
+    this.cover.interactiveChildren = false;
 
     this._lastCut = null;
 
@@ -43,6 +45,7 @@ export class GridCover {
   setLayout({ x = 0, y = 0, size = 0 } = {}) {
     this.cover.clear().rect(0, 0, size, size).fill(this.color);
     this.cover.position.set(x, y);
+    this.cover.hitArea = new Rectangle(0, 0, size, size);
     if (this.cover.parent && !this.mask.parent) {
       this.cover.parent.addChild(this.mask);
     }
@@ -62,8 +65,8 @@ export class GridCover {
   }
 
   #applyCutFromEvent(event, force) {
-    if (!event?.data) return;
-    const position = event.data.getLocalPosition(this.cover);
+    if (!event?.getLocalPosition) return;
+    const position = event.getLocalPosition(this.cover);
     const lastCut = this._lastCut;
 
     if (!force && lastCut) {
