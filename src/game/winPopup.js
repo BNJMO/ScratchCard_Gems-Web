@@ -3,8 +3,8 @@ import dollarIconUrl from "../../assets/sprites/dollarWinPopup.svg";
 const DEFAULT_OPTIONS = {
   width: 310,
   height: 106,
-  maxWidth: 360,
-  minWidth: 220,
+  maxWidth: 310,
+  minWidth: 310,
   paddingX: 24,
   paddingY: 16,
   borderRadius: 18,
@@ -105,6 +105,7 @@ export class WinPopup {
     container.style.left = "50%";
     container.style.transform = this.#hiddenTransform();
     container.style.opacity = "0";
+    container.style.boxSizing = "border-box";
     container.style.padding = `${paddingY}px ${paddingX}px`;
     container.style.width = width ? `${width}px` : "auto";
     container.style.minWidth = `${minWidth}px`;
