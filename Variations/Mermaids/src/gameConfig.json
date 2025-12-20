@@ -1,7 +1,7 @@
 {
   "app": {
-    "vitePath": "/ScratchCard_Gems-Web/",
-    "gameName": "Flipping Cards - Gems"
+    "vitePath": "/_Games/mine_crash/clients/mermaids/",
+    "gameName": "Flipping Cards - Mermaids"
   },
   "gameplay": {
     "gridSize": 3,
@@ -12,12 +12,12 @@
       "exitDuration": 200
     },
     "card": {
-      "iconType": "static",
+      "iconType": "animated",
       "iconScale": 1,
       "iconOffsetX": 0,
       "offsetYv": -5,
       "spritesheetAnimationSpeed": 0.14,
-      "matchShake": true
+      "matchShake": false
     },
     "spritesheetProvider": {
       "columns": 3,

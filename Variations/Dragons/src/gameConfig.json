@@ -1,7 +1,7 @@
 {
   "app": {
-    "vitePath": "/ScratchCard_Gems-Web/",
-    "gameName": "Flipping Cards - Gems"
+    "vitePath": "/_Games/mine_crash/clients/dragons/",
+    "gameName": "Flipping Cards - Dragons"
   },
   "gameplay": {
     "gridSize": 3,
@@ -12,23 +12,23 @@
       "exitDuration": 200
     },
     "card": {
-      "iconType": "static",
+      "iconType": "animated",
       "iconScale": 1,
       "iconOffsetX": 0,
       "offsetYv": -5,
       "spritesheetAnimationSpeed": 0.14,
-      "matchShake": true
+      "matchShake": false
     },
     "spritesheetProvider": {
       "columns": 3,
       "rows": 4,
-      "cellWidth": 152,
-      "cellHeight": 166,
-      "horizontalGap": 4,
-      "verticalGap": 8,
-      "paddingLeft": 0,
-      "paddingTop": 0,
-      "paddingRight": 0,
+      "cellWidth": 144,
+      "cellHeight": 148,
+      "horizontalGap": 5,
+      "verticalGap": 21,
+      "paddingLeft": 11,
+      "paddingTop": 29,
+      "paddingRight": 8,
       "paddingBottom": 0,
       "resolutionFactor": 0.75
     }
