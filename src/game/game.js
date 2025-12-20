@@ -338,14 +338,14 @@ export async function createGame(mount, opts = {}) {
 
   const iconSizePercentage = opts.iconSizePercentage ?? 0.7;
   const iconRevealedSizeFactor = opts.iconRevealedSizeFactor ?? 0.85;
-  const iconScaleMultiplier = Math.max(0, opts.cardIconScale ?? 1.0);
-  const iconOffsetX = Number(opts.cardIconOffsetX ?? 0) || 0;
-  const iconOffsetY = Number(opts.cardIconOffsetY ?? 0) || 0;
-  const matchShakeEnabled = opts.cardMatchShake ?? true;
+  const iconScaleMultiplier = Math.max(0, gameConfig.gameplay.card.iconScale ?? 1.0);
+  const iconOffsetX = Number(gameConfig.gameplay.card.iconOffsetX ?? 0) || 0;
+  const iconOffsetY = Number(gameConfig.gameplay.card.offsetYv ?? 0) || 0;
+  const matchShakeEnabled = gameConfig.gameplay.card.matchShake ?? true;
   const cardSpritesheetAnimationSpeed = Number.isFinite(
-    opts.cardSpritesheetAnimationSpeed
+    gameConfig.gameplay.card.spritesheetAnimationSpeed
   )
-    ? opts.cardSpritesheetAnimationSpeed
+    ? gameConfig.gameplay.card.spritesheetAnimationSpeed
     : DEFAULT_CARD_ANIMATION_SPEED;
   const cardsSpawnDuration = opts.cardsSpawnDuration ?? 350;
   const revealAllIntervalDelay = opts.revealAllIntervalDelay ?? 40;

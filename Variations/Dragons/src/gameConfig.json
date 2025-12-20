@@ -13,10 +13,10 @@
     },
     "card": {
       "iconType": "animated",
-      "iconScale": 1,
+      "iconScale": 1.25,
       "iconOffsetX": 0,
       "offsetYv": -5,
-      "spritesheetAnimationSpeed": 0.14,
+      "spritesheetAnimationSpeed": 0.16,
       "matchShake": false
     },
     "spritesheetProvider": {
