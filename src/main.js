@@ -3,7 +3,7 @@ import { createGame } from "./game/game.js";
 import { ControlPanel } from "./controlPanel/controlPanel.js";
 import { ServerRelay } from "./serverRelay.js";
 import { createServerDummy } from "./serverDummy/serverDummy.js";
-import localConfig from "./config.json";
+import localConfig from "./gameConfig.json";
 
 import tileTapDownSoundUrl from "../assets/sounds/TileTapDown.wav";
 import tileFlipSoundUrl from "../assets/sounds/TileFlip.wav";
@@ -12,17 +12,19 @@ import roundWinSoundUrl from "../assets/sounds/Win.wav";
 import roundLostSoundUrl from "../assets/sounds/Lost.wav";
 
 /* Build Log */
+const localGameName = localConfig?.app?.gameName ?? "Unknown";
 const buildId = buildConfig?.buildId ?? "0.0.0";
 const buildDate = buildConfig?.buildDate ?? "Unknown";
 const buildEnvironment = buildConfig?.environment ?? "Production";
 
+console.info(`🎮 Game: ${localGameName}`);
 console.info(`🚀 Build: ${buildId}`);
 console.info(`📅 Date: ${buildDate}`);
 console.info(`🌐 Environment: ${buildEnvironment}`);
 
 async function loadRuntimeConfig() {
   const fallback = localConfig ?? {};
-  const configPath = `${import.meta.env.BASE_URL ?? "/"}config.json`;
+  const configPath = `${import.meta.env.BASE_URL ?? "/"}gameConfig.json`;
   const configUrl = new URL(configPath, window.location.origin).toString();
 
   try {

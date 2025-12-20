@@ -1,0 +1,36 @@
+{
+  "app": {
+    "vitePath": "/_Games/mine_crash/clients/dragons/",
+    "gameName": "Flipping Cards - Dragons"
+  },
+  "gameplay": {
+    "gridSize": 3,
+    "gameMode": "flip",
+    "hover": {
+      "enabled": true,
+      "enterDuration": 120,
+      "exitDuration": 200
+    },
+    "card": {
+      "iconType": "animated",
+      "iconScale": 1,
+      "iconOffsetX": 0,
+      "offsetYv": -5,
+      "spritesheetAnimationSpeed": 0.14,
+      "matchShake": false
+    },
+    "spritesheetProvider": {
+      "columns": 3,
+      "rows": 4,
+      "cellWidth": 144,
+      "cellHeight": 148,
+      "horizontalGap": 5,
+      "verticalGap": 21,
+      "paddingLeft": 11,
+      "paddingTop": 29,
+      "paddingRight": 8,
+      "paddingBottom": 0,
+      "resolutionFactor": 0.75
+    }
+  }
+}
