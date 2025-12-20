@@ -12,10 +12,12 @@ import roundWinSoundUrl from "../assets/sounds/Win.wav";
 import roundLostSoundUrl from "../assets/sounds/Lost.wav";
 
 /* Build Log */
+const localGameName = localConfig?.app?.gameName ?? "Unknown";
 const buildId = buildConfig?.buildId ?? "0.0.0";
 const buildDate = buildConfig?.buildDate ?? "Unknown";
 const buildEnvironment = buildConfig?.environment ?? "Production";
 
+console.info(`🎮 Game: ${localGameName}`);
 console.info(`🚀 Build: ${buildId}`);
 console.info(`📅 Date: ${buildDate}`);
 console.info(`🌐 Environment: ${buildEnvironment}`);
