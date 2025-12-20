@@ -420,14 +420,8 @@ export async function createGame(mount, opts = {}) {
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
   };
 
-  const configuredCardType = gameConfig?.gameplay?.card?.iconType;
-  const normalizedConfiguredCardType =
-    configuredCardType === "animated" || configuredCardType === "static"
-      ? configuredCardType
-      : "static";
-  const cardType =
-    opts.cardType ?? opts.cardIconType ?? normalizedConfiguredCardType;
-
+  const cardType = gameConfig?.gameplay?.card?.iconType ?? "static"
+  console.log("Card types: " + cardType);
   const cardTypeEntries = cardType === "animated"
     ? await loadCardTypeAnimations()
     : await loadCardTypeTextures({

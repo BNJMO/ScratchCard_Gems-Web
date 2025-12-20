@@ -490,7 +490,6 @@ function clearAutoRoundTimer() {
 function determineDemoBetResult() {
   const lostProbability = Math.random() < 0.4;
   const betResult = lostProbability ? "lost" : "win";
-  console.log(`[Scratch Cards] Bet result: ${betResult}`);
   return betResult;
 }
 
