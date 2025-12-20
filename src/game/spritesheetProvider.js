@@ -1,17 +1,47 @@
 import { Assets, Rectangle, Texture } from "pixi.js";
+import gameConfig from "../gameConfig.json";
 
-const SPRITESHEET_COLUMNS = 3;
-const SPRITESHEET_ROWS = 4;
-const SPRITESHEET_CELL_WIDTH = 152;
-const SPRITESHEET_CELL_HEIGHT = 166;
-const SPRITESHEET_HORIZONTAL_GAP = 4;
-const SPRITESHEET_VERTICAL_GAP = 8;
-const SPRITESHEET_PADDING_LEFT = 0;
-const SPRITESHEET_PADDING_TOP = 0;
-const SPRITESHEET_PADDING_RIGHT = 0;
-const SPRITESHEET_PADDING_BOTTOM = 0;
+const spritesheetConfig = gameConfig?.gameplay?.spritesheetProvider ?? {};
+const SPRITESHEET_COLUMNS = Number.isFinite(spritesheetConfig.columns)
+  ? spritesheetConfig.columns
+  : 3;
+const SPRITESHEET_ROWS = Number.isFinite(spritesheetConfig.rows)
+  ? spritesheetConfig.rows
+  : 4;
+const SPRITESHEET_CELL_WIDTH = Number.isFinite(spritesheetConfig.cellWidth)
+  ? spritesheetConfig.cellWidth
+  : 152;
+const SPRITESHEET_CELL_HEIGHT = Number.isFinite(spritesheetConfig.cellHeight)
+  ? spritesheetConfig.cellHeight
+  : 166;
+const SPRITESHEET_HORIZONTAL_GAP = Number.isFinite(
+  spritesheetConfig.horizontalGap
+)
+  ? spritesheetConfig.horizontalGap
+  : 4;
+const SPRITESHEET_VERTICAL_GAP = Number.isFinite(spritesheetConfig.verticalGap)
+  ? spritesheetConfig.verticalGap
+  : 8;
+const SPRITESHEET_PADDING_LEFT = Number.isFinite(spritesheetConfig.paddingLeft)
+  ? spritesheetConfig.paddingLeft
+  : 0;
+const SPRITESHEET_PADDING_TOP = Number.isFinite(spritesheetConfig.paddingTop)
+  ? spritesheetConfig.paddingTop
+  : 0;
+const SPRITESHEET_PADDING_RIGHT = Number.isFinite(spritesheetConfig.paddingRight)
+  ? spritesheetConfig.paddingRight
+  : 0;
+const SPRITESHEET_PADDING_BOTTOM = Number.isFinite(
+  spritesheetConfig.paddingBottom
+)
+  ? spritesheetConfig.paddingBottom
+  : 0;
 // Scales the hardcoded cell metrics so higher-resolution spritesheets can be used.
-const SPRITESHEET_RESOLUTION_FACTOR = 0.75;
+const SPRITESHEET_RESOLUTION_FACTOR = Number.isFinite(
+  spritesheetConfig.resolutionFactor
+)
+  ? spritesheetConfig.resolutionFactor
+  : 0.75;
 const CARD_TYPE_COUNT = SPRITESHEET_COLUMNS * SPRITESHEET_ROWS;
 
 const SPRITESHEET_MODULES = import.meta.glob(

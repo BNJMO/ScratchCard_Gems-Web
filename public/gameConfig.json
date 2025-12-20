@@ -18,6 +18,19 @@
       "offsetYv": -5,
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true
+    },
+    "spritesheetProvider": {
+      "columns": 3,
+      "rows": 4,
+      "cellWidth": 152,
+      "cellHeight": 166,
+      "horizontalGap": 4,
+      "verticalGap": 8,
+      "paddingLeft": 0,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "resolutionFactor": 0.75
     }
   }
 }
