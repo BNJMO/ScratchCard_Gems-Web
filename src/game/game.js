@@ -13,6 +13,7 @@ import winFrameSpriteUrl from "../../assets/sprites/winFrame.svg";
 import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
 import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
 import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
+import gameConfig from "../gameConfig.json";
 
 const optionalBackgroundSpriteModules = import.meta.glob(
   "../../assets/sprites/game_background.svg",
@@ -419,17 +420,16 @@ export async function createGame(mount, opts = {}) {
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
   };
 
-  const cardIconType = opts.cardIconType
-    ?? (opts.useAnimatedSpritesheets === false ? "static" : "animated");
-
-  const cardTypeEntries = cardIconType === "animated"
+  const cardType = gameConfig?.gameplay?.card?.iconType ?? "static"
+  console.log("Card types: " + cardType);
+  const cardTypeEntries = cardType === "animated"
     ? await loadCardTypeAnimations()
     : await loadCardTypeTextures({
         svgResolution: svgRasterizationResolution,
       });
   if (!cardTypeEntries.length) {
     throw new Error(
-      cardIconType === "static"
+      cardType === "static"
         ? "No scratch card textures found under assets/sprites/cardTypes"
         : "No scratch card textures found under assets/sprites/spritesheets"
     );
