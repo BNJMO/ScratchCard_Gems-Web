@@ -49,7 +49,7 @@ export class CoverScratch {
     this.coverBounds.width = contentSize + this.padding * 2;
     this.coverBounds.height = contentSize + this.padding * 2;
 
-    const targetRadius = this.radiusOption ?? Math.max(12, Math.floor((layout.tileSize ?? 64) * 0.8));
+    const targetRadius = this.radiusOption ?? Math.max(12, Math.floor((layout.tileSize ?? 64) * 0.3));
     const targetBlur = this.blurSizeOption ?? Math.max(8, Math.floor(targetRadius * 0.25));
 
     if (targetRadius !== this._currentRadius || targetBlur !== this._currentBlur) {
