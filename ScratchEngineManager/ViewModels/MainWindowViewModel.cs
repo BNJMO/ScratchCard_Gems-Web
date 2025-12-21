@@ -203,6 +203,49 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    [RelayCommand]
+    private async Task StartLocalServerAsync()
+    {
+        AppendBlankLine();
+        if (string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            AppendError("Could not locate repository root. Server start aborted.");
+            return;
+        }
+
+        try
+        {
+            AppendInfo("Starting local server...");
+            int exitCode;
+            if (OperatingSystem.IsWindows())
+            {
+                exitCode = await RunProcessAsync("cmd.exe", "/c start-server.bat", repositoryRoot);
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                exitCode = await RunProcessAsync("/bin/bash", "start-server.sh", repositoryRoot);
+            }
+            else
+            {
+                AppendError("Local server supported only on Windows or macOS.");
+                return;
+            }
+
+            if (exitCode == 0)
+            {
+                AppendSuccess("Local server stopped.");
+            }
+            else
+            {
+                AppendError($"Local server exited with code {exitCode}.");
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Local server failed: {ex.Message}");
+        }
+    }
+
     private bool CanStartBuild() => !IsBuildRunning;
 
     [RelayCommand(CanExecute = nameof(CanStartBuild))]
