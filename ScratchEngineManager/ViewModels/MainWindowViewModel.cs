@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -15,6 +19,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly string? buildConfigPath;
     private string gameConfigSnapshot = string.Empty;
     private string buildConfigSnapshot = string.Empty;
+    private JsonNode? gameConfigNode;
+    private JsonNode? buildConfigNode;
 
     public MainWindowViewModel()
     {
@@ -29,6 +35,10 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<string> VariationOptions { get; }
 
     public ObservableCollection<LogEntry> LogEntries { get; } = new();
+
+    public ObservableCollection<ConfigValueEntry> GameConfigEntries { get; } = new();
+
+    public ObservableCollection<ConfigValueEntry> BuildConfigEntries { get; } = new();
 
     [ObservableProperty]
     private string? selectedVariation;
@@ -239,6 +249,10 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         GameConfigText = LoadConfigFile(gameConfigPath);
         BuildConfigText = LoadConfigFile(buildConfigPath);
+        gameConfigNode = TryParseJson(GameConfigText);
+        buildConfigNode = TryParseJson(BuildConfigText);
+        PopulateConfigEntries(GameConfigEntries, gameConfigNode, OnGameConfigEntryChanged);
+        PopulateConfigEntries(BuildConfigEntries, buildConfigNode, OnBuildConfigEntryChanged);
         gameConfigSnapshot = GameConfigText;
         buildConfigSnapshot = BuildConfigText;
         IsGameConfigDirty = false;
@@ -310,5 +324,257 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnBuildConfigTextChanged(string value)
     {
         IsBuildConfigDirty = !string.Equals(value, buildConfigSnapshot, StringComparison.Ordinal);
+    }
+
+    private static JsonNode? TryParseJson(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonNode.Parse(text);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void PopulateConfigEntries(
+        ObservableCollection<ConfigValueEntry> target,
+        JsonNode? rootNode,
+        Action<ConfigValueEntry> onValueChanged)
+    {
+        target.Clear();
+        if (rootNode is null)
+        {
+            return;
+        }
+
+        var path = new List<ConfigPathSegment>();
+        CollectConfigEntries(rootNode, path, target, onValueChanged);
+    }
+
+    private void CollectConfigEntries(
+        JsonNode? node,
+        List<ConfigPathSegment> path,
+        ObservableCollection<ConfigValueEntry> target,
+        Action<ConfigValueEntry> onValueChanged)
+    {
+        if (node is null)
+        {
+            return;
+        }
+
+        if (node is JsonObject obj)
+        {
+            foreach (var entry in obj)
+            {
+                path.Add(new ConfigPathSegment(entry.Key, null));
+                CollectConfigEntries(entry.Value, path, target, onValueChanged);
+                path.RemoveAt(path.Count - 1);
+            }
+
+            return;
+        }
+
+        if (node is JsonArray array)
+        {
+            for (var i = 0; i < array.Count; i++)
+            {
+                path.Add(new ConfigPathSegment(null, i));
+                CollectConfigEntries(array[i], path, target, onValueChanged);
+                path.RemoveAt(path.Count - 1);
+            }
+
+            return;
+        }
+
+        if (node is JsonValue valueNode)
+        {
+            var displayPath = BuildDisplayPath(path);
+            var (valueText, valueType) = ExtractValue(valueNode);
+            var segments = path.ToArray();
+            target.Add(new ConfigValueEntry(displayPath, segments, valueText, valueType, onValueChanged));
+        }
+    }
+
+    private static string BuildDisplayPath(IReadOnlyList<ConfigPathSegment> path)
+    {
+        var result = string.Empty;
+        foreach (var segment in path)
+        {
+            if (!string.IsNullOrWhiteSpace(segment.PropertyName))
+            {
+                result = string.IsNullOrEmpty(result) ? segment.PropertyName! : $"{result}.{segment.PropertyName}";
+            }
+
+            if (segment.Index is not null)
+            {
+                result = $"{result}[{segment.Index}]";
+            }
+        }
+
+        return result;
+    }
+
+    private static (string valueText, ConfigValueType valueType) ExtractValue(JsonValue node)
+    {
+        if (node.TryGetValue<string>(out var stringValue))
+        {
+            return (stringValue ?? string.Empty, ConfigValueType.String);
+        }
+
+        if (node.TryGetValue<bool>(out var boolValue))
+        {
+            return (boolValue ? "true" : "false", ConfigValueType.Boolean);
+        }
+
+        if (node.TryGetValue<long>(out var longValue))
+        {
+            return (longValue.ToString(CultureInfo.InvariantCulture), ConfigValueType.Number);
+        }
+
+        if (node.TryGetValue<double>(out var doubleValue))
+        {
+            return (doubleValue.ToString(CultureInfo.InvariantCulture), ConfigValueType.Number);
+        }
+
+        if (node.TryGetValue<decimal>(out var decimalValue))
+        {
+            return (decimalValue.ToString(CultureInfo.InvariantCulture), ConfigValueType.Number);
+        }
+
+        var json = node.ToJsonString();
+        if (string.Equals(json, "null", StringComparison.OrdinalIgnoreCase))
+        {
+            return ("null", ConfigValueType.Null);
+        }
+
+        return (json.Trim('"'), ConfigValueType.Unknown);
+    }
+
+    private void OnGameConfigEntryChanged(ConfigValueEntry entry)
+    {
+        if (gameConfigNode is null)
+        {
+            return;
+        }
+
+        if (TryUpdateJsonValue(gameConfigNode, entry))
+        {
+            GameConfigText = gameConfigNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        }
+    }
+
+    private void OnBuildConfigEntryChanged(ConfigValueEntry entry)
+    {
+        if (buildConfigNode is null)
+        {
+            return;
+        }
+
+        if (TryUpdateJsonValue(buildConfigNode, entry))
+        {
+            BuildConfigText = buildConfigNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        }
+    }
+
+    private static bool TryUpdateJsonValue(JsonNode rootNode, ConfigValueEntry entry)
+    {
+        if (entry.Segments.Count == 0)
+        {
+            return false;
+        }
+
+        JsonNode? current = rootNode;
+        for (var i = 0; i < entry.Segments.Count - 1; i++)
+        {
+            var segment = entry.Segments[i];
+            current = GetSegmentNode(current, segment);
+            if (current is null)
+            {
+                return false;
+            }
+        }
+
+        var last = entry.Segments[^1];
+        var replacement = CreateValueNode(entry.Value, entry.ValueType);
+        if (current is JsonObject obj && last.PropertyName is not null)
+        {
+            obj[last.PropertyName] = replacement;
+            return true;
+        }
+
+        if (current is JsonArray array && last.Index is not null)
+        {
+            array[last.Index.Value] = replacement;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static JsonNode? GetSegmentNode(JsonNode? node, ConfigPathSegment segment)
+    {
+        if (node is null)
+        {
+            return null;
+        }
+
+        if (segment.PropertyName is not null && node is JsonObject obj)
+        {
+            return obj[segment.PropertyName];
+        }
+
+        if (segment.Index is not null && node is JsonArray array && segment.Index.Value < array.Count)
+        {
+            return array[segment.Index.Value];
+        }
+
+        return null;
+    }
+
+    private static JsonNode? CreateValueNode(string value, ConfigValueType valueType)
+    {
+        switch (valueType)
+        {
+            case ConfigValueType.Boolean:
+                if (bool.TryParse(value, out var boolValue))
+                {
+                    return JsonValue.Create(boolValue);
+                }
+
+                return JsonValue.Create(value);
+            case ConfigValueType.Number:
+                if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var longValue))
+                {
+                    return JsonValue.Create(longValue);
+                }
+
+                if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue))
+                {
+                    return JsonValue.Create(doubleValue);
+                }
+
+                if (decimal.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var decimalValue))
+                {
+                    return JsonValue.Create(decimalValue);
+                }
+
+                return JsonValue.Create(value);
+            case ConfigValueType.Null:
+                return string.Equals(value.Trim(), "null", StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : JsonValue.Create(value);
+            case ConfigValueType.String:
+                return JsonValue.Create(value);
+            case ConfigValueType.Unknown:
+            default:
+                return JsonValue.Create(value);
+        }
     }
 }
