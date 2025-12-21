@@ -89,6 +89,20 @@
                         <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveGameConfigCommand}"/>
                         <KeyBinding Gesture="Cmd+S" Command="{Binding SaveGameConfigCommand}"/>
                     </TabItem.KeyBindings>
+                    <TabItem.Styles>
+                        <Style Selector="TextBox">
+                            <Setter Property="KeyBindings">
+                                <Setter.Value>
+                                    <KeyBindings>
+                                        <KeyBinding Gesture="Ctrl+S"
+                                                    Command="{Binding DataContext.SaveGameConfigCommand, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
+                                        <KeyBinding Gesture="Cmd+S"
+                                                    Command="{Binding DataContext.SaveGameConfigCommand, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
+                                    </KeyBindings>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </TabItem.Styles>
                     <Border Background="#20242C"
                             BorderBrush="#3B414F"
                             CornerRadius="6"
@@ -151,6 +165,20 @@
                         <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveBuildConfigCommand}"/>
                         <KeyBinding Gesture="Cmd+S" Command="{Binding SaveBuildConfigCommand}"/>
                     </TabItem.KeyBindings>
+                    <TabItem.Styles>
+                        <Style Selector="TextBox">
+                            <Setter Property="KeyBindings">
+                                <Setter.Value>
+                                    <KeyBindings>
+                                        <KeyBinding Gesture="Ctrl+S"
+                                                    Command="{Binding DataContext.SaveBuildConfigCommand, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
+                                        <KeyBinding Gesture="Cmd+S"
+                                                    Command="{Binding DataContext.SaveBuildConfigCommand, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
+                                    </KeyBindings>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </TabItem.Styles>
                     <Border Background="#20242C"
                             BorderBrush="#3B414F"
                             CornerRadius="6"
