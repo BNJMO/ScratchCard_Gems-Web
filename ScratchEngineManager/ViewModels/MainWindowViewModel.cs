@@ -65,6 +65,10 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool isBuildRunning;
 
+    public string GameConfigTabHeader => IsGameConfigDirty ? "Game Config *" : "Game Config";
+
+    public string BuildConfigTabHeader => IsBuildConfigDirty ? "Build Config *" : "Build Config";
+    
     [ObservableProperty]
     private bool isLocalServerRunning;
 
@@ -305,6 +309,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (exitCode == 0)
             {
                 AppendSuccess("Build completed successfully.");
+                LoadConfigText();
             }
             else
             {
@@ -451,9 +456,19 @@ public partial class MainWindowViewModel : ViewModelBase
         IsGameConfigDirty = !string.Equals(value, gameConfigSnapshot, StringComparison.Ordinal);
     }
 
+    partial void OnIsGameConfigDirtyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(GameConfigTabHeader));
+    }
+
     partial void OnBuildConfigTextChanged(string value)
     {
         IsBuildConfigDirty = !string.Equals(value, buildConfigSnapshot, StringComparison.Ordinal);
+    }
+
+    partial void OnIsBuildConfigDirtyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(BuildConfigTabHeader));
     }
 
     private static JsonNode? TryParseJson(string? text)
