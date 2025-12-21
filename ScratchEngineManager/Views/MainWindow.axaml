@@ -70,20 +70,25 @@
                             Padding="12">
                         <ScrollViewer x:Name="LogScrollViewer"
                                       HorizontalScrollBarVisibility="Disabled">
-                            <TextBox Text="{Binding LogText}"
-                                     FontFamily="Consolas"
-                                     FontSize="13"
-                                     Foreground="#E6E8ED"
-                                     Background="Transparent"
-                                     BorderThickness="0"
-                                     IsReadOnly="True"
-                                     TextWrapping="Wrap"
-                                     AcceptsReturn="True"
-                                     HorizontalAlignment="Stretch"/>
+                            <ItemsControl ItemsSource="{Binding LogEntries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Message}"
+                                                   Foreground="{Binding Foreground}"
+                                                   FontFamily="Consolas"
+                                                   FontSize="13"
+                                                   TextWrapping="Wrap"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </ScrollViewer>
                     </Border>
                 </TabItem>
                 <TabItem Header="{Binding GameConfigTabHeader}">
+                    <TabItem.KeyBindings>
+                        <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveGameConfigCommand}"/>
+                        <KeyBinding Gesture="Cmd+S" Command="{Binding SaveGameConfigCommand}"/>
+                    </TabItem.KeyBindings>
                     <Border Background="#20242C"
                             BorderBrush="#3B414F"
                             CornerRadius="6"
@@ -142,6 +147,10 @@
                     </Border>
                 </TabItem>
                 <TabItem Header="{Binding BuildConfigTabHeader}">
+                    <TabItem.KeyBindings>
+                        <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveBuildConfigCommand}"/>
+                        <KeyBinding Gesture="Cmd+S" Command="{Binding SaveBuildConfigCommand}"/>
+                    </TabItem.KeyBindings>
                     <Border Background="#20242C"
                             BorderBrush="#3B414F"
                             CornerRadius="6"

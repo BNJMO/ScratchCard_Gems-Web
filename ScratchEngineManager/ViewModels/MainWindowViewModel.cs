@@ -411,9 +411,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void AppendInfo(string message) => AppendLogEntry(message, Brushes.WhiteSmoke);
 
-    private void AppendSuccess(string message) => AppendLogEntry(message, Brushes.LightGreen);
+    private void AppendSuccess(string message) => AppendLogEntry(message, Brushes.LimeGreen);
 
-    private void AppendError(string message) => AppendLogEntry(message, Brushes.IndianRed);
+    private void AppendError(string message) => AppendLogEntry(message, Brushes.Red);
 
     private void AppendLogEntry(string message, IBrush brush)
     {
