@@ -226,7 +226,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             AppendInfo("Starting build process...");
-            var exitCode = await RunProcessAsync("cmd.exe", "/c start-build.bat", repositoryRoot);
+            var exitCode = await RunProcessAsync("cmd.exe", "/c start-build.bat --no-pause", repositoryRoot);
 
             if (exitCode == 0)
             {
