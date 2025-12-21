@@ -18,6 +18,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly string? buildConfigPath;
     private string gameConfigSnapshot = string.Empty;
     private string buildConfigSnapshot = string.Empty;
+    private readonly object localServerLock = new();
+    private Process? localServerProcess;
 
     public MainWindowViewModel()
     {
@@ -50,6 +52,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool isBuildRunning;
+
+    [ObservableProperty]
+    private bool isLocalServerRunning;
+
+    [ObservableProperty]
+    private string localServerButtonLabel = "Start Local Server";
 
     [RelayCommand]
     private void ReplaceAssets()
@@ -204,8 +212,14 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task StartLocalServerAsync()
+    private async Task ToggleLocalServerAsync()
     {
+        if (IsLocalServerRunning)
+        {
+            StopLocalServer();
+            return;
+        }
+
         AppendBlankLine();
         if (string.IsNullOrWhiteSpace(repositoryRoot))
         {
@@ -216,14 +230,14 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             AppendInfo("Starting local server...");
-            int exitCode;
+            Process? process;
             if (OperatingSystem.IsWindows())
             {
-                exitCode = await RunProcessAsync("cmd.exe", "/c start-server.bat", repositoryRoot);
+                process = StartLocalServerProcess("cmd.exe", "/c start-server.bat", repositoryRoot);
             }
             else if (OperatingSystem.IsMacOS())
             {
-                exitCode = await RunProcessAsync("/bin/bash", "start-server.sh", repositoryRoot);
+                process = StartLocalServerProcess("/bin/bash", "start-server.sh", repositoryRoot);
             }
             else
             {
@@ -231,14 +245,19 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
-            if (exitCode == 0)
+            if (process is null)
             {
-                AppendSuccess("Local server stopped.");
+                AppendError("Failed to start local server process.");
+                return;
             }
-            else
+
+            lock (localServerLock)
             {
-                AppendError($"Local server exited with code {exitCode}.");
+                localServerProcess = process;
             }
+
+            IsLocalServerRunning = true;
+            _ = MonitorLocalServerAsync(process);
         }
         catch (Exception ex)
         {
@@ -426,6 +445,48 @@ public partial class MainWindowViewModel : ViewModelBase
         StartBuildCommand.NotifyCanExecuteChanged();
     }
 
+    partial void OnIsLocalServerRunningChanged(bool value)
+    {
+        LocalServerButtonLabel = value ? "Stop Local Server" : "Start Local Server";
+    }
+
+    public void StopLocalServer()
+    {
+        AppendBlankLine();
+        AppendInfo("Stopping local server...");
+        Process? process;
+        lock (localServerLock)
+        {
+            process = localServerProcess;
+        }
+
+        if (process is null || process.HasExited)
+        {
+            AppendInfo("Local server is not running.");
+            IsLocalServerRunning = false;
+            return;
+        }
+
+        try
+        {
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit();
+            AppendSuccess("Local server stopped.");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Failed to stop local server: {ex.Message}");
+        }
+        finally
+        {
+            IsLocalServerRunning = false;
+            lock (localServerLock)
+            {
+                localServerProcess = null;
+            }
+        }
+    }
+
     private async Task<int> RunProcessAsync(string fileName, string arguments, string workingDirectory)
     {
         var startInfo = new ProcessStartInfo
@@ -448,6 +509,70 @@ public partial class MainWindowViewModel : ViewModelBase
         await Task.WhenAll(outputTask, errorTask, process.WaitForExitAsync());
 
         return process.ExitCode;
+    }
+
+    private Process? StartLocalServerProcess(string fileName, string arguments, string workingDirectory)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+
+        if (!process.Start())
+        {
+            return null;
+        }
+
+        _ = ReadStreamAsync(process.StandardOutput, AppendInfo);
+        _ = ReadStreamAsync(process.StandardError, AppendError);
+
+        return process;
+    }
+
+    private async Task MonitorLocalServerAsync(Process process)
+    {
+        try
+        {
+            await process.WaitForExitAsync();
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Local server monitoring error: {ex.Message}");
+        }
+        finally
+        {
+            if (!IsLocalServerRunning)
+            {
+                return;
+            }
+
+            var exitCode = process.ExitCode;
+            if (exitCode == 0)
+            {
+                AppendSuccess("Local server stopped.");
+            }
+            else
+            {
+                AppendError($"Local server exited with code {exitCode}.");
+            }
+
+            IsLocalServerRunning = false;
+            lock (localServerLock)
+            {
+                if (ReferenceEquals(localServerProcess, process))
+                {
+                    localServerProcess = null;
+                }
+            }
+        }
     }
 
     private static async Task ReadStreamAsync(StreamReader reader, Action<string> appendLine)
