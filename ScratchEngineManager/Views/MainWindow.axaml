@@ -67,14 +67,18 @@
                             BorderBrush="#3B414F"
                             CornerRadius="6"
                             Padding="12">
-                        <ScrollViewer>
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
                             <ItemsControl ItemsSource="{Binding LogEntries}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Message}"
-                                                   Foreground="{Binding Foreground}"
-                                                   FontFamily="Consolas"
-                                                   FontSize="13"/>
+                                        <TextBox Text="{Binding Message}"
+                                                 Foreground="{Binding Foreground}"
+                                                 FontFamily="Consolas"
+                                                 FontSize="13"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 IsReadOnly="True"
+                                                 TextWrapping="Wrap"/>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
