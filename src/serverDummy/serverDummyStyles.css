@@ -154,6 +154,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  user-select: text;
 }
 
 .server-dummy__log-header {
@@ -209,6 +210,8 @@
   font-size: 11px;
   line-height: 1.4;
   color: #d9e6ef;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .server-dummy__log-entry--incoming {
@@ -235,9 +238,9 @@
   padding: 6px;
   background: rgba(9, 27, 38, 0.9);
   border-radius: 6px;
-  overflow: hidden;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .server-dummy__controls {
