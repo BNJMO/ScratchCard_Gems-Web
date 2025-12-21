@@ -87,7 +87,7 @@
                             Padding="12">
                         <ScrollViewer>
                             <StackPanel Spacing="6">
-                                <TextBlock Text="{"
+                                <TextBlock Text="{}{"
                                            Foreground="#A5ACB8"
                                            FontFamily="Consolas"/>
                                 <ItemsControl ItemsSource="{Binding GameConfigFields}">
@@ -126,7 +126,7 @@
                             Padding="12">
                         <ScrollViewer>
                             <StackPanel Spacing="6">
-                                <TextBlock Text="{"
+                                <TextBlock Text="{}{"
                                            Foreground="#A5ACB8"
                                            FontFamily="Consolas"/>
                                 <ItemsControl ItemsSource="{Binding BuildConfigFields}">
