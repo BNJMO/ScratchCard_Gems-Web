@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -15,6 +13,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly string? repositoryRoot;
     private readonly string? gameConfigPath;
     private readonly string? buildConfigPath;
+    private string gameConfigSnapshot = string.Empty;
+    private string buildConfigSnapshot = string.Empty;
 
     public MainWindowViewModel()
     {
@@ -23,20 +23,27 @@ public partial class MainWindowViewModel : ViewModelBase
         buildConfigPath = repositoryRoot is null ? null : Path.Combine(repositoryRoot, "buildConfig.json");
         VariationOptions = new ObservableCollection<string>(LoadVariations(repositoryRoot));
         SelectedVariation = VariationOptions.FirstOrDefault();
-        GameConfigFields = LoadConfigFields(gameConfigPath);
-        BuildConfigFields = LoadConfigFields(buildConfigPath);
+        LoadConfigText();
     }
 
     public ObservableCollection<string> VariationOptions { get; }
 
     public ObservableCollection<LogEntry> LogEntries { get; } = new();
 
-    public ObservableCollection<ConfigField> GameConfigFields { get; }
-
-    public ObservableCollection<ConfigField> BuildConfigFields { get; }
-
     [ObservableProperty]
     private string? selectedVariation;
+
+    [ObservableProperty]
+    private string gameConfigText = string.Empty;
+
+    [ObservableProperty]
+    private string buildConfigText = string.Empty;
+
+    [ObservableProperty]
+    private bool isGameConfigDirty;
+
+    [ObservableProperty]
+    private bool isBuildConfigDirty;
 
     [RelayCommand]
     private void ReplaceAssets()
@@ -138,11 +145,55 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             AppendSuccess("Asset replacement complete.");
-            ReloadConfigFields();
+            LoadConfigText();
         }
         catch (Exception ex)
         {
             AppendError($"Error during replacement: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void SaveGameConfig()
+    {
+        if (string.IsNullOrWhiteSpace(gameConfigPath))
+        {
+            AppendError("Game config path not found.");
+            return;
+        }
+
+        try
+        {
+            File.WriteAllText(gameConfigPath, GameConfigText);
+            gameConfigSnapshot = GameConfigText;
+            IsGameConfigDirty = false;
+            AppendSuccess("Saved gameConfig.json.");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Error saving gameConfig.json: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void SaveBuildConfig()
+    {
+        if (string.IsNullOrWhiteSpace(buildConfigPath))
+        {
+            AppendError("Build config path not found.");
+            return;
+        }
+
+        try
+        {
+            File.WriteAllText(buildConfigPath, BuildConfigText);
+            buildConfigSnapshot = BuildConfigText;
+            IsBuildConfigDirty = false;
+            AppendSuccess("Saved buildConfig.json.");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Error saving buildConfig.json: {ex.Message}");
         }
     }
 
@@ -184,114 +235,32 @@ public partial class MainWindowViewModel : ViewModelBase
             .ToArray()!;
     }
 
-    private ObservableCollection<ConfigField> LoadConfigFields(string? configPath)
+    private void LoadConfigText()
     {
-        var fields = new ObservableCollection<ConfigField>();
+        GameConfigText = LoadConfigFile(gameConfigPath);
+        BuildConfigText = LoadConfigFile(buildConfigPath);
+        gameConfigSnapshot = GameConfigText;
+        buildConfigSnapshot = BuildConfigText;
+        IsGameConfigDirty = false;
+        IsBuildConfigDirty = false;
+    }
+
+    private string LoadConfigFile(string? configPath)
+    {
         if (string.IsNullOrWhiteSpace(configPath) || !File.Exists(configPath))
         {
-            return fields;
+            return string.Empty;
         }
 
         try
         {
-            using var stream = File.OpenRead(configPath);
-            using var document = JsonDocument.Parse(stream);
-            if (document.RootElement.ValueKind != JsonValueKind.Object)
-            {
-                return fields;
-            }
-
-            foreach (var property in document.RootElement.EnumerateObject())
-            {
-                var valueKind = property.Value.ValueKind;
-                fields.Add(new ConfigField(
-                    property.Name,
-                    GetValueString(property.Value),
-                    valueKind,
-                    newValue => SaveConfigField(configPath, fields, property.Name, valueKind, newValue)));
-            }
+            return File.ReadAllText(configPath);
         }
         catch (Exception ex)
         {
             AppendError($"Error loading config {configPath}: {ex.Message}");
+            return string.Empty;
         }
-
-        return fields;
-    }
-
-    private void ReloadConfigFields()
-    {
-        ReloadConfigCollection(GameConfigFields, gameConfigPath);
-        ReloadConfigCollection(BuildConfigFields, buildConfigPath);
-    }
-
-    private void ReloadConfigCollection(ObservableCollection<ConfigField> target, string? configPath)
-    {
-        target.Clear();
-        foreach (var field in LoadConfigFields(configPath))
-        {
-            target.Add(field);
-        }
-    }
-
-    private void SaveConfigField(
-        string configPath,
-        ObservableCollection<ConfigField> fields,
-        string key,
-        JsonValueKind originalKind,
-        string? newValue)
-    {
-        try
-        {
-            var output = new Dictionary<string, object?>();
-            foreach (var field in fields)
-            {
-                output[field.Key] = field.Key == key
-                    ? ConvertValue(newValue, originalKind)
-                    : ConvertValue(field.Value, field.ValueKind);
-            }
-
-            var json = JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(configPath, json);
-            AppendSuccess($"Saved {Path.GetFileName(configPath)}.");
-        }
-        catch (Exception ex)
-        {
-            AppendError($"Error saving {Path.GetFileName(configPath)}: {ex.Message}");
-        }
-    }
-
-    private static object? ConvertValue(string? value, JsonValueKind kind)
-    {
-        if (kind == JsonValueKind.Null)
-        {
-            return null;
-        }
-
-        if (kind == JsonValueKind.True || kind == JsonValueKind.False)
-        {
-            return bool.TryParse(value, out var boolValue) ? boolValue : false;
-        }
-
-        if (kind == JsonValueKind.Number)
-        {
-            return decimal.TryParse(value, out var number) ? number : 0;
-        }
-
-        return value ?? string.Empty;
-    }
-
-    private static string GetValueString(JsonElement element)
-    {
-        return element.ValueKind switch
-        {
-            JsonValueKind.String => element.GetString() ?? string.Empty,
-            JsonValueKind.Number => element.GetRawText(),
-            JsonValueKind.True => "true",
-            JsonValueKind.False => "false",
-            JsonValueKind.Null => "null",
-            _ => element.GetRawText(),
-        };
     }
 
     private void AppendBlankLine()
@@ -331,30 +300,15 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    public sealed partial class ConfigField : ObservableObject
+    public sealed record LogEntry(string Message, IBrush Foreground);
+
+    partial void OnGameConfigTextChanged(string value)
     {
-        private readonly Action<string?>? onValueChanged;
-
-        public ConfigField(string key, string value, JsonValueKind valueKind, Action<string?>? onValueChanged)
-        {
-            Key = key;
-            this.value = value;
-            ValueKind = valueKind;
-            this.onValueChanged = onValueChanged;
-        }
-
-        public string Key { get; }
-
-        public JsonValueKind ValueKind { get; }
-
-        [ObservableProperty]
-        private string value;
-
-        partial void OnValueChanged(string value)
-        {
-            onValueChanged?.Invoke(value);
-        }
+        IsGameConfigDirty = !string.Equals(value, gameConfigSnapshot, StringComparison.Ordinal);
     }
 
-    public sealed record LogEntry(string Message, IBrush Foreground);
+    partial void OnBuildConfigTextChanged(string value)
+    {
+        IsBuildConfigDirty = !string.Equals(value, buildConfigSnapshot, StringComparison.Ordinal);
+    }
 }

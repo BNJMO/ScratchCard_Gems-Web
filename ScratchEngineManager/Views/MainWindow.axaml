@@ -85,38 +85,28 @@
                             BorderBrush="#3B414F"
                             CornerRadius="6"
                             Padding="12">
-                        <ScrollViewer>
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="{}{"
-                                           Foreground="#A5ACB8"
-                                           FontFamily="Consolas"/>
-                                <ItemsControl ItemsSource="{Binding GameConfigFields}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <TextBlock Text="{Binding Key}"
-                                                           Foreground="#7CC0FF"
-                                                           FontFamily="Consolas"/>
-                                                <TextBlock Text=":"
-                                                           Foreground="#A5ACB8"
-                                                           FontFamily="Consolas"/>
-                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                         Background="#2A2F3A"
-                                                         Foreground="#F2E68A"
-                                                         BorderBrush="#3B414F"
-                                                         CornerRadius="4"
-                                                         Padding="6,4"
-                                                         FontFamily="Consolas"
-                                                         MinWidth="120"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <TextBlock Text="}"
-                                           Foreground="#A5ACB8"
-                                           FontFamily="Consolas"/>
-                            </StackPanel>
-                        </ScrollViewer>
+                        <Grid RowDefinitions="Auto,*">
+                            <Button Content="Save"
+                                    Command="{Binding SaveGameConfigCommand}"
+                                    IsEnabled="{Binding IsGameConfigDirty}"
+                                    HorizontalAlignment="Right"
+                                    Background="#3E8EDE"
+                                    Foreground="#F7F8FA"
+                                    BorderBrush="#3E8EDE"
+                                    CornerRadius="6"
+                                    Padding="10,4"/>
+                            <ScrollViewer Grid.Row="1">
+                                <TextBox Text="{Binding GameConfigText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True"
+                                         IsReadOnly="False"
+                                         Background="#20242C"
+                                         Foreground="#E6E8ED"
+                                         BorderBrush="#3B414F"
+                                         CornerRadius="6"
+                                         Padding="12"
+                                         FontFamily="Consolas"/>
+                            </ScrollViewer>
+                        </Grid>
                     </Border>
                 </TabItem>
                 <TabItem Header="Build Config">
@@ -124,38 +114,28 @@
                             BorderBrush="#3B414F"
                             CornerRadius="6"
                             Padding="12">
-                        <ScrollViewer>
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="{}{"
-                                           Foreground="#A5ACB8"
-                                           FontFamily="Consolas"/>
-                                <ItemsControl ItemsSource="{Binding BuildConfigFields}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <TextBlock Text="{Binding Key}"
-                                                           Foreground="#7CC0FF"
-                                                           FontFamily="Consolas"/>
-                                                <TextBlock Text=":"
-                                                           Foreground="#A5ACB8"
-                                                           FontFamily="Consolas"/>
-                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                         Background="#2A2F3A"
-                                                         Foreground="#F2E68A"
-                                                         BorderBrush="#3B414F"
-                                                         CornerRadius="4"
-                                                         Padding="6,4"
-                                                         FontFamily="Consolas"
-                                                         MinWidth="120"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <TextBlock Text="}"
-                                           Foreground="#A5ACB8"
-                                           FontFamily="Consolas"/>
-                            </StackPanel>
-                        </ScrollViewer>
+                        <Grid RowDefinitions="Auto,*">
+                            <Button Content="Save"
+                                    Command="{Binding SaveBuildConfigCommand}"
+                                    IsEnabled="{Binding IsBuildConfigDirty}"
+                                    HorizontalAlignment="Right"
+                                    Background="#3E8EDE"
+                                    Foreground="#F7F8FA"
+                                    BorderBrush="#3E8EDE"
+                                    CornerRadius="6"
+                                    Padding="10,4"/>
+                            <ScrollViewer Grid.Row="1">
+                                <TextBox Text="{Binding BuildConfigText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True"
+                                         IsReadOnly="False"
+                                         Background="#20242C"
+                                         Foreground="#E6E8ED"
+                                         BorderBrush="#3B414F"
+                                         CornerRadius="6"
+                                         Padding="12"
+                                         FontFamily="Consolas"/>
+                            </ScrollViewer>
+                        </Grid>
                     </Border>
                 </TabItem>
             </TabControl>
