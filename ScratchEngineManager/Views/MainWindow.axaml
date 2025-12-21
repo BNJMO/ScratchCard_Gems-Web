@@ -23,7 +23,7 @@
                            Foreground="#E6E8ED"
                            FontSize="14"
                            FontWeight="SemiBold"/>
-                <ComboBox Items="{Binding VariationOptions}"
+                <ComboBox ItemsSource="{Binding VariationOptions}"
                           SelectedItem="{Binding SelectedVariation}"
                           Background="#1C1F26"
                           Foreground="#E6E8ED"
