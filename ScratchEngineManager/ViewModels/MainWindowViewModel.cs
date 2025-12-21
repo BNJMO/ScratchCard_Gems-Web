@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text;
+using System.Text.Json;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -11,41 +13,51 @@ namespace ScratchEngineManager.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly string? repositoryRoot;
+    private readonly string? gameConfigPath;
+    private readonly string? buildConfigPath;
 
     public MainWindowViewModel()
     {
         repositoryRoot = FindRepositoryRoot();
+        gameConfigPath = repositoryRoot is null ? null : Path.Combine(repositoryRoot, "src", "gameConfig.json");
+        buildConfigPath = repositoryRoot is null ? null : Path.Combine(repositoryRoot, "buildConfig.json");
         VariationOptions = new ObservableCollection<string>(LoadVariations(repositoryRoot));
         SelectedVariation = VariationOptions.FirstOrDefault();
+        GameConfigFields = LoadConfigFields(gameConfigPath);
+        BuildConfigFields = LoadConfigFields(buildConfigPath);
     }
 
     public ObservableCollection<string> VariationOptions { get; }
 
-    [ObservableProperty]
-    private string? selectedVariation;
+    public ObservableCollection<LogEntry> LogEntries { get; } = new();
+
+    public ObservableCollection<ConfigField> GameConfigFields { get; }
+
+    public ObservableCollection<ConfigField> BuildConfigFields { get; }
 
     [ObservableProperty]
-    private string logText = string.Empty;
+    private string? selectedVariation;
 
     [RelayCommand]
     private void ReplaceAssets()
     {
+        AppendBlankLine();
         if (string.IsNullOrWhiteSpace(repositoryRoot))
         {
-            AppendLog("Could not locate repository root. Replace Assets aborted.");
+            AppendError("Could not locate repository root. Replace Assets aborted.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(SelectedVariation))
         {
-            AppendLog("No variation selected. Replace Assets aborted.");
+            AppendError("No variation selected. Replace Assets aborted.");
             return;
         }
 
         var variationRoot = Path.Combine(repositoryRoot, "Variations", SelectedVariation);
         if (!Directory.Exists(variationRoot))
         {
-            AppendLog($"Variation folder not found: {variationRoot}");
+            AppendError($"Variation folder not found: {variationRoot}");
             return;
         }
 
@@ -53,14 +65,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
-            AppendLog("Starting asset replacement...");
+            AppendInfo("Starting asset replacement...");
             Directory.CreateDirectory(oldAssetsRoot);
 
             var sourceAssets = Path.Combine(repositoryRoot, "assets");
             var sourceBuildConfig = Path.Combine(repositoryRoot, "buildConfig.json");
             var sourceGameConfig = Path.Combine(repositoryRoot, "src", "gameConfig.json");
 
-            AppendLog("Backing up current assets and configs...");
+            AppendInfo("Backing up current assets and configs...");
             if (Directory.Exists(sourceAssets))
             {
                 CopyDirectory(sourceAssets, Path.Combine(oldAssetsRoot, "assets"), true);
@@ -68,7 +80,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
             else
             {
-                AppendLog($"Warning: assets folder not found at {sourceAssets}.");
+                AppendInfo($"Warning: assets folder not found at {sourceAssets}.");
             }
 
             if (File.Exists(sourceBuildConfig))
@@ -78,7 +90,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
             else
             {
-                AppendLog($"Warning: buildConfig.json not found at {sourceBuildConfig}.");
+                AppendInfo($"Warning: buildConfig.json not found at {sourceBuildConfig}.");
             }
 
             if (File.Exists(sourceGameConfig))
@@ -89,10 +101,10 @@ public partial class MainWindowViewModel : ViewModelBase
             }
             else
             {
-                AppendLog($"Warning: gameConfig.json not found at {sourceGameConfig}.");
+                AppendInfo($"Warning: gameConfig.json not found at {sourceGameConfig}.");
             }
 
-            AppendLog("Copying selected variation assets and configs...");
+            AppendInfo("Copying selected variation assets and configs...");
             var variationAssets = Path.Combine(variationRoot, "assets");
             var variationBuildConfig = Path.Combine(variationRoot, "buildConfig.json");
             var variationGameConfig = Path.Combine(variationRoot, "src", "gameConfig.json");
@@ -103,7 +115,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
             else
             {
-                AppendLog($"Error: variation assets folder not found at {variationAssets}.");
+                AppendError($"Variation assets folder not found at {variationAssets}.");
             }
 
             if (File.Exists(variationBuildConfig))
@@ -112,7 +124,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
             else
             {
-                AppendLog($"Error: variation buildConfig.json not found at {variationBuildConfig}.");
+                AppendError($"Variation buildConfig.json not found at {variationBuildConfig}.");
             }
 
             if (File.Exists(variationGameConfig))
@@ -122,14 +134,15 @@ public partial class MainWindowViewModel : ViewModelBase
             }
             else
             {
-                AppendLog($"Error: variation gameConfig.json not found at {variationGameConfig}.");
+                AppendError($"Variation gameConfig.json not found at {variationGameConfig}.");
             }
 
-            AppendLog("Asset replacement complete.");
+            AppendSuccess("Asset replacement complete.");
+            ReloadConfigFields();
         }
         catch (Exception ex)
         {
-            AppendLog($"Error during replacement: {ex.Message}");
+            AppendError($"Error during replacement: {ex.Message}");
         }
     }
 
@@ -171,17 +184,129 @@ public partial class MainWindowViewModel : ViewModelBase
             .ToArray()!;
     }
 
-    private void AppendLog(string message)
+    private ObservableCollection<ConfigField> LoadConfigFields(string? configPath)
     {
-        var builder = new StringBuilder(LogText);
-        if (builder.Length > 0)
+        var fields = new ObservableCollection<ConfigField>();
+        if (string.IsNullOrWhiteSpace(configPath) || !File.Exists(configPath))
         {
-            builder.AppendLine();
+            return fields;
         }
 
-        builder.Append(message);
-        LogText = builder.ToString();
+        try
+        {
+            using var stream = File.OpenRead(configPath);
+            using var document = JsonDocument.Parse(stream);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return fields;
+            }
+
+            foreach (var property in document.RootElement.EnumerateObject())
+            {
+                var valueKind = property.Value.ValueKind;
+                fields.Add(new ConfigField(
+                    property.Name,
+                    GetValueString(property.Value),
+                    valueKind,
+                    newValue => SaveConfigField(configPath, fields, property.Name, valueKind, newValue)));
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Error loading config {configPath}: {ex.Message}");
+        }
+
+        return fields;
     }
+
+    private void ReloadConfigFields()
+    {
+        ReloadConfigCollection(GameConfigFields, gameConfigPath);
+        ReloadConfigCollection(BuildConfigFields, buildConfigPath);
+    }
+
+    private void ReloadConfigCollection(ObservableCollection<ConfigField> target, string? configPath)
+    {
+        target.Clear();
+        foreach (var field in LoadConfigFields(configPath))
+        {
+            target.Add(field);
+        }
+    }
+
+    private void SaveConfigField(
+        string configPath,
+        ObservableCollection<ConfigField> fields,
+        string key,
+        JsonValueKind originalKind,
+        string? newValue)
+    {
+        try
+        {
+            var output = new Dictionary<string, object?>();
+            foreach (var field in fields)
+            {
+                output[field.Key] = field.Key == key
+                    ? ConvertValue(newValue, originalKind)
+                    : ConvertValue(field.Value, field.ValueKind);
+            }
+
+            var json = JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(configPath, json);
+            AppendSuccess($"Saved {Path.GetFileName(configPath)}.");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Error saving {Path.GetFileName(configPath)}: {ex.Message}");
+        }
+    }
+
+    private static object? ConvertValue(string? value, JsonValueKind kind)
+    {
+        if (kind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (kind == JsonValueKind.True || kind == JsonValueKind.False)
+        {
+            return bool.TryParse(value, out var boolValue) ? boolValue : false;
+        }
+
+        if (kind == JsonValueKind.Number)
+        {
+            return decimal.TryParse(value, out var number) ? number : 0;
+        }
+
+        return value ?? string.Empty;
+    }
+
+    private static string GetValueString(JsonElement element)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.String => element.GetString() ?? string.Empty,
+            JsonValueKind.Number => element.GetRawText(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            JsonValueKind.Null => "null",
+            _ => element.GetRawText(),
+        };
+    }
+
+    private void AppendBlankLine()
+    {
+        if (LogEntries.Count > 0)
+        {
+            LogEntries.Add(new LogEntry(string.Empty, Brushes.Transparent));
+        }
+    }
+
+    private void AppendInfo(string message) => LogEntries.Add(new LogEntry(message, Brushes.WhiteSmoke));
+
+    private void AppendSuccess(string message) => LogEntries.Add(new LogEntry(message, Brushes.LightGreen));
+
+    private void AppendError(string message) => LogEntries.Add(new LogEntry(message, Brushes.IndianRed));
 
     private static void CopyDirectory(string sourcePath, string destinationPath, bool overwrite)
     {
@@ -205,4 +330,31 @@ public partial class MainWindowViewModel : ViewModelBase
             CopyDirectory(directory.FullName, targetDirectoryPath, overwrite);
         }
     }
+
+    public sealed partial class ConfigField : ObservableObject
+    {
+        private readonly Action<string?>? onValueChanged;
+
+        public ConfigField(string key, string value, JsonValueKind valueKind, Action<string?>? onValueChanged)
+        {
+            Key = key;
+            this.value = value;
+            ValueKind = valueKind;
+            this.onValueChanged = onValueChanged;
+        }
+
+        public string Key { get; }
+
+        public JsonValueKind ValueKind { get; }
+
+        [ObservableProperty]
+        private string value;
+
+        partial void OnValueChanged(string value)
+        {
+            onValueChanged?.Invoke(value);
+        }
+    }
+
+    public sealed record LogEntry(string Message, IBrush Foreground);
 }

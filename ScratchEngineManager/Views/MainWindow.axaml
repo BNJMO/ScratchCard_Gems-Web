@@ -62,34 +62,101 @@
         <Border Grid.Column="1" Background="#1C1F26" Padding="16">
             <TabControl Background="#1C1F26" BorderBrush="#3B414F">
                 <TabItem Header="Log">
-                    <TextBox Text="{Binding LogText}"
-                             IsReadOnly="True"
-                             Background="#20242C"
-                             Foreground="#E6E8ED"
-                             BorderBrush="#3B414F"
-                             CornerRadius="6"
-                             Padding="12"
-                             AcceptsReturn="True"/>
+                    <Border Background="#20242C"
+                            BorderBrush="#3B414F"
+                            CornerRadius="6"
+                            Padding="12">
+                        <ScrollViewer>
+                            <ItemsControl ItemsSource="{Binding LogEntries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Message}"
+                                                   Foreground="{Binding Foreground}"
+                                                   FontFamily="Consolas"
+                                                   FontSize="13"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
                 </TabItem>
                 <TabItem Header="Game Config">
-                    <TextBox Text="Game configuration details will appear here."
-                             IsReadOnly="True"
-                             Background="#20242C"
-                             Foreground="#E6E8ED"
-                             BorderBrush="#3B414F"
-                             CornerRadius="6"
-                             Padding="12"
-                             AcceptsReturn="True"/>
+                    <Border Background="#20242C"
+                            BorderBrush="#3B414F"
+                            CornerRadius="6"
+                            Padding="12">
+                        <ScrollViewer>
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{"
+                                           Foreground="#A5ACB8"
+                                           FontFamily="Consolas"/>
+                                <ItemsControl ItemsSource="{Binding GameConfigFields}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding Key}"
+                                                           Foreground="#7CC0FF"
+                                                           FontFamily="Consolas"/>
+                                                <TextBlock Text=":"
+                                                           Foreground="#A5ACB8"
+                                                           FontFamily="Consolas"/>
+                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         Background="#2A2F3A"
+                                                         Foreground="#F2E68A"
+                                                         BorderBrush="#3B414F"
+                                                         CornerRadius="4"
+                                                         Padding="6,4"
+                                                         FontFamily="Consolas"
+                                                         MinWidth="120"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="}"
+                                           Foreground="#A5ACB8"
+                                           FontFamily="Consolas"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
                 </TabItem>
                 <TabItem Header="Build Config">
-                    <TextBox Text="Build configuration details will appear here."
-                             IsReadOnly="True"
-                             Background="#20242C"
-                             Foreground="#E6E8ED"
-                             BorderBrush="#3B414F"
-                             CornerRadius="6"
-                             Padding="12"
-                             AcceptsReturn="True"/>
+                    <Border Background="#20242C"
+                            BorderBrush="#3B414F"
+                            CornerRadius="6"
+                            Padding="12">
+                        <ScrollViewer>
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{"
+                                           Foreground="#A5ACB8"
+                                           FontFamily="Consolas"/>
+                                <ItemsControl ItemsSource="{Binding BuildConfigFields}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding Key}"
+                                                           Foreground="#7CC0FF"
+                                                           FontFamily="Consolas"/>
+                                                <TextBlock Text=":"
+                                                           Foreground="#A5ACB8"
+                                                           FontFamily="Consolas"/>
+                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         Background="#2A2F3A"
+                                                         Foreground="#F2E68A"
+                                                         BorderBrush="#3B414F"
+                                                         CornerRadius="4"
+                                                         Padding="6,4"
+                                                         FontFamily="Consolas"
+                                                         MinWidth="120"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="}"
+                                           Foreground="#A5ACB8"
+                                           FontFamily="Consolas"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
                 </TabItem>
             </TabControl>
         </Border>
