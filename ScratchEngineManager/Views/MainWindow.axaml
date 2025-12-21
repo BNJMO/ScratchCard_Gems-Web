@@ -69,20 +69,18 @@
                             Padding="12">
                         <ScrollViewer x:Name="LogScrollViewer"
                                       HorizontalScrollBarVisibility="Disabled">
-                            <ItemsControl ItemsSource="{Binding LogEntries}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBox Text="{Binding Message}"
-                                                 Foreground="{Binding Foreground}"
-                                                 FontFamily="Consolas"
-                                                 FontSize="13"
-                                                 Background="Transparent"
-                                                 BorderThickness="0"
-                                                 IsReadOnly="True"
-                                                 TextWrapping="Wrap"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <TextBox Text="{Binding LogText}"
+                                     FontFamily="Consolas"
+                                     FontSize="13"
+                                     Foreground="#E6E8ED"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     IsReadOnly="True"
+                                     TextWrapping="Wrap"
+                                     AcceptsReturn="True"
+                                     HorizontalAlignment="Stretch"
+                                     VerticalScrollBarVisibility="Disabled"
+                                     HorizontalScrollBarVisibility="Disabled"/>
                         </ScrollViewer>
                     </Border>
                 </TabItem>
