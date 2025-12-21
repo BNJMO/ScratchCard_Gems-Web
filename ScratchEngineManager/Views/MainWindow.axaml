@@ -7,7 +7,8 @@
         x:Class="ScratchEngineManager.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="ScratchEngineManager">
+        Title="Scratch Engine Manager"
+        Background="#1C1F26">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -15,6 +16,130 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <Grid ColumnDefinitions="1*,3*">
+        <Border Background="#2A2F3A" Padding="16">
+            <StackPanel Spacing="12">
+                <TextBlock Text="Selected game variation:"
+                           Foreground="#E6E8ED"
+                           FontSize="14"
+                           FontWeight="SemiBold"/>
+                <ComboBox ItemsSource="{Binding VariationOptions}"
+                          SelectedItem="{Binding SelectedVariation}"
+                          Background="#1C1F26"
+                          Foreground="#E6E8ED"
+                          BorderBrush="#3B414F"
+                          CornerRadius="6"
+                          Padding="8"/>
+
+                <Border Height="18"/>
+
+                <TextBlock Text="Actions:"
+                           Foreground="#E6E8ED"
+                           FontSize="14"
+                           FontWeight="SemiBold"/>
+                <Button Content="Replace Assets"
+                        Command="{Binding ReplaceAssetsCommand}"
+                        Background="#3E8EDE"
+                        Foreground="#F7F8FA"
+                        BorderBrush="#3E8EDE"
+                        CornerRadius="6"
+                        Padding="10,6"/>
+                <Button Content="Start Local Server"
+                        Background="#3E8EDE"
+                        Foreground="#F7F8FA"
+                        BorderBrush="#3E8EDE"
+                        CornerRadius="6"
+                        Padding="10,6"/>
+                <Button Content="Start Build"
+                        Background="#3E8EDE"
+                        Foreground="#F7F8FA"
+                        BorderBrush="#3E8EDE"
+                        CornerRadius="6"
+                        Padding="10,6"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Column="1" Background="#1C1F26" Padding="16">
+            <TabControl Background="#1C1F26" BorderBrush="#3B414F">
+                <TabItem Header="Log">
+                    <Border Background="#20242C"
+                            BorderBrush="#3B414F"
+                            CornerRadius="6"
+                            Padding="12">
+                        <ScrollViewer>
+                            <ItemsControl ItemsSource="{Binding LogEntries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Message}"
+                                                   Foreground="{Binding Foreground}"
+                                                   FontFamily="Consolas"
+                                                   FontSize="13"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </TabItem>
+                <TabItem Header="Game Config">
+                    <Border Background="#20242C"
+                            BorderBrush="#3B414F"
+                            CornerRadius="6"
+                            Padding="12">
+                        <Grid RowDefinitions="Auto,*">
+                            <Button Content="Save"
+                                    Command="{Binding SaveGameConfigCommand}"
+                                    IsEnabled="{Binding IsGameConfigDirty}"
+                                    HorizontalAlignment="Right"
+                                    Background="#3E8EDE"
+                                    Foreground="#F7F8FA"
+                                    BorderBrush="#3E8EDE"
+                                    CornerRadius="6"
+                                    Padding="10,4"/>
+                            <ScrollViewer Grid.Row="1">
+                                <TextBox Text="{Binding GameConfigText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True"
+                                         IsReadOnly="False"
+                                         Background="#20242C"
+                                         Foreground="#E6E8ED"
+                                         BorderBrush="#3B414F"
+                                         CornerRadius="6"
+                                         Padding="12"
+                                         FontFamily="Consolas"/>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </TabItem>
+                <TabItem Header="Build Config">
+                    <Border Background="#20242C"
+                            BorderBrush="#3B414F"
+                            CornerRadius="6"
+                            Padding="12">
+                        <Grid RowDefinitions="Auto,*">
+                            <Button Content="Save"
+                                    Command="{Binding SaveBuildConfigCommand}"
+                                    IsEnabled="{Binding IsBuildConfigDirty}"
+                                    HorizontalAlignment="Right"
+                                    Background="#3E8EDE"
+                                    Foreground="#F7F8FA"
+                                    BorderBrush="#3E8EDE"
+                                    CornerRadius="6"
+                                    Padding="10,4"/>
+                            <ScrollViewer Grid.Row="1">
+                                <TextBox Text="{Binding BuildConfigText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True"
+                                         IsReadOnly="False"
+                                         Background="#20242C"
+                                         Foreground="#E6E8ED"
+                                         BorderBrush="#3B414F"
+                                         CornerRadius="6"
+                                         Padding="12"
+                                         FontFamily="Consolas"/>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </TabItem>
+            </TabControl>
+        </Border>
+    </Grid>
 
 </Window>
