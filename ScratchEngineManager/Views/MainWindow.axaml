@@ -78,9 +78,7 @@
                                      IsReadOnly="True"
                                      TextWrapping="Wrap"
                                      AcceptsReturn="True"
-                                     HorizontalAlignment="Stretch"
-                                     VerticalScrollBarVisibility="Disabled"
-                                     HorizontalScrollBarVisibility="Disabled"/>
+                                     HorizontalAlignment="Stretch"/>
                         </ScrollViewer>
                     </Border>
                 </TabItem>
