@@ -43,6 +43,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<LogEntry> LogEntries { get; } = new();
 
+    [ObservableProperty]
+    private string logText = string.Empty;
+
     public ObservableCollection<ConfigValueEntry> GameConfigEntries { get; } = new();
 
     public ObservableCollection<ConfigValueEntry> BuildConfigEntries { get; } = new();
@@ -414,7 +417,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void AppendLogEntry(string message, IBrush brush)
     {
-        void AddEntry() => LogEntries.Add(new LogEntry(message, brush));
+        void AddEntry()
+        {
+            LogEntries.Add(new LogEntry(message, brush));
+            LogText = string.IsNullOrEmpty(LogText) ? message : $"{LogText}{Environment.NewLine}{message}";
+        }
 
         if (Dispatcher.UIThread.CheckAccess())
         {
