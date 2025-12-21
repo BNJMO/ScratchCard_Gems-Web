@@ -24,6 +24,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly string? buildConfigPath;
     private string gameConfigSnapshot = string.Empty;
     private string buildConfigSnapshot = string.Empty;
+    private readonly object localServerLock = new();
+    private Process? localServerProcess;
     private JsonNode? gameConfigNode;
     private JsonNode? buildConfigNode;
 
@@ -66,6 +68,12 @@ public partial class MainWindowViewModel : ViewModelBase
     public string GameConfigTabHeader => IsGameConfigDirty ? "Game Config *" : "Game Config";
 
     public string BuildConfigTabHeader => IsBuildConfigDirty ? "Build Config *" : "Build Config";
+    
+    [ObservableProperty]
+    private bool isLocalServerRunning;
+
+    [ObservableProperty]
+    private string localServerButtonLabel = "Start Local Server";
 
     [RelayCommand]
     private void ReplaceAssets()
@@ -216,6 +224,60 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             AppendError($"Error saving buildConfig.json: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleLocalServer()
+    {
+        if (IsLocalServerRunning)
+        {
+            StopLocalServer();
+            return;
+        }
+
+        AppendBlankLine();
+        if (string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            AppendError("Could not locate repository root. Server start aborted.");
+            return;
+        }
+
+        try
+        {
+            AppendInfo("Starting local server...");
+            Process? process;
+            if (OperatingSystem.IsWindows())
+            {
+                process = StartLocalServerProcess("cmd.exe", "/c start-server.bat", repositoryRoot);
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                process = StartLocalServerProcess("/bin/bash", "start-server.sh", repositoryRoot);
+            }
+            else
+            {
+                AppendError("Local server supported only on Windows or macOS.");
+                return;
+            }
+
+            if (process is null)
+            {
+                AppendError("Failed to start local server process.");
+                return;
+            }
+
+            lock (localServerLock)
+            {
+                localServerProcess = process;
+            }
+
+            IsLocalServerRunning = true;
+            _ = MonitorLocalServerAsync(process);
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Local server failed: {ex.Message}");
         }
     }
 
@@ -848,6 +910,48 @@ public partial class MainWindowViewModel : ViewModelBase
         StartBuildCommand.NotifyCanExecuteChanged();
     }
 
+    partial void OnIsLocalServerRunningChanged(bool value)
+    {
+        LocalServerButtonLabel = value ? "Stop Local Server" : "Start Local Server";
+    }
+
+    public void StopLocalServer()
+    {
+        AppendBlankLine();
+        AppendInfo("Stopping local server...");
+        Process? process;
+        lock (localServerLock)
+        {
+            process = localServerProcess;
+        }
+
+        if (process is null || process.HasExited)
+        {
+            AppendInfo("Local server is not running.");
+            IsLocalServerRunning = false;
+            return;
+        }
+
+        try
+        {
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit();
+            AppendSuccess("Local server stopped.");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Failed to stop local server: {ex.Message}");
+        }
+        finally
+        {
+            IsLocalServerRunning = false;
+            lock (localServerLock)
+            {
+                localServerProcess = null;
+            }
+        }
+    }
+
     private async Task<int> RunProcessAsync(string fileName, string arguments, string workingDirectory)
     {
         var startInfo = new ProcessStartInfo
@@ -870,6 +974,76 @@ public partial class MainWindowViewModel : ViewModelBase
         await Task.WhenAll(outputTask, errorTask, process.WaitForExitAsync());
 
         return process.ExitCode;
+    }
+
+    private Process? StartLocalServerProcess(string fileName, string arguments, string workingDirectory)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+
+        if (!process.Start())
+        {
+            return null;
+        }
+
+        _ = ReadStreamAsync(process.StandardOutput, AppendInfo);
+        _ = ReadStreamAsync(process.StandardError, AppendError);
+
+        return process;
+    }
+
+    private async Task MonitorLocalServerAsync(Process process)
+    {
+        var shouldReportExit = true;
+
+        try
+        {
+            await process.WaitForExitAsync();
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Local server monitoring error: {ex.Message}");
+            shouldReportExit = false;
+        }
+        finally
+        {
+            if (!IsLocalServerRunning)
+            {
+                shouldReportExit = false;
+            }
+
+            if (shouldReportExit)
+            {
+                var exitCode = process.ExitCode;
+                if (exitCode == 0)
+                {
+                    AppendSuccess("Local server stopped.");
+                }
+                else
+                {
+                    AppendError($"Local server exited with code {exitCode}.");
+                }
+            }
+
+            IsLocalServerRunning = false;
+            lock (localServerLock)
+            {
+                if (ReferenceEquals(localServerProcess, process))
+                {
+                    localServerProcess = null;
+                }
+            }
+        }
     }
 
     private static async Task ReadStreamAsync(StreamReader reader, Action<string> appendLine)
