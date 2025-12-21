@@ -15,6 +15,7 @@ namespace ScratchEngineManager.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
+    private static readonly IBrush DefaultLeafBrush = new SolidColorBrush(Color.Parse("#AAB2C0"));
     private readonly string? repositoryRoot;
     private readonly string? gameConfigPath;
     private readonly string? buildConfigPath;
@@ -357,7 +358,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var path = new List<ConfigPathSegment>();
         CollectConfigEntries(rootNode, path, target, onValueChanged);
-        ApplyGroupPresentation(target);
+        ApplyHierarchyPresentation(target);
     }
 
     private void CollectConfigEntries(
@@ -459,51 +460,125 @@ public partial class MainWindowViewModel : ViewModelBase
         return (json.Trim('"'), ConfigValueType.Unknown);
     }
 
-    private void ApplyGroupPresentation(ObservableCollection<ConfigValueEntry> target)
+    private void ApplyHierarchyPresentation(ObservableCollection<ConfigValueEntry> target)
     {
         var groupColors = new Dictionary<string, IBrush>(StringComparer.Ordinal);
         var random = new Random(7319);
-        string? lastGroup = null;
+        IReadOnlyList<ConfigPathSegment>? previousSegments = null;
 
         foreach (var entry in target)
         {
-            var (groupName, suffix) = GetGroupNameAndSuffix(entry.Path, entry.Segments);
-            entry.GroupName = groupName;
-            entry.PathSuffix = suffix;
-
-            if (!groupColors.TryGetValue(groupName, out var brush))
-            {
-                brush = CreateRandomBrush(random);
-                groupColors[groupName] = brush;
-            }
-
-            entry.GroupBrush = brush;
-            entry.IsGroupStart = !string.Equals(lastGroup, groupName, StringComparison.Ordinal);
-            entry.ItemMargin = entry.IsGroupStart ? new Thickness(0, 14, 0, 10) : new Thickness(0, 0, 0, 10);
-            lastGroup = groupName;
+            entry.DisplaySegments = BuildDisplaySegments(entry.Segments, groupColors, random);
+            entry.ItemMargin = BuildHierarchyMargin(entry.Segments, previousSegments);
+            previousSegments = entry.Segments;
         }
     }
 
-    private static (string groupName, string suffix) GetGroupNameAndSuffix(
-        string fullPath,
-        IReadOnlyList<ConfigPathSegment> segments)
+    private static IReadOnlyList<ConfigPathDisplaySegment> BuildDisplaySegments(
+        IReadOnlyList<ConfigPathSegment> segments,
+        IDictionary<string, IBrush> groupColors,
+        Random random)
     {
         if (segments.Count == 0)
         {
-            return ("root", fullPath);
+            return Array.Empty<ConfigPathDisplaySegment>();
         }
 
-        var first = segments[0];
-        var groupName = first.PropertyName ?? $"[{first.Index}]";
-        if (string.IsNullOrWhiteSpace(groupName))
+        var displaySegments = new List<ConfigPathDisplaySegment>(segments.Count);
+        for (var i = 0; i < segments.Count; i++)
         {
-            groupName = "root";
+            var segment = segments[i];
+            var text = segment.PropertyName ?? $"[{segment.Index}]";
+            if (i < segments.Count - 1 && ShouldAppendDot(segment, segments[i + 1]))
+            {
+                text += ".";
+            }
+
+            var brush = i == segments.Count - 1
+                ? DefaultLeafBrush
+                : GetBrushForPrefix(segments, i, groupColors, random);
+            displaySegments.Add(new ConfigPathDisplaySegment(text, brush));
         }
 
-        var suffix = fullPath.Length > groupName.Length
-            ? fullPath.Substring(groupName.Length)
-            : string.Empty;
-        return (groupName, suffix);
+        return displaySegments;
+    }
+
+    private static Thickness BuildHierarchyMargin(
+        IReadOnlyList<ConfigPathSegment> current,
+        IReadOnlyList<ConfigPathSegment>? previous)
+    {
+        if (previous is null || previous.Count == 0 || current.Count == 0)
+        {
+            return new Thickness(0, 0, 0, 10);
+        }
+
+        var sharedDepth = 0;
+        var maxDepth = Math.Min(current.Count, previous.Count);
+        while (sharedDepth < maxDepth && SegmentEquals(current[sharedDepth], previous[sharedDepth]))
+        {
+            sharedDepth++;
+        }
+
+        var sameParentDepth = maxDepth - 1;
+        if (sharedDepth >= sameParentDepth)
+        {
+            return new Thickness(0, 0, 0, 10);
+        }
+
+        var topMargin = sharedDepth switch
+        {
+            0 => 14,
+            1 => 10,
+            _ => 6,
+        };
+        return new Thickness(0, topMargin, 0, 10);
+    }
+
+    private static bool SegmentEquals(ConfigPathSegment left, ConfigPathSegment right)
+    {
+        return string.Equals(left.PropertyName, right.PropertyName, StringComparison.Ordinal)
+            && left.Index == right.Index;
+    }
+
+    private static bool ShouldAppendDot(ConfigPathSegment current, ConfigPathSegment next)
+    {
+        return next.PropertyName is not null && (current.PropertyName is not null || current.Index is not null);
+    }
+
+    private static IBrush GetBrushForPrefix(
+        IReadOnlyList<ConfigPathSegment> segments,
+        int segmentIndex,
+        IDictionary<string, IBrush> groupColors,
+        Random random)
+    {
+        var prefix = BuildPrefixKey(segments, segmentIndex);
+        if (!groupColors.TryGetValue(prefix, out var brush))
+        {
+            brush = CreateRandomBrush(random);
+            groupColors[prefix] = brush;
+        }
+
+        return brush;
+    }
+
+    private static string BuildPrefixKey(IReadOnlyList<ConfigPathSegment> segments, int lastIndex)
+    {
+        var result = string.Empty;
+        for (var i = 0; i <= lastIndex; i++)
+        {
+            var segment = segments[i];
+            if (!string.IsNullOrWhiteSpace(segment.PropertyName))
+            {
+                result = string.IsNullOrEmpty(result) ? segment.PropertyName! : $"{result}.{segment.PropertyName}";
+            }
+
+            if (segment.Index is not null)
+            {
+                result = $"{result}[{segment.Index}]";
+            }
+        }
+
+        return result;
     }
 
     private static IBrush CreateRandomBrush(Random random)

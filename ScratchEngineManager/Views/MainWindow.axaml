@@ -106,13 +106,21 @@
                                                     Margin="{Binding ItemMargin}">
                                                 <Grid ColumnDefinitions="2*,3*"
                                                       ColumnSpacing="12">
-                                                    <TextBlock FontFamily="Consolas"
-                                                               VerticalAlignment="Center">
-                                                        <Run Text="{Binding GroupName}"
-                                                             Foreground="{Binding GroupBrush}"/>
-                                                        <Run Text="{Binding PathSuffix}"
-                                                             Foreground="#AAB2C0"/>
-                                                    </TextBlock>
+                                                    <ItemsControl ItemsSource="{Binding DisplaySegments}"
+                                                                  VerticalAlignment="Center">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal"/>
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Text}"
+                                                                           Foreground="{Binding Foreground}"
+                                                                           FontFamily="Consolas"/>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
                                                     <TextBox Grid.Column="1"
                                                              Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                              Background="#1B2B3D"
@@ -156,13 +164,21 @@
                                                     Margin="{Binding ItemMargin}">
                                                 <Grid ColumnDefinitions="2*,3*"
                                                       ColumnSpacing="12">
-                                                    <TextBlock FontFamily="Consolas"
-                                                               VerticalAlignment="Center">
-                                                        <Run Text="{Binding GroupName}"
-                                                             Foreground="{Binding GroupBrush}"/>
-                                                        <Run Text="{Binding PathSuffix}"
-                                                             Foreground="#AAB2C0"/>
-                                                    </TextBlock>
+                                                    <ItemsControl ItemsSource="{Binding DisplaySegments}"
+                                                                  VerticalAlignment="Center">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal"/>
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Text}"
+                                                                           Foreground="{Binding Foreground}"
+                                                                           FontFamily="Consolas"/>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
                                                     <TextBox Grid.Column="1"
                                                              Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                              Background="#1B2B3D"

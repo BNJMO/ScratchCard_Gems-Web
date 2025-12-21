@@ -17,6 +17,8 @@ public enum ConfigValueType
 
 public readonly record struct ConfigPathSegment(string? PropertyName, int? Index);
 
+public sealed record ConfigPathDisplaySegment(string Text, IBrush Foreground);
+
 public sealed partial class ConfigValueEntry : ObservableObject
 {
     private readonly Action<ConfigValueEntry>? onValueChanged;
@@ -42,16 +44,7 @@ public sealed partial class ConfigValueEntry : ObservableObject
     public ConfigValueType ValueType { get; }
 
     [ObservableProperty]
-    private string groupName = string.Empty;
-
-    [ObservableProperty]
-    private string pathSuffix = string.Empty;
-
-    [ObservableProperty]
-    private IBrush groupBrush = Brushes.LightGray;
-
-    [ObservableProperty]
-    private bool isGroupStart;
+    private IReadOnlyList<ConfigPathDisplaySegment> displaySegments = Array.Empty<ConfigPathDisplaySegment>();
 
     [ObservableProperty]
     private Thickness itemMargin = new(0, 0, 0, 10);
