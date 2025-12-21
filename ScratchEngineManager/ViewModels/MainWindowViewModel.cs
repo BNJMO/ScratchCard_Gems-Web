@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Media;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -15,6 +18,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly string? buildConfigPath;
     private string gameConfigSnapshot = string.Empty;
     private string buildConfigSnapshot = string.Empty;
+    private Process? localServerProcess;
 
     public MainWindowViewModel()
     {
@@ -44,6 +48,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool isBuildConfigDirty;
+
+    [ObservableProperty]
+    private bool isLocalServerRunning;
+
+    [ObservableProperty]
+    private string localServerButtonText = "Start Local Server";
 
     [RelayCommand]
     private void ReplaceAssets()
@@ -197,6 +207,18 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    [RelayCommand]
+    private async Task ToggleLocalServerAsync()
+    {
+        if (IsLocalServerRunning)
+        {
+            StopLocalServer();
+            return;
+        }
+
+        await StartLocalServerAsync();
+    }
+
     private static string? FindRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
@@ -310,5 +332,136 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnBuildConfigTextChanged(string value)
     {
         IsBuildConfigDirty = !string.Equals(value, buildConfigSnapshot, StringComparison.Ordinal);
+    }
+
+    partial void OnIsLocalServerRunningChanged(bool value)
+    {
+        LocalServerButtonText = value ? "Stop Local Server" : "Start Local Server";
+    }
+
+    private async Task StartLocalServerAsync()
+    {
+        AppendBlankLine();
+        if (string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            AppendError("Could not locate repository root. Local server start aborted.");
+            return;
+        }
+
+        if (!await IsNodeAvailableAsync())
+        {
+            AppendError("Node.js is not installed. Please install Node.js from https://nodejs.org/.");
+            return;
+        }
+
+        var nodeModulesPath = Path.Combine(repositoryRoot, "node_modules");
+        if (!Directory.Exists(nodeModulesPath))
+        {
+            AppendInfo("Installing dependencies (npm install)...");
+            var installExitCode = await RunProcessAsync("npm", "install", repositoryRoot);
+            if (installExitCode != 0)
+            {
+                AppendError("npm install failed. Check the log output for details.");
+                return;
+            }
+        }
+
+        AppendInfo("Starting Vite development server...");
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "npm",
+                Arguments = "run dev",
+                WorkingDirectory = repositoryRoot,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            localServerProcess = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+            localServerProcess.Exited += (_, _) =>
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    AppendInfo("Local server stopped.");
+                    IsLocalServerRunning = false;
+                });
+            };
+
+            localServerProcess.Start();
+            localServerProcess.BeginOutputReadLine();
+            localServerProcess.BeginErrorReadLine();
+
+            IsLocalServerRunning = true;
+            AppendSuccess("Local server running at http://localhost:3000");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Error starting local server: {ex.Message}");
+        }
+    }
+
+    private void StopLocalServer()
+    {
+        if (localServerProcess is null)
+        {
+            IsLocalServerRunning = false;
+            return;
+        }
+
+        try
+        {
+            if (!localServerProcess.HasExited)
+            {
+                localServerProcess.Kill(true);
+                localServerProcess.WaitForExit(5000);
+            }
+
+            AppendInfo("Local server stopped.");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Error stopping local server: {ex.Message}");
+        }
+        finally
+        {
+            localServerProcess.Dispose();
+            localServerProcess = null;
+            IsLocalServerRunning = false;
+        }
+    }
+
+    private static async Task<bool> IsNodeAvailableAsync()
+    {
+        var exitCode = await RunProcessAsync("node", "--version", null);
+        return exitCode == 0;
+    }
+
+    private static async Task<int> RunProcessAsync(string fileName, string arguments, string? workingDirectory)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                WorkingDirectory = workingDirectory ?? string.Empty,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            using var process = new Process { StartInfo = startInfo };
+            process.Start();
+            await process.WaitForExitAsync();
+            return process.ExitCode;
+        }
+        catch
+        {
+            return -1;
+        }
     }
 }
