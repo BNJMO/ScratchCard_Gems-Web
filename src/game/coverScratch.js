@@ -19,6 +19,7 @@ export class CoverScratch {
     this._pointerMoveHandler = (event) => this.#handlePointerMove(event);
     this._pointerDownHandler = (event) => this.#handlePointerDown(event);
     this._pointerUpHandler = () => this.#handlePointerUp();
+    this._pointerOutHandler = () => this.#handlePointerOut();
     this._initialized = false;
     this._dragging = false;
     this._lastDrawnPoint = null;
@@ -47,6 +48,7 @@ export class CoverScratch {
       app.stage.on("pointerup", this._pointerUpHandler);
       app.stage.on("pointerupoutside", this._pointerUpHandler);
       app.stage.on("pointermove", this._pointerMoveHandler);
+      app.stage.on("pointerout", this._pointerOutHandler);
       this._initialized = true;
     }
 
@@ -92,6 +94,7 @@ export class CoverScratch {
       app.stage.off("pointerup", this._pointerUpHandler);
       app.stage.off("pointerupoutside", this._pointerUpHandler);
       app.stage.off("pointermove", this._pointerMoveHandler);
+      app.stage.off("pointerout", this._pointerOutHandler);
     }
 
     // Remove mask from cover
@@ -294,10 +297,23 @@ export class CoverScratch {
   }
 
   #scratch(globalX, globalY) {
-    if (!this._dragging || !this.brush || !this.maskTexture || !this.scene?.board || !this.line) return;
+    if (!this.brush || !this.maskTexture || !this.scene?.board || !this.line) return;
 
     const app = this.scene.app;
     if (!app) return;
+
+    // Select a random brush mask for each scratch point
+    if (this.brushMaskTextures.length > 0 && this.brush instanceof Sprite) {
+      const randomIndex = Math.floor(Math.random() * this.brushMaskTextures.length);
+      const maskTexture = this.brushMaskTextures[randomIndex];
+
+      // Update the brush texture
+      this.brush.texture = maskTexture;
+
+      // Recalculate scale to match the desired radius
+      const scale = (this._currentRadius * 2) / Math.max(maskTexture.width, maskTexture.height);
+      this.brush.scale.set(scale);
+    }
 
     const localPoint = this.scene.board.toLocal({ x: globalX, y: globalY });
 
@@ -335,6 +351,19 @@ export class CoverScratch {
         const x = this._lastDrawnPoint.x + dx * t;
         const y = this._lastDrawnPoint.y + dy * t;
 
+        // Select a random brush mask for each interpolated point
+        if (this.brushMaskTextures.length > 0 && this.brush instanceof Sprite) {
+          const randomIndex = Math.floor(Math.random() * this.brushMaskTextures.length);
+          const maskTexture = this.brushMaskTextures[randomIndex];
+
+          // Update the brush texture
+          this.brush.texture = maskTexture;
+
+          // Recalculate scale to match the desired radius
+          const scale = (this._currentRadius * 2) / Math.max(maskTexture.width, maskTexture.height);
+          this.brush.scale.set(scale);
+        }
+
         this.brush.position.set(x, y);
         app.renderer.render({
           container: this.brush,
@@ -366,5 +395,9 @@ export class CoverScratch {
   #handlePointerMove(event) {
     if (!event || !event.global) return;
     this.#scratch(event.global.x, event.global.y);
+  }
+
+  #handlePointerOut() {
+    this._lastDrawnPoint = null;
   }
 }

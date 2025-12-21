@@ -946,6 +946,9 @@ export async function createGame(mount, opts = {}) {
     ) {
       currentRoundOutcome.feedbackPlayed = true;
 
+      // Fade out the scratch cover when round is complete
+      coverScratch?.fadeOut();
+
       if (
         currentRoundOutcome.betResult === "win" &&
         currentRoundOutcome.winningCards.size > 0
