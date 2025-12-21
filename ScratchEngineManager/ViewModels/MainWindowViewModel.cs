@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Media;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -44,6 +47,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool isBuildConfigDirty;
+
+    [ObservableProperty]
+    private bool isBuildRunning;
 
     [RelayCommand]
     private void ReplaceAssets()
@@ -197,6 +203,50 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    private bool CanStartBuild() => !IsBuildRunning;
+
+    [RelayCommand(CanExecute = nameof(CanStartBuild))]
+    private async Task StartBuildAsync()
+    {
+        AppendBlankLine();
+        if (!OperatingSystem.IsWindows())
+        {
+            AppendError("Build currently supported only on Windows.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            AppendError("Could not locate repository root. Build aborted.");
+            return;
+        }
+
+        IsBuildRunning = true;
+
+        try
+        {
+            AppendInfo("Starting build process...");
+            var exitCode = await RunProcessAsync("cmd.exe", "/c start-build.bat", repositoryRoot);
+
+            if (exitCode == 0)
+            {
+                AppendSuccess("Build completed successfully.");
+            }
+            else
+            {
+                AppendError($"Build failed with exit code {exitCode}.");
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Build failed: {ex.Message}");
+        }
+        finally
+        {
+            IsBuildRunning = false;
+        }
+    }
+
     private static string? FindRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
@@ -265,17 +315,33 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void AppendBlankLine()
     {
-        if (LogEntries.Count > 0)
+        if (LogEntries.Count == 0)
         {
-            LogEntries.Add(new LogEntry(string.Empty, Brushes.Transparent));
+            return;
         }
+
+        AppendLogEntry(string.Empty, Brushes.Transparent);
     }
 
-    private void AppendInfo(string message) => LogEntries.Add(new LogEntry(message, Brushes.WhiteSmoke));
+    private void AppendInfo(string message) => AppendLogEntry(message, Brushes.WhiteSmoke);
 
-    private void AppendSuccess(string message) => LogEntries.Add(new LogEntry(message, Brushes.LightGreen));
+    private void AppendSuccess(string message) => AppendLogEntry(message, Brushes.LightGreen);
 
-    private void AppendError(string message) => LogEntries.Add(new LogEntry(message, Brushes.IndianRed));
+    private void AppendError(string message) => AppendLogEntry(message, Brushes.IndianRed);
+
+    private void AppendLogEntry(string message, IBrush brush)
+    {
+        void AddEntry() => LogEntries.Add(new LogEntry(message, brush));
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            AddEntry();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(AddEntry);
+        }
+    }
 
     private static void CopyDirectory(string sourcePath, string destinationPath, bool overwrite)
     {
@@ -310,5 +376,45 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnBuildConfigTextChanged(string value)
     {
         IsBuildConfigDirty = !string.Equals(value, buildConfigSnapshot, StringComparison.Ordinal);
+    }
+
+    partial void OnIsBuildRunningChanged(bool value)
+    {
+        StartBuildCommand.NotifyCanExecuteChanged();
+    }
+
+    private async Task<int> RunProcessAsync(string fileName, string arguments, string workingDirectory)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = new Process { StartInfo = startInfo };
+        process.Start();
+
+        var outputTask = ReadStreamAsync(process.StandardOutput, AppendInfo);
+        var errorTask = ReadStreamAsync(process.StandardError, AppendError);
+
+        await Task.WhenAll(outputTask, errorTask, process.WaitForExitAsync());
+
+        return process.ExitCode;
+    }
+
+    private static async Task ReadStreamAsync(StreamReader reader, Action<string> appendLine)
+    {
+        while (await reader.ReadLineAsync() is { } line)
+        {
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                appendLine(line);
+            }
+        }
     }
 }
