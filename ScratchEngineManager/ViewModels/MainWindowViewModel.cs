@@ -8,7 +8,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Media;
-using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -521,15 +520,45 @@ public partial class MainWindowViewModel : ViewModelBase
         var x = c * (1 - Math.Abs((hue / 60.0 % 2) - 1));
         var m = lightness - c / 2;
 
-        (double r, double g, double b) = hue switch
+        double r;
+        double g;
+        double b;
+        if (hue < 60)
         {
-            < 60 => (c, x, 0),
-            < 120 => (x, c, 0),
-            < 180 => (0, c, x),
-            < 240 => (0, x, c),
-            < 300 => (x, 0, c),
-            _ => (c, 0, x),
-        };
+            r = c;
+            g = x;
+            b = 0;
+        }
+        else if (hue < 120)
+        {
+            r = x;
+            g = c;
+            b = 0;
+        }
+        else if (hue < 180)
+        {
+            r = 0;
+            g = c;
+            b = x;
+        }
+        else if (hue < 240)
+        {
+            r = 0;
+            g = x;
+            b = c;
+        }
+        else if (hue < 300)
+        {
+            r = x;
+            g = 0;
+            b = c;
+        }
+        else
+        {
+            r = c;
+            g = 0;
+            b = x;
+        }
 
         return Color.FromRgb(
             (byte)Math.Round((r + m) * 255),
