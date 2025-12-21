@@ -51,6 +51,7 @@
                         CornerRadius="6"
                         Padding="10,6"/>
                 <Button Content="Start Build"
+                        Command="{Binding StartBuildCommand}"
                         Background="#3E8EDE"
                         Foreground="#F7F8FA"
                         BorderBrush="#3E8EDE"
