@@ -77,4 +77,8 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
+if /I "%~1"=="--no-pause" (
+    exit /b 0
+)
+
 pause
