@@ -98,15 +98,44 @@
                                     CornerRadius="6"
                                     Padding="10,4"/>
                             <ScrollViewer Grid.Row="1">
-                                <TextBox Text="{Binding GameConfigText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         AcceptsReturn="True"
-                                         IsReadOnly="False"
-                                         Background="#20242C"
-                                         Foreground="#E6E8ED"
-                                         BorderBrush="#3B414F"
-                                         CornerRadius="6"
-                                         Padding="12"
-                                         FontFamily="Consolas"/>
+                                <ItemsControl ItemsSource="{Binding GameConfigEntries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#243447"
+                                                    BorderBrush="#3B414F"
+                                                    CornerRadius="6"
+                                                    Padding="10"
+                                                    Margin="{Binding ItemMargin}">
+                                                <Grid ColumnDefinitions="2*,3*"
+                                                      ColumnSpacing="12">
+                                                    <ItemsControl ItemsSource="{Binding DisplaySegments}"
+                                                                  VerticalAlignment="Center">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal"/>
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Text}"
+                                                                           Foreground="{Binding Foreground}"
+                                                                           FontFamily="Consolas"/>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <TextBox Grid.Column="1"
+                                                             Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             Background="#1B2B3D"
+                                                             Foreground="#E6E8ED"
+                                                             BorderBrush="#4B5A70"
+                                                             CornerRadius="4"
+                                                             Padding="6"
+                                                             FontFamily="Consolas"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </ScrollViewer>
                         </Grid>
                     </Border>
@@ -127,15 +156,44 @@
                                     CornerRadius="6"
                                     Padding="10,4"/>
                             <ScrollViewer Grid.Row="1">
-                                <TextBox Text="{Binding BuildConfigText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         AcceptsReturn="True"
-                                         IsReadOnly="False"
-                                         Background="#20242C"
-                                         Foreground="#E6E8ED"
-                                         BorderBrush="#3B414F"
-                                         CornerRadius="6"
-                                         Padding="12"
-                                         FontFamily="Consolas"/>
+                                <ItemsControl ItemsSource="{Binding BuildConfigEntries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#243447"
+                                                    BorderBrush="#3B414F"
+                                                    CornerRadius="6"
+                                                    Padding="10"
+                                                    Margin="{Binding ItemMargin}">
+                                                <Grid ColumnDefinitions="2*,3*"
+                                                      ColumnSpacing="12">
+                                                    <ItemsControl ItemsSource="{Binding DisplaySegments}"
+                                                                  VerticalAlignment="Center">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal"/>
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Text}"
+                                                                           Foreground="{Binding Foreground}"
+                                                                           FontFamily="Consolas"/>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <TextBox Grid.Column="1"
+                                                             Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             Background="#1B2B3D"
+                                                             Foreground="#E6E8ED"
+                                                             BorderBrush="#4B5A70"
+                                                             CornerRadius="4"
+                                                             Padding="6"
+                                                             FontFamily="Consolas"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </ScrollViewer>
                         </Grid>
                     </Border>
