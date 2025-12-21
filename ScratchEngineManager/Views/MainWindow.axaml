@@ -44,7 +44,8 @@
                         BorderBrush="#3E8EDE"
                         CornerRadius="6"
                         Padding="10,6"/>
-                <Button Content="Start Local Server"
+                <Button Content="{Binding LocalServerButtonText}"
+                        Command="{Binding ToggleLocalServerCommand}"
                         Background="#3E8EDE"
                         Foreground="#F7F8FA"
                         BorderBrush="#3E8EDE"
