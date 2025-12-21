@@ -67,7 +67,8 @@
                             BorderBrush="#3B414F"
                             CornerRadius="6"
                             Padding="12">
-                        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                        <ScrollViewer x:Name="LogScrollViewer"
+                                      HorizontalScrollBarVisibility="Disabled">
                             <ItemsControl ItemsSource="{Binding LogEntries}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
