@@ -3,6 +3,8 @@ using System.Collections.Specialized;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using ScratchEngineManager.ViewModels;
 
@@ -14,17 +16,24 @@ public partial class MainWindow : Window
     private ScrollViewer? _logScrollViewer;
     private INotifyCollectionChanged? _logEntries;
     private bool _autoScrollEnabled = true;
+    private TabControl? _configTabs;
+    private TabItem? _gameConfigTab;
+    private TabItem? _buildConfigTab;
 
     public MainWindow()
     {
         InitializeComponent();
         _logScrollViewer = this.FindControl<ScrollViewer>("LogScrollViewer");
+        _configTabs = this.FindControl<TabControl>("ConfigTabs");
+        _gameConfigTab = this.FindControl<TabItem>("GameConfigTab");
+        _buildConfigTab = this.FindControl<TabItem>("BuildConfigTab");
 
         if (_logScrollViewer is not null)
         {
             _logScrollViewer.ScrollChanged += OnLogScrollChanged;
         }
 
+        AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
         DataContextChanged += OnDataContextChanged;
         Closing += OnWindowClosing;
     }
@@ -81,6 +90,39 @@ public partial class MainWindow : Window
     {
         var maxOffset = scrollViewer.Extent.Height - scrollViewer.Viewport.Height;
         return scrollViewer.Offset.Y >= maxOffset - AutoScrollThreshold;
+    }
+
+    private void OnWindowKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!IsSaveShortcut(e) || DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        var selectedTab = _configTabs?.SelectedItem as TabItem;
+        if (selectedTab == _gameConfigTab && viewModel.SaveGameConfigCommand.CanExecute(null))
+        {
+            viewModel.SaveGameConfigCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (selectedTab == _buildConfigTab && viewModel.SaveBuildConfigCommand.CanExecute(null))
+        {
+            viewModel.SaveBuildConfigCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    private static bool IsSaveShortcut(KeyEventArgs e)
+    {
+        if (e.Key != Key.S)
+        {
+            return false;
+        }
+
+        var modifiers = e.KeyModifiers;
+        return modifiers.HasFlag(KeyModifiers.Control) || modifiers.HasFlag(KeyModifiers.Meta);
     }
 
     private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
