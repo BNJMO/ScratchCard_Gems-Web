@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Avalonia.Controls;
 using ScratchEngineManager.ViewModels;
 
@@ -9,15 +8,14 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Closing += OnWindowClosing;
     }
 
-    protected override void OnClosing(CancelEventArgs e)
+    private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
     {
         if (DataContext is MainWindowViewModel viewModel)
         {
             viewModel.StopLocalServer();
         }
-
-        base.OnClosing(e);
     }
 }
