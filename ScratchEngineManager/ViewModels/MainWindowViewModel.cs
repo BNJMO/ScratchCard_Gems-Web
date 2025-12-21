@@ -212,7 +212,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task ToggleLocalServerAsync()
+    private void ToggleLocalServer()
     {
         if (IsLocalServerRunning)
         {
@@ -539,6 +539,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task MonitorLocalServerAsync(Process process)
     {
+        var shouldReportExit = true;
+
         try
         {
             await process.WaitForExitAsync();
@@ -546,22 +548,26 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             AppendError($"Local server monitoring error: {ex.Message}");
+            shouldReportExit = false;
         }
         finally
         {
             if (!IsLocalServerRunning)
             {
-                return;
+                shouldReportExit = false;
             }
 
-            var exitCode = process.ExitCode;
-            if (exitCode == 0)
+            if (shouldReportExit)
             {
-                AppendSuccess("Local server stopped.");
-            }
-            else
-            {
-                AppendError($"Local server exited with code {exitCode}.");
+                var exitCode = process.ExitCode;
+                if (exitCode == 0)
+                {
+                    AppendSuccess("Local server stopped.");
+                }
+                else
+                {
+                    AppendError($"Local server exited with code {exitCode}.");
+                }
             }
 
             IsLocalServerRunning = false;
