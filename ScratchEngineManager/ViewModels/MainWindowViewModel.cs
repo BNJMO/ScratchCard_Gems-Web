@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -358,7 +359,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (!Directory.Exists(nodeModulesPath))
         {
             AppendInfo("Installing dependencies (npm install)...");
-            var installExitCode = await RunProcessAsync("npm", "install", repositoryRoot);
+            var installExitCode = await RunProcessAsync(GetNpmCommand(), "install", repositoryRoot);
             if (installExitCode != 0)
             {
                 AppendError("npm install failed. Check the log output for details.");
@@ -371,7 +372,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = "npm",
+                FileName = GetNpmCommand(),
                 Arguments = "run dev",
                 WorkingDirectory = repositoryRoot,
                 UseShellExecute = false,
@@ -381,6 +382,24 @@ public partial class MainWindowViewModel : ViewModelBase
             };
 
             localServerProcess = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+            localServerProcess.OutputDataReceived += (_, args) =>
+            {
+                if (string.IsNullOrWhiteSpace(args.Data))
+                {
+                    return;
+                }
+
+                Dispatcher.UIThread.Post(() => AppendInfo(args.Data));
+            };
+            localServerProcess.ErrorDataReceived += (_, args) =>
+            {
+                if (string.IsNullOrWhiteSpace(args.Data))
+                {
+                    return;
+                }
+
+                Dispatcher.UIThread.Post(() => AppendError(args.Data));
+            };
             localServerProcess.Exited += (_, _) =>
             {
                 Dispatcher.UIThread.Post(() =>
@@ -435,7 +454,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private static async Task<bool> IsNodeAvailableAsync()
     {
-        var exitCode = await RunProcessAsync("node", "--version", null);
+        var exitCode = await RunProcessAsync(GetNodeCommand(), "--version", null);
         return exitCode == 0;
     }
 
@@ -463,5 +482,15 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             return -1;
         }
+    }
+
+    private static string GetNodeCommand()
+    {
+        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "node.exe" : "node";
+    }
+
+    private static string GetNpmCommand()
+    {
+        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "npm.cmd" : "npm";
     }
 }
