@@ -103,13 +103,16 @@
                                                     BorderBrush="#3B414F"
                                                     CornerRadius="6"
                                                     Padding="10"
-                                                    Margin="0,0,0,10">
+                                                    Margin="{Binding ItemMargin}">
                                                 <Grid ColumnDefinitions="2*,3*"
                                                       ColumnSpacing="12">
-                                                    <TextBlock Text="{Binding Path}"
-                                                               Foreground="#AAB2C0"
-                                                               FontFamily="Consolas"
-                                                               VerticalAlignment="Center"/>
+                                                    <TextBlock FontFamily="Consolas"
+                                                               VerticalAlignment="Center">
+                                                        <Run Text="{Binding GroupName}"
+                                                             Foreground="{Binding GroupBrush}"/>
+                                                        <Run Text="{Binding PathSuffix}"
+                                                             Foreground="#AAB2C0"/>
+                                                    </TextBlock>
                                                     <TextBox Grid.Column="1"
                                                              Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                              Background="#1B2B3D"
@@ -150,13 +153,16 @@
                                                     BorderBrush="#3B414F"
                                                     CornerRadius="6"
                                                     Padding="10"
-                                                    Margin="0,0,0,10">
+                                                    Margin="{Binding ItemMargin}">
                                                 <Grid ColumnDefinitions="2*,3*"
                                                       ColumnSpacing="12">
-                                                    <TextBlock Text="{Binding Path}"
-                                                               Foreground="#AAB2C0"
-                                                               FontFamily="Consolas"
-                                                               VerticalAlignment="Center"/>
+                                                    <TextBlock FontFamily="Consolas"
+                                                               VerticalAlignment="Center">
+                                                        <Run Text="{Binding GroupName}"
+                                                             Foreground="{Binding GroupBrush}"/>
+                                                        <Run Text="{Binding PathSuffix}"
+                                                             Foreground="#AAB2C0"/>
+                                                    </TextBlock>
                                                     <TextBox Grid.Column="1"
                                                              Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                              Background="#1B2B3D"

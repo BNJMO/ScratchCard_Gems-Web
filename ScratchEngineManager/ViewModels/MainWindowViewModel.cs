@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Avalonia;
+using Avalonia.Media;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -356,6 +358,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var path = new List<ConfigPathSegment>();
         CollectConfigEntries(rootNode, path, target, onValueChanged);
+        ApplyGroupPresentation(target);
     }
 
     private void CollectConfigEntries(
@@ -455,6 +458,83 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         return (json.Trim('"'), ConfigValueType.Unknown);
+    }
+
+    private void ApplyGroupPresentation(ObservableCollection<ConfigValueEntry> target)
+    {
+        var groupColors = new Dictionary<string, IBrush>(StringComparer.Ordinal);
+        var random = new Random(7319);
+        string? lastGroup = null;
+
+        foreach (var entry in target)
+        {
+            var (groupName, suffix) = GetGroupNameAndSuffix(entry.Path, entry.Segments);
+            entry.GroupName = groupName;
+            entry.PathSuffix = suffix;
+
+            if (!groupColors.TryGetValue(groupName, out var brush))
+            {
+                brush = CreateRandomBrush(random);
+                groupColors[groupName] = brush;
+            }
+
+            entry.GroupBrush = brush;
+            entry.IsGroupStart = !string.Equals(lastGroup, groupName, StringComparison.Ordinal);
+            entry.ItemMargin = entry.IsGroupStart ? new Thickness(0, 14, 0, 10) : new Thickness(0, 0, 0, 10);
+            lastGroup = groupName;
+        }
+    }
+
+    private static (string groupName, string suffix) GetGroupNameAndSuffix(
+        string fullPath,
+        IReadOnlyList<ConfigPathSegment> segments)
+    {
+        if (segments.Count == 0)
+        {
+            return ("root", fullPath);
+        }
+
+        var first = segments[0];
+        var groupName = first.PropertyName ?? $"[{first.Index}]";
+        if (string.IsNullOrWhiteSpace(groupName))
+        {
+            groupName = "root";
+        }
+
+        var suffix = fullPath.Length > groupName.Length
+            ? fullPath.Substring(groupName.Length)
+            : string.Empty;
+        return (groupName, suffix);
+    }
+
+    private static IBrush CreateRandomBrush(Random random)
+    {
+        var hue = random.NextDouble() * 360.0;
+        var saturation = 0.5 + random.NextDouble() * 0.25;
+        var lightness = 0.55 + random.NextDouble() * 0.15;
+        return new SolidColorBrush(FromHsl(hue, saturation, lightness));
+    }
+
+    private static Color FromHsl(double hue, double saturation, double lightness)
+    {
+        var c = (1 - Math.Abs(2 * lightness - 1)) * saturation;
+        var x = c * (1 - Math.Abs((hue / 60.0 % 2) - 1));
+        var m = lightness - c / 2;
+
+        (double r, double g, double b) = hue switch
+        {
+            < 60 => (c, x, 0),
+            < 120 => (x, c, 0),
+            < 180 => (0, c, x),
+            < 240 => (0, x, c),
+            < 300 => (x, 0, c),
+            _ => (c, 0, x),
+        };
+
+        return Color.FromRgb(
+            (byte)Math.Round((r + m) * 255),
+            (byte)Math.Round((g + m) * 255),
+            (byte)Math.Round((b + m) * 255));
     }
 
     private void OnGameConfigEntryChanged(ConfigValueEntry entry)

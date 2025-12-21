@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using Avalonia;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace ScratchEngineManager.ViewModels;
@@ -38,6 +40,21 @@ public sealed partial class ConfigValueEntry : ObservableObject
     public IReadOnlyList<ConfigPathSegment> Segments { get; }
 
     public ConfigValueType ValueType { get; }
+
+    [ObservableProperty]
+    private string groupName = string.Empty;
+
+    [ObservableProperty]
+    private string pathSuffix = string.Empty;
+
+    [ObservableProperty]
+    private IBrush groupBrush = Brushes.LightGray;
+
+    [ObservableProperty]
+    private bool isGroupStart;
+
+    [ObservableProperty]
+    private Thickness itemMargin = new(0, 0, 0, 10);
 
     [ObservableProperty]
     private string value = string.Empty;
