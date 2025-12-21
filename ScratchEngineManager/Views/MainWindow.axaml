@@ -62,7 +62,7 @@
         </Border>
 
         <Border Grid.Column="1" Background="#1C1F26" Padding="16">
-            <TabControl Background="#1C1F26" BorderBrush="#3B414F">
+            <TabControl x:Name="ConfigTabs" Background="#1C1F26" BorderBrush="#3B414F">
                 <TabItem Header="Log">
                     <Border Background="#20242C"
                             BorderBrush="#3B414F"
@@ -84,23 +84,7 @@
                         </ScrollViewer>
                     </Border>
                 </TabItem>
-                <TabItem Header="{Binding GameConfigTabHeader}">
-                    <TabItem.KeyBindings>
-                        <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveGameConfigCommand}"/>
-                        <KeyBinding Gesture="Cmd+S" Command="{Binding SaveGameConfigCommand}"/>
-                    </TabItem.KeyBindings>
-                    <TabItem.Styles>
-                        <Style Selector="TextBox">
-                            <Setter Property="KeyBindings">
-                                <Setter.Value>
-                                    <KeyBinding Gesture="Ctrl+S"
-                                                Command="{Binding DataContext.SaveGameConfigCommand, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
-                                    <KeyBinding Gesture="Cmd+S"
-                                                Command="{Binding DataContext.SaveGameConfigCommand, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </TabItem.Styles>
+                <TabItem x:Name="GameConfigTab" Header="{Binding GameConfigTabHeader}">
                     <Border Background="#20242C"
                             BorderBrush="#3B414F"
                             CornerRadius="6"
@@ -158,23 +142,7 @@
                         </Grid>
                     </Border>
                 </TabItem>
-                <TabItem Header="{Binding BuildConfigTabHeader}">
-                    <TabItem.KeyBindings>
-                        <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveBuildConfigCommand}"/>
-                        <KeyBinding Gesture="Cmd+S" Command="{Binding SaveBuildConfigCommand}"/>
-                    </TabItem.KeyBindings>
-                    <TabItem.Styles>
-                        <Style Selector="TextBox">
-                            <Setter Property="KeyBindings">
-                                <Setter.Value>
-                                    <KeyBinding Gesture="Ctrl+S"
-                                                Command="{Binding DataContext.SaveBuildConfigCommand, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
-                                    <KeyBinding Gesture="Cmd+S"
-                                                Command="{Binding DataContext.SaveBuildConfigCommand, RelativeSource={RelativeSource AncestorType=TabItem}}"/>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </TabItem.Styles>
+                <TabItem x:Name="BuildConfigTab" Header="{Binding BuildConfigTabHeader}">
                     <Border Background="#20242C"
                             BorderBrush="#3B414F"
                             CornerRadius="6"
