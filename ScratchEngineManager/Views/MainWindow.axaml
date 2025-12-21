@@ -7,7 +7,7 @@
         x:Class="ScratchEngineManager.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="ScratchEngineManager"
+        Title="Scratch Engine Manager"
         Background="#1C1F26">
 
     <Design.DataContext>
@@ -38,6 +38,7 @@
                            FontSize="14"
                            FontWeight="SemiBold"/>
                 <Button Content="Replace Assets"
+                        Command="{Binding ReplaceAssetsCommand}"
                         Background="#3E8EDE"
                         Foreground="#F7F8FA"
                         BorderBrush="#3E8EDE"
@@ -61,7 +62,7 @@
         <Border Grid.Column="1" Background="#1C1F26" Padding="16">
             <TabControl Background="#1C1F26" BorderBrush="#3B414F">
                 <TabItem Header="Log">
-                    <TextBox Text="Log output will appear here."
+                    <TextBox Text="{Binding LogText}"
                              IsReadOnly="True"
                              Background="#20242C"
                              Foreground="#E6E8ED"
