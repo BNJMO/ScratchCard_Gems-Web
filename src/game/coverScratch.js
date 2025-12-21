@@ -1,4 +1,4 @@
-import { BlurFilter, Graphics, Rectangle, RenderTexture, Sprite } from "pixi.js";
+import { Assets, BlurFilter, Graphics, Rectangle, RenderTexture, Sprite } from "pixi.js";
 
 export class CoverScratch {
   constructor({ scene, radius, blurSize, padding = 16 } = {}) {
@@ -7,30 +7,52 @@ export class CoverScratch {
     this.blurSizeOption = blurSize;
     this.padding = Math.max(0, Number(padding) || 0);
 
-    this.coverSprite = null;
-    this.coverTexture = null;
+    this.coverGraphics = null;
+    this.maskTexture = null;
+    this.maskSprite = null;
     this.brush = null;
-    this.brushTexture = null;
+    this.line = null;
+    this.brushMaskTextures = [];
     this.coverBounds = new Rectangle();
     this._currentRadius = null;
     this._currentBlur = null;
     this._pointerMoveHandler = (event) => this.#handlePointerMove(event);
+    this._pointerDownHandler = (event) => this.#handlePointerDown(event);
+    this._pointerUpHandler = () => this.#handlePointerUp();
     this._initialized = false;
+    this._dragging = false;
+    this._lastDrawnPoint = null;
   }
 
-  init() {
+  async init() {
     const app = this.scene?.app;
     if (!app || !this.scene?.board) return;
 
-    if (!this.brush) {
-      this.#rebuildBrush();
+    // Load brush mask textures FIRST before any brush building
+    let masksJustLoaded = false;
+    if (this.brushMaskTextures.length === 0) {
+      await this.#loadBrushMasks();
+      masksJustLoaded = true;
+      console.log('Masks loaded, ready to build brush');
+    }
+
+    if (!this.line) {
+      this.line = new Graphics();
     }
 
     if (!this._initialized) {
       app.stage.eventMode = "static";
       app.stage.hitArea = app.screen;
+      app.stage.on("pointerdown", this._pointerDownHandler);
+      app.stage.on("pointerup", this._pointerUpHandler);
+      app.stage.on("pointerupoutside", this._pointerUpHandler);
       app.stage.on("pointermove", this._pointerMoveHandler);
       this._initialized = true;
+    }
+
+    // Force rebuild if masks were just loaded, or build if no brush exists
+    if (masksJustLoaded || !this.brush) {
+      this.#rebuildBrush();
     }
 
     this.syncWithLayout();
@@ -56,8 +78,7 @@ export class CoverScratch {
       this.#rebuildBrush(targetRadius, targetBlur);
     }
 
-    const sizeChanged = this.#ensureCoverTexture();
-    this.#positionCoverSprite();
+    const sizeChanged = this.#ensureCoverAndMask();
 
     if (sizeChanged) {
       this.reset();
@@ -67,117 +88,205 @@ export class CoverScratch {
   destroy() {
     const app = this.scene?.app;
     if (app?.stage) {
+      app.stage.off("pointerdown", this._pointerDownHandler);
+      app.stage.off("pointerup", this._pointerUpHandler);
+      app.stage.off("pointerupoutside", this._pointerUpHandler);
       app.stage.off("pointermove", this._pointerMoveHandler);
     }
 
-    if (this.coverSprite?.parent) {
-      this.coverSprite.parent.removeChild(this.coverSprite);
+    // Remove mask from cover
+    if (this.coverGraphics) {
+      this.coverGraphics.mask = null;
     }
 
-    this.coverSprite?.destroy({ texture: false, baseTexture: false });
-    this.coverTexture?.destroy(true);
-    this.brush?.destroy({ texture: false, baseTexture: false });
-    this.brushTexture?.destroy(true);
-    this.coverSprite = null;
-    this.coverTexture = null;
+    if (this.coverGraphics?.parent) {
+      this.coverGraphics.parent.removeChild(this.coverGraphics);
+    }
+
+    if (this.maskSprite?.parent) {
+      this.maskSprite.parent.removeChild(this.maskSprite);
+    }
+
+    this.coverGraphics?.destroy();
+    this.maskSprite?.destroy({ texture: false, baseTexture: false });
+    this.maskTexture?.destroy(true);
+    this.brush?.destroy();
+    this.line?.destroy();
+    this.coverGraphics = null;
+    this.maskSprite = null;
+    this.maskTexture = null;
     this.brush = null;
-    this.brushTexture = null;
+    this.line = null;
     this._initialized = false;
   }
 
   reset() {
-    this.#fillCover();
+    this._dragging = false;
+    this._lastDrawnPoint = null;
+
+    // Restore cover to full opacity
+    if (this.coverGraphics) {
+      this.coverGraphics.alpha = 1;
+    }
+
+    // Clear all scratches - fill mask with white to show full cover
+    this.#clearMask();
   }
 
-  #ensureCoverTexture() {
+  fadeOut(duration = 1000) {
+    if (!this.coverGraphics) return;
+
+    const startTime = Date.now();
+    const startAlpha = this.coverGraphics.alpha;
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Ease out cubic for smooth animation
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+
+      this.coverGraphics.alpha = startAlpha * (1 - easedProgress);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // Animation complete
+        this.coverGraphics.alpha = 0;
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }
+
+  async #ensureCoverAndMask() {
     const app = this.scene?.app;
-    if (!app) return false;
+    const board = this.scene?.board;
+    if (!app || !board) return false;
 
     const width = Math.max(1, Math.ceil(this.coverBounds.width));
     const height = Math.max(1, Math.ceil(this.coverBounds.height));
 
-    const needsNewTexture =
-      !this.coverTexture ||
-      this.coverTexture.width !== width ||
-      this.coverTexture.height !== height;
+    const needsNew =
+      !this.maskTexture ||
+      this.maskTexture.width !== width ||
+      this.maskTexture.height !== height;
 
-    if (!needsNewTexture) {
+    if (!needsNew) {
       return false;
     }
 
-    this.coverTexture?.destroy(true);
-    this.coverTexture = RenderTexture.create({
+    // Create the mask texture (render texture for scratching)
+    this.maskTexture?.destroy(true);
+    this.maskTexture = RenderTexture.create({
       width,
       height,
       resolution: app.renderer.resolution ?? 1,
     });
 
-    if (!this.coverSprite) {
-      this.coverSprite = new Sprite(this.coverTexture);
-      this.coverSprite.eventMode = "none";
-      this.coverSprite.renderable = true;
-      this.scene?.board?.addChild(this.coverSprite);
-    } else {
-      this.coverSprite.texture = this.coverTexture;
+    // Create the cover sprite from image (on top of the board)
+    if (!this.coverGraphics) {
+      const coverTexture = await Assets.load('assets/sprites/scratchCover.png');
+      this.coverGraphics = new Sprite(coverTexture);
+      this.coverGraphics.eventMode = "none";
+      // Add cover above the board
+      board.parent?.addChild(this.coverGraphics);
     }
+
+    // Position and size the cover to match the bounds
+    // Convert board local position to parent coordinate system
+    const globalPos = board.toGlobal({ x: this.coverBounds.x, y: this.coverBounds.y });
+    const localPos = board.parent.toLocal(globalPos);
+
+    this.coverGraphics.position.set(localPos.x, localPos.y);
+    this.coverGraphics.width = width;
+    this.coverGraphics.height = height;
+
+    // Create mask sprite for the cover
+    if (!this.maskSprite) {
+      this.maskSprite = new Sprite(this.maskTexture);
+      this.maskSprite.eventMode = "none";
+      board.parent?.addChild(this.maskSprite);
+    } else {
+      this.maskSprite.texture = this.maskTexture;
+    }
+
+    // Position mask sprite in parent's coordinate system
+    this.maskSprite.position.set(localPos.x, localPos.y);
+
+    // Apply mask to cover - cover only shows where mask is white
+    // We'll invert this by filling mask with white initially and erasing where scratched
+    this.coverGraphics.mask = this.maskSprite;
 
     return true;
   }
 
-  #positionCoverSprite() {
-    if (!this.coverSprite) return;
-    this.coverSprite.position.set(this.coverBounds.x, this.coverBounds.y);
+  async #loadBrushMasks() {
+    const masks = [];
+
+    // Try to load masks with indices 0-20 (adjust range as needed)
+    for (let index = 0; index < 20; index++) {
+      try {
+        const path = `assets/sprites/scratchMasks/scratchMask_${index}.png`;
+        const texture = await Assets.load(path);
+        masks.push(texture);
+        console.log(`Loaded brush mask ${index}`);
+      } catch (error) {
+        // This index doesn't exist, continue to next
+        console.log(`No brush mask found at index ${index}, stopping...`);
+        break;
+      }
+    }
+
+    this.brushMaskTextures = masks;
+    console.log(`Total brush masks loaded: ${masks.length}`);
   }
 
   #rebuildBrush(radius = 96, blurSize = 24) {
     const app = this.scene?.app;
     if (!app) return;
 
-    this.brush?.destroy({ texture: false, baseTexture: false });
-    this.brushTexture?.destroy(true);
+    this.brush?.destroy();
 
-    const circle = new Graphics()
-      .circle(radius + blurSize, radius + blurSize, radius)
-      .fill({ color: 0xffffff });
+    // Select a random brush mask texture
+    if (this.brushMaskTextures.length > 0) {
+      const randomIndex = Math.floor(Math.random() * this.brushMaskTextures.length);
+      const maskTexture = this.brushMaskTextures[randomIndex];
 
-    circle.filters = [new BlurFilter(blurSize)];
+      console.log(`Using brush mask ${randomIndex} of ${this.brushMaskTextures.length}`);
 
-    const bounds = new Rectangle(
-      0,
-      0,
-      (radius + blurSize) * 2,
-      (radius + blurSize) * 2
-    );
+      this.brush = new Sprite(maskTexture);
+      this.brush.anchor.set(0.5);
+      this.brush.tint = 0x000000; // Tint to black to erase the cover mask
 
-    const texture = app.renderer.generateTexture({
-      target: circle,
-      frame: bounds,
-      resolution: 1,
-    });
+      // Scale the brush to match the desired radius
+      const scale = (radius * 2) / Math.max(maskTexture.width, maskTexture.height);
+      this.brush.scale.set(scale);
+    } else {
+      // Fallback to circle brush if no masks loaded
+      console.log('Using fallback circle brush - no masks loaded');
+      this.brush = new Graphics()
+        .circle(0, 0, radius)
+        .fill({ color: 0x000000 });
+    }
 
-    circle.destroy();
-
-    const brush = new Sprite(texture);
-    brush.anchor.set(0.5);
-    brush.blendMode = "erase";
-
-    this.brushTexture = texture;
-    this.brush = brush;
     this._currentRadius = radius;
     this._currentBlur = blurSize;
   }
 
-  #fillCover() {
+  #clearMask() {
     const app = this.scene?.app;
-    if (!app || !this.coverTexture) return;
+    if (!app || !this.maskTexture) return;
 
+    // Fill the mask texture with white
+    // This makes the cover fully visible (white mask = cover shows)
     const filler = new Graphics()
-      .rect(0, 0, this.coverTexture.width, this.coverTexture.height)
-      .fill({ color: 0xeaff00 });
+      .rect(0, 0, this.maskTexture.width, this.maskTexture.height)
+      .fill({ color: 0xffffff });
 
     app.renderer.render({
       container: filler,
-      target: this.coverTexture,
+      target: this.maskTexture,
       clear: true,
     });
 
@@ -185,10 +294,14 @@ export class CoverScratch {
   }
 
   #scratch(globalX, globalY) {
-    if (!this.brush || !this.coverTexture || !this.scene?.board) return;
+    if (!this._dragging || !this.brush || !this.maskTexture || !this.scene?.board || !this.line) return;
+
+    const app = this.scene.app;
+    if (!app) return;
 
     const localPoint = this.scene.board.toLocal({ x: globalX, y: globalY });
 
+    // Check bounds
     if (
       localPoint.x < this.coverBounds.x ||
       localPoint.x > this.coverBounds.x + this.coverBounds.width ||
@@ -201,13 +314,53 @@ export class CoverScratch {
     const localX = localPoint.x - this.coverBounds.x;
     const localY = localPoint.y - this.coverBounds.y;
 
+    // Position and render the brush to the mask texture
     this.brush.position.set(localX, localY);
-
-    this.scene?.app?.renderer?.render({
+    app.renderer.render({
       container: this.brush,
-      target: this.coverTexture,
+      target: this.maskTexture,
       clear: false,
     });
+
+    // Smooth out the drawing by connecting the previous point to the current one
+    if (this._lastDrawnPoint) {
+      // Draw a line connecting the points
+      const dx = localX - this._lastDrawnPoint.x;
+      const dy = localY - this._lastDrawnPoint.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const steps = Math.ceil(distance / (this._currentRadius * 0.5));
+
+      for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        const x = this._lastDrawnPoint.x + dx * t;
+        const y = this._lastDrawnPoint.y + dy * t;
+
+        this.brush.position.set(x, y);
+        app.renderer.render({
+          container: this.brush,
+          target: this.maskTexture,
+          clear: false,
+        });
+      }
+    }
+
+    // Update last drawn point
+    if (!this._lastDrawnPoint) {
+      this._lastDrawnPoint = { x: 0, y: 0 };
+    }
+    this._lastDrawnPoint.x = localX;
+    this._lastDrawnPoint.y = localY;
+  }
+
+  #handlePointerDown(event) {
+    if (!event || !event.global) return;
+    this._dragging = true;
+    this.#scratch(event.global.x, event.global.y);
+  }
+
+  #handlePointerUp() {
+    this._dragging = false;
+    this._lastDrawnPoint = null;
   }
 
   #handlePointerMove(event) {
