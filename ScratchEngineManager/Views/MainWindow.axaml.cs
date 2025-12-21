@@ -26,6 +26,7 @@ public partial class MainWindow : Window
         }
 
         DataContextChanged += OnDataContextChanged;
+        Closing += OnWindowClosing;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -80,5 +81,13 @@ public partial class MainWindow : Window
     {
         var maxOffset = scrollViewer.Extent.Height - scrollViewer.Viewport.Height;
         return scrollViewer.Offset.Y >= maxOffset - AutoScrollThreshold;
+    }
+
+    private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.StopLocalServer();
+        }
     }
 }

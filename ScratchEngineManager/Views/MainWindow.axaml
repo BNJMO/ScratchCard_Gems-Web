@@ -44,7 +44,8 @@
                         BorderBrush="#3E8EDE"
                         CornerRadius="6"
                         Padding="10,6"/>
-                <Button Content="Start Local Server"
+                <Button Content="{Binding LocalServerButtonLabel}"
+                        Command="{Binding ToggleLocalServerCommand}"
                         Background="#3E8EDE"
                         Foreground="#F7F8FA"
                         BorderBrush="#3E8EDE"
@@ -82,7 +83,7 @@
                         </ScrollViewer>
                     </Border>
                 </TabItem>
-                <TabItem Header="Game Config">
+                <TabItem Header="{Binding GameConfigTabHeader}">
                     <Border Background="#20242C"
                             BorderBrush="#3B414F"
                             CornerRadius="6"
@@ -91,7 +92,7 @@
                             <Button Content="Save"
                                     Command="{Binding SaveGameConfigCommand}"
                                     IsEnabled="{Binding IsGameConfigDirty}"
-                                    HorizontalAlignment="Right"
+                                    HorizontalAlignment="Left"
                                     Background="#3E8EDE"
                                     Foreground="#F7F8FA"
                                     BorderBrush="#3E8EDE"
@@ -140,7 +141,7 @@
                         </Grid>
                     </Border>
                 </TabItem>
-                <TabItem Header="Build Config">
+                <TabItem Header="{Binding BuildConfigTabHeader}">
                     <Border Background="#20242C"
                             BorderBrush="#3B414F"
                             CornerRadius="6"
@@ -149,7 +150,7 @@
                             <Button Content="Save"
                                     Command="{Binding SaveBuildConfigCommand}"
                                     IsEnabled="{Binding IsBuildConfigDirty}"
-                                    HorizontalAlignment="Right"
+                                    HorizontalAlignment="Left"
                                     Background="#3E8EDE"
                                     Foreground="#F7F8FA"
                                     BorderBrush="#3E8EDE"
