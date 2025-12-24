@@ -1,4 +1,4 @@
-import { Application, Container, Sprite } from "pixi.js";
+import { Application, Container, Graphics, Rectangle, Sprite, Text } from "pixi.js";
 import { Card } from "./card.js";
 import { WinPopup } from "./winPopup.js";
 
@@ -367,6 +367,40 @@ export class GameScene {
     const boardCenterY = vertical + availableHeight / 2;
 
     return { tileSize, gap, contentSize, boardCenterX, boardCenterY };
+  }
+
+  getBoardLayout() {
+    const layout = this._lastLayout;
+    if (!layout) return null;
+
+    return {
+      ...layout,
+    };
+  }
+
+  getBoardBounds() {
+    const layout = this._lastLayout;
+    if (!layout) return null;
+
+    const contentSize = layout.contentSize ?? 0;
+    const half = contentSize / 2;
+
+    return new Rectangle(
+      (layout.boardCenterX ?? 0) - half,
+      (layout.boardCenterY ?? 0) - half,
+      contentSize,
+      contentSize
+    );
+  }
+
+  #positionWinPopup() {
+    if (!this.winPopup) return;
+    const layout = this._lastLayout;
+    const fallbackWidth = this.app?.renderer?.width ?? 0;
+    const fallbackHeight = this.app?.renderer?.height ?? 0;
+    const centerX = layout?.boardCenterX ?? fallbackWidth / 2;
+    const centerY = layout?.boardCenterY ?? fallbackHeight / 2;
+    this.winPopup.container.position.set(centerX, centerY);
   }
 
   #getGridPadding() {
