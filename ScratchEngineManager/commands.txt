@@ -1,3 +1,8 @@
-run app: dotnet run
-run build Windows: dotnet publish -c Release -r win-x64 --self-contained true
-run build Mac: dotnet publish -c Release -r osx-arm64 --self-contained true
+- run app: 
+dotnet run
+
+- run build Windows: 
+dotnet publish -c Release -r win-x64 --self-contained true
+
+-run build Mac: 
+dotnet publish -c Release -r osx-arm64 --self-contained true
