@@ -423,6 +423,13 @@ export async function createGame(mount, opts = {}) {
 
   const gameMode = String(gameConfig?.gameplay?.gameMode ?? "").toLowerCase();
   const isScratchMode = gameMode === "scratch";
+  const scratchCoverFadeOutDuration = (() => {
+    const fromConfig = Number(gameConfig?.gameplay?.scratch?.coverFadeOutDuration);
+    if (Number.isFinite(fromConfig) && fromConfig >= 0) {
+      return fromConfig;
+    }
+    return 1000;
+  })();
   const scratchRevealRadius = (() => {
     const fromOpts = Number(opts.scratchRevealRadius);
     if (Number.isFinite(fromOpts)) {
@@ -973,7 +980,7 @@ export async function createGame(mount, opts = {}) {
       currentRoundOutcome.feedbackPlayed = true;
 
       // Fade out the scratch cover when round is complete
-      coverScratch?.fadeOut();
+      fadeOutScratchCover();
 
       if (
         currentRoundOutcome.betResult === "win" &&
@@ -1281,6 +1288,11 @@ export async function createGame(mount, opts = {}) {
     coverScratch?.setEnabled(nextEnabled);
   }
 
+  function fadeOutScratchCover() {
+    if (!isScratchMode) return;
+    coverScratch?.fadeOut(scratchCoverFadeOutDuration);
+  }
+
   return {
     app: scene.app,
     reset,
@@ -1298,5 +1310,6 @@ export async function createGame(mount, opts = {}) {
     setWinPopupAmount,
     getCardContentKeys: getAvailableContentKeys,
     setScratchEnabled,
+    fadeOutScratchCover,
   };
 }

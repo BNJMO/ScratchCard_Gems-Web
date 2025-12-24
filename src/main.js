@@ -742,6 +742,7 @@ function revealRemainingTilesAndFinalize() {
     return;
   }
 
+  game?.fadeOutScratchCover?.();
   markManualRoundForReset();
   game?.revealRemainingTiles?.();
   finalizeRound();
