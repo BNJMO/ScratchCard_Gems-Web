@@ -421,6 +421,9 @@ export async function createGame(mount, opts = {}) {
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
   };
 
+  const gameMode = String(gameConfig?.gameplay?.gameMode ?? "").toLowerCase();
+  const isScratchMode = gameMode === "scratch";
+
   const cardType = gameConfig?.gameplay?.card?.iconType ?? "static"
   console.log("Card types: " + cardType);
   const cardTypeEntries = cardType === "animated"
@@ -1088,7 +1091,9 @@ export async function createGame(mount, opts = {}) {
     blurSize: opts.coverRevealBlurSize,
     padding: opts.coverRevealPadding,
   });
-  coverScratch.init();
+  if (isScratchMode) {
+    coverScratch.init();
+  }
 
   registerCards();
 
