@@ -5,7 +5,7 @@
   },
   "gameplay": {
     "gridSize": 3,
-    "gameMode": "flip",
+    "gameMode": "scratch",
     "hover": {
       "enabled": true,
       "enterDuration": 120,
@@ -18,6 +18,10 @@
       "offsetYv": -5,
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true
+    },
+    "scratch": {
+      "revealRadius": 40,
+      "coverFadeOutDuration": 200
     },
     "spritesheetProvider": {
       "columns": 3,

@@ -226,7 +226,9 @@ function createAnimatedIconConfigurator(
   const hasAnimation = textures.length > 1;
   const firstTexture = textures[0] ?? null;
   const resolvedAnimationSpeed =
-    typeof animationSpeed === "number" ? animationSpeed : DEFAULT_CARD_ANIMATION_SPEED;
+    typeof animationSpeed === "number"
+      ? animationSpeed
+      : DEFAULT_CARD_ANIMATION_SPEED;
   const shouldAnimate = hasAnimation && resolvedAnimationSpeed !== 0;
 
   const getNow = () =>
@@ -250,9 +252,7 @@ function createAnimatedIconConfigurator(
   return (icon, context = {}) => {
     if (!icon) return;
 
-    const shouldPlayAnimation = Boolean(
-      context?.shouldPlayAnimation ?? true
-    );
+    const shouldPlayAnimation = Boolean(context?.shouldPlayAnimation ?? true);
     const startFromFirstFrame = Boolean(context?.startFromFirstFrame);
 
     if (Array.isArray(icon.textures)) {
@@ -266,12 +266,13 @@ function createAnimatedIconConfigurator(
         icon.texture = firstTexture;
       }
       const canAnimate = shouldAnimate && shouldPlayAnimation;
-      const timelineTime = canAnimate && !startFromFirstFrame
-        ? resolveSynchronizedTime()
-        : 0;
+      const timelineTime =
+        canAnimate && !startFromFirstFrame ? resolveSynchronizedTime() : 0;
       let frameIndex = 0;
       if (canAnimate && textures.length > 0 && !startFromFirstFrame) {
-        frameIndex = ((Math.floor(timelineTime) % textures.length) + textures.length) % textures.length;
+        frameIndex =
+          ((Math.floor(timelineTime) % textures.length) + textures.length) %
+          textures.length;
       }
 
       if (typeof icon.gotoAndStop === "function") {
@@ -339,7 +340,10 @@ export async function createGame(mount, opts = {}) {
 
   const iconSizePercentage = opts.iconSizePercentage ?? 0.7;
   const iconRevealedSizeFactor = opts.iconRevealedSizeFactor ?? 0.85;
-  const iconScaleMultiplier = Math.max(0, gameConfig.gameplay.card.iconScale ?? 1.0);
+  const iconScaleMultiplier = Math.max(
+    0,
+    gameConfig.gameplay.card.iconScale ?? 1.0
+  );
   const iconOffsetX = Number(gameConfig.gameplay.card.iconOffsetX ?? 0) || 0;
   const iconOffsetY = Number(gameConfig.gameplay.card.offsetYv ?? 0) || 0;
   const matchShakeEnabled = gameConfig.gameplay.card.matchShake ?? true;
@@ -360,7 +364,7 @@ export async function createGame(mount, opts = {}) {
     hoverEnabled: opts.hoverEnabled ?? true,
     hoverEnterDuration: opts.hoverEnterDuration ?? 120,
     hoverExitDuration: opts.hoverExitDuration ?? 200,
-    hoverSkewAmount: opts.hoverSkewAmount ?? 0.00,
+    hoverSkewAmount: opts.hoverSkewAmount ?? 0.0,
     hoverTiltAxis: opts.hoverTiltAxis ?? "x",
   };
 
@@ -376,7 +380,6 @@ export async function createGame(mount, opts = {}) {
     winPopupWidth: opts.winPopupWidth ?? 240,
     winPopupHeight: opts.winPopupHeight ?? 170,
   };
-
 
   // Resolve mount element
   const root =
@@ -405,9 +408,8 @@ export async function createGame(mount, opts = {}) {
       return absolute;
     }
     const multiplier = Number(opts.svgRasterizationResolutionMultiplier);
-    const safeMultiplier = Number.isFinite(multiplier) && multiplier > 0
-      ? multiplier
-      : 2;
+    const safeMultiplier =
+      Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 2;
     const computed = Math.ceil(getDevicePixelRatio() * safeMultiplier);
     return Math.max(2, computed);
   })();
@@ -421,13 +423,37 @@ export async function createGame(mount, opts = {}) {
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
   };
 
-  const cardType = gameConfig?.gameplay?.card?.iconType ?? "static"
+  const gameMode = String(gameConfig?.gameplay?.gameMode ?? "").toLowerCase();
+  const isScratchMode = gameMode === "scratch";
+  const scratchCoverFadeOutDuration = (() => {
+    const fromConfig = Number(
+      gameConfig?.gameplay?.scratch?.coverFadeOutDuration
+    );
+    if (Number.isFinite(fromConfig) && fromConfig >= 0) {
+      return fromConfig;
+    }
+    return 1000;
+  })();
+  const scratchRevealRadius = (() => {
+    const fromConfig = Number(gameConfig?.gameplay?.scratch?.revealRadius);
+    if (Number.isFinite(fromConfig)) {
+      return Math.max(0, fromConfig);
+    }
+    const fromOpts = Number(opts.scratchRevealRadius);
+    if (Number.isFinite(fromOpts)) {
+      return Math.max(0, fromOpts);
+    }
+    return 50;
+  })();
+
+  const cardType = gameConfig?.gameplay?.card?.iconType ?? "static";
   console.log("Card types: " + cardType);
-  const cardTypeEntries = cardType === "animated"
-    ? await loadCardTypeAnimations()
-    : await loadCardTypeTextures({
-        svgResolution: svgRasterizationResolution,
-      });
+  const cardTypeEntries =
+    cardType === "animated"
+      ? await loadCardTypeAnimations()
+      : await loadCardTypeTextures({
+          svgResolution: svgRasterizationResolution,
+        });
   if (!cardTypeEntries.length) {
     throw new Error(
       cardType === "static"
@@ -491,6 +517,7 @@ export async function createGame(mount, opts = {}) {
   const soundManager = createSoundManager(sound, soundEffectPaths);
 
   let coverScratch = null;
+  let scratchInteractionEnabled = false;
 
   const contentLibrary = {};
   await Promise.all(
@@ -522,7 +549,6 @@ export async function createGame(mount, opts = {}) {
     })
   );
 
-
   const [
     gameBackgroundTexture,
     matchSparkTexture,
@@ -531,7 +557,9 @@ export async function createGame(mount, opts = {}) {
     tileHoverTexture,
     tileFlippedTexture,
   ] = await Promise.all([
-    loadTexture(gameBackgroundSpriteUrl, {svgResolution: svgRasterizationResolution,}),
+    loadTexture(gameBackgroundSpriteUrl, {
+      svgResolution: svgRasterizationResolution,
+    }),
     loadTexture(sparkSpriteUrl),
     loadTexture(winFrameSpriteUrl),
     loadTexture(tileUnflippedSpriteUrl, {
@@ -565,7 +593,7 @@ export async function createGame(mount, opts = {}) {
         sparkTexture: matchSparkTexture,
         sparkDuration: 1500,
       },
-      frameTexture: winFrameTexture,
+      frameTexture: isScratchMode ? null : winFrameTexture,
       stateTextures: {
         default: tileDefaultTexture,
         hover: tileHoverTexture,
@@ -704,7 +732,8 @@ export async function createGame(mount, opts = {}) {
   function applyRoundOutcomeMeta(meta = {}, assignments = []) {
     resetRoundOutcome();
 
-    const betResult = typeof meta.betResult === "string" ? meta.betResult : null;
+    const betResult =
+      typeof meta.betResult === "string" ? meta.betResult : null;
     currentRoundOutcome.betResult = betResult;
 
     if (betResult === "win" && meta.winningKey != null) {
@@ -736,6 +765,12 @@ export async function createGame(mount, opts = {}) {
       card._assignedContent = currentAssignments.get(key) ?? null;
       card._pendingWinningReveal = false;
       card._randomSelectionPending = false;
+      if (isScratchMode) {
+        card.setTileVisible?.(false);
+        card.clearContentPreview?.();
+      } else {
+        card.setTileVisible?.(true);
+      }
       clearScheduledAutoReveal(card);
       card.stopMatchShake?.();
     }
@@ -952,7 +987,7 @@ export async function createGame(mount, opts = {}) {
       currentRoundOutcome.feedbackPlayed = true;
 
       // Fade out the scratch cover when round is complete
-      coverScratch?.fadeOut();
+      fadeOutScratchCover();
 
       if (
         currentRoundOutcome.betResult === "win" &&
@@ -1002,7 +1037,8 @@ export async function createGame(mount, opts = {}) {
     ordered.forEach((card, index) => {
       clearScheduledAutoReveal(card);
       card._autoRevealScheduled = true;
-      const assignedFace = currentAssignments.get(`${card.row},${card.col}`) ?? null;
+      const assignedFace =
+        currentAssignments.get(`${card.row},${card.col}`) ?? null;
       const delay = disableAnimations ? 0 : revealAllIntervalDelay * index;
       const handle = setTimeout(() => {
         scheduledAutoRevealTimers.delete(handle);
@@ -1030,6 +1066,7 @@ export async function createGame(mount, opts = {}) {
   function handleCardTap(card) {
     const autoMode = isAutoModeActive(getMode);
     if (card.revealed || card._animating || rules.gameOver) return;
+    if (isScratchMode && !scratchInteractionEnabled) return;
 
     if (autoMode) {
       return;
@@ -1045,7 +1082,9 @@ export async function createGame(mount, opts = {}) {
   function handlePointerOver(card) {
     if (card.revealed || card._animating || rules.gameOver) return;
     if (isAutoModeActive(getMode)) return;
-    soundManager.play("tileHover");
+    if (!isScratchMode) {
+      soundManager.play("tileHover");
+    }
     card.hover(true);
   }
 
@@ -1056,6 +1095,23 @@ export async function createGame(mount, opts = {}) {
       card._pressed = false;
       card.refreshTint();
     }
+  }
+
+  function handlePointerMove(card, event) {
+    if (!isScratchMode || !scratchInteractionEnabled) return;
+    if (card.revealed || card._animating || rules.gameOver) return;
+    if (rules.waitingForChoice) return;
+    const global = event?.global;
+    if (!global) return;
+    const center =
+      typeof card.getGlobalCenter === "function"
+        ? card.getGlobalCenter()
+        : null;
+    if (!center) return;
+    const dx = global.x - center.x;
+    const dy = global.y - center.y;
+    if (dx * dx + dy * dy > scratchRevealRadius * scratchRevealRadius) return;
+    handleCardTap(card);
   }
 
   function handlePointerDown(card) {
@@ -1079,16 +1135,21 @@ export async function createGame(mount, opts = {}) {
       onPointerUp: handlePointerUp,
       onPointerUpOutside: handlePointerUp,
       onPointerTap: handleCardTap,
+      onPointerMove: handlePointerMove,
     }),
   });
 
-  coverScratch = new CoverScratch({
-    scene,
-    radius: opts.coverRevealRadius,
-    blurSize: opts.coverRevealBlurSize,
-    padding: opts.coverRevealPadding,
-  });
-  coverScratch.init();
+  if (isScratchMode) {
+    coverScratch = new CoverScratch({
+      scene,
+      radius: opts.coverRevealRadius,
+      blurSize: opts.coverRevealBlurSize,
+      padding: opts.coverRevealPadding,
+    });
+    coverScratch.init();
+    coverScratch.setEnabled(false);
+    scratchInteractionEnabled = false;
+  }
 
   registerCards();
 
@@ -1107,6 +1168,7 @@ export async function createGame(mount, opts = {}) {
         onPointerUp: handlePointerUp,
         onPointerUpOutside: handlePointerUp,
         onPointerTap: handleCardTap,
+        onPointerMove: handlePointerMove,
       }),
     });
     coverScratch?.syncWithLayout();
@@ -1124,14 +1186,32 @@ export async function createGame(mount, opts = {}) {
     currentAssignments.clear();
     applyRoundOutcomeMeta(meta, assignments);
     for (const entry of assignments) {
-      if (entry && typeof entry.row === "number" && typeof entry.col === "number") {
+      if (
+        entry &&
+        typeof entry.row === "number" &&
+        typeof entry.col === "number"
+      ) {
         const key = `${entry.row},${entry.col}`;
         currentAssignments.set(key, entry.contentKey ?? entry.result ?? null);
       }
     }
     rules.setAssignments(currentAssignments);
     for (const [key, card] of cardsByKey.entries()) {
-      card._assignedContent = currentAssignments.get(key) ?? null;
+      const assignedKey = currentAssignments.get(key) ?? null;
+      card._assignedContent = assignedKey;
+      if (isScratchMode) {
+        const content =
+          assignedKey != null ? contentLibrary[assignedKey] : null;
+        if (content) {
+          card.showContentPreview?.(content, { useRevealedSizing: true });
+        } else {
+          card.clearContentPreview?.();
+        }
+        card.setTileVisible?.(false);
+      } else {
+        card.clearContentPreview?.();
+        card.setTileVisible?.(true);
+      }
     }
     notifyStateChange();
   }
@@ -1144,7 +1224,10 @@ export async function createGame(mount, opts = {}) {
     const key = `${selection.row},${selection.col}`;
     const resolvedContent =
       contentKey ?? currentAssignments.get(key) ?? card._assignedContent;
-    const outcome = rules.revealResult({ ...selection, result: resolvedContent });
+    const outcome = rules.revealResult({
+      ...selection,
+      result: resolvedContent,
+    });
     revealCard(card, outcome.face);
     rules.clearSelection();
     notifyStateChange();
@@ -1171,8 +1254,7 @@ export async function createGame(mount, opts = {}) {
       return true;
     });
     if (!candidates.length) return null;
-    const card =
-      candidates[Math.floor(Math.random() * candidates.length)];
+    const card = candidates[Math.floor(Math.random() * candidates.length)];
     card._randomSelectionPending = true;
     handleCardTap(card);
     return { row: card.row, col: card.col };
@@ -1187,7 +1269,9 @@ export async function createGame(mount, opts = {}) {
         row: entry.row,
         col: entry.col,
         result:
-          entry.contentKey ?? entry.result ?? currentAssignments.get(`${entry.row},${entry.col}`),
+          entry.contentKey ??
+          entry.result ??
+          currentAssignments.get(`${entry.row},${entry.col}`),
       });
       revealCard(card, outcome.face, { revealedByPlayer: true });
     }
@@ -1215,6 +1299,18 @@ export async function createGame(mount, opts = {}) {
     return Object.keys(contentLibrary);
   }
 
+  function setScratchEnabled(enabled) {
+    if (!isScratchMode) return;
+    const nextEnabled = Boolean(enabled);
+    scratchInteractionEnabled = nextEnabled;
+    coverScratch?.setEnabled(nextEnabled);
+  }
+
+  function fadeOutScratchCover() {
+    if (!isScratchMode) return;
+    coverScratch?.fadeOut(scratchCoverFadeOutDuration);
+  }
+
   return {
     app: scene.app,
     reset,
@@ -1231,5 +1327,7 @@ export async function createGame(mount, opts = {}) {
     setRoundAssignments,
     setWinPopupAmount,
     getCardContentKeys: getAvailableContentKeys,
+    setScratchEnabled,
+    fadeOutScratchCover,
   };
 }
