@@ -587,7 +587,7 @@ export async function createGame(mount, opts = {}) {
         sparkTexture: matchSparkTexture,
         sparkDuration: 1500,
       },
-      frameTexture: winFrameTexture,
+      frameTexture: isScratchMode ? null : winFrameTexture,
       stateTextures: {
         default: tileDefaultTexture,
         hover: tileHoverTexture,
