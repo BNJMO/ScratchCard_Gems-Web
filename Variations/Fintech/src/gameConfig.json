@@ -1,0 +1,36 @@
+{
+  "app": {
+    "vitePath": "/_Games/mine_crash/clients/fintech/",
+    "gameName": "Flipping Cards - Fintech"
+  },
+  "gameplay": {
+    "gridSize": 3,
+    "gameMode": "flip",
+    "hover": {
+      "enabled": true,
+      "enterDuration": 120,
+      "exitDuration": 200
+    },
+    "card": {
+      "iconType": "animated",
+      "iconScale": 1.25,
+      "iconOffsetX": 0,
+      "offsetYv": -5,
+      "spritesheetAnimationSpeed": 0.16,
+      "matchShake": false
+    },
+    "spritesheetProvider": {
+      "columns": 3,
+      "rows": 4,
+      "cellWidth": 109,
+      "cellHeight": 120,
+      "horizontalGap": 8,
+      "verticalGap": 5,
+      "paddingLeft": 5,
+      "paddingTop": 18,
+      "paddingRight": 0,
+      "paddingBottom": 3,
+      "resolutionFactor": 1.0
+    }
+  }
+}

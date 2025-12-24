@@ -84,6 +84,7 @@ export class Card {
     this._tileSprite = null;
     this._tileState = "default";
     this._isHovering = false;
+    this._tileVisible = true;
 
     this.container = this.#createCard(tileSize);
     this.hideWinFrame();
@@ -131,6 +132,13 @@ export class Card {
     if (!this._tileSprite) return;
     const fallback = this.palette.defaultTint ?? 0xffffff;
     this._tileSprite.tint = color ?? fallback;
+  }
+
+  setTileVisible(visible) {
+    if (!this._tileSprite) return;
+    this._tileVisible = Boolean(visible);
+    this._tileSprite.visible = true;
+    this._tileSprite.alpha = this._tileVisible ? 1 : 0;
   }
 
   refreshTint() {
@@ -466,6 +474,55 @@ export class Card {
     this.#stopWinHighlightLoop();
   }
 
+  showContentPreview(contentConfig, { useRevealedSizing = true } = {}) {
+    const icon = this._icon;
+    if (!icon || !contentConfig) return;
+
+    const baseSize =
+      contentConfig.iconSizePercentage ?? this.iconOptions.sizePercentage;
+    const iconScaleMultiplier = this.iconOptions.scaleMultiplier ?? 1;
+    const sizeFactor = useRevealedSizing
+      ? contentConfig.iconRevealedSizeFactor ??
+        this.iconOptions.revealedSizeFactor ??
+        1
+      : 1;
+    const maxDimension =
+      this._tileSize * baseSize * sizeFactor * iconScaleMultiplier;
+
+    if (contentConfig.texture) {
+      icon.texture = contentConfig.texture;
+    }
+
+    const iconContext = {
+      card: this,
+      revealedByPlayer: false,
+      shouldPlayAnimation: false,
+      startFromFirstFrame: true,
+      animationHandled: false,
+    };
+
+    contentConfig.configureIcon?.(icon, iconContext);
+
+    const referenceTexture = contentConfig.texture ?? icon.texture ?? null;
+    this.#applyIconSizing(icon, maxDimension, referenceTexture);
+
+    if (!iconContext.animationHandled && Array.isArray(icon.textures)) {
+      icon.gotoAndStop?.(0);
+      icon.stop?.();
+    }
+
+    icon.visible = true;
+  }
+
+  clearContentPreview() {
+    if (this.revealed) return;
+    const icon = this._icon;
+    if (!icon) return;
+    icon.visible = false;
+    icon.stop?.();
+    icon.gotoAndStop?.(0);
+  }
+
   reveal({
     content,
     useSelectionTint = false,
@@ -726,6 +783,14 @@ export class Card {
         this._shadowContainer.rotation = 0;
       }
     }
+  }
+
+  getGlobalCenter() {
+    if (!this.container) return null;
+    return this.container.toGlobal({
+      x: this._tileSize / 2,
+      y: this._tileSize / 2,
+    });
   }
 
   setSkew(v) {
@@ -1267,18 +1332,27 @@ export class Card {
       });
     }
 
-    tile.on("pointerover", () =>
-      this.interactionCallbacks.onPointerOver?.(this)
+    tile.on("pointerover", (event) =>
+      this.interactionCallbacks.onPointerOver?.(this, event)
     );
-    tile.on("pointerout", () => this.interactionCallbacks.onPointerOut?.(this));
-    tile.on("pointerdown", () =>
-      this.interactionCallbacks.onPointerDown?.(this)
+    tile.on("pointerout", (event) =>
+      this.interactionCallbacks.onPointerOut?.(this, event)
     );
-    tile.on("pointerup", () => this.interactionCallbacks.onPointerUp?.(this));
-    tile.on("pointerupoutside", () =>
-      this.interactionCallbacks.onPointerUpOutside?.(this)
+    tile.on("pointerdown", (event) =>
+      this.interactionCallbacks.onPointerDown?.(this, event)
     );
-    tile.on("pointertap", () => this.interactionCallbacks.onPointerTap?.(this));
+    tile.on("pointerup", (event) =>
+      this.interactionCallbacks.onPointerUp?.(this, event)
+    );
+    tile.on("pointerupoutside", (event) =>
+      this.interactionCallbacks.onPointerUpOutside?.(this, event)
+    );
+    tile.on("pointertap", (event) =>
+      this.interactionCallbacks.onPointerTap?.(this, event)
+    );
+    tile.on("pointermove", (event) =>
+      this.interactionCallbacks.onPointerMove?.(this, event)
+    );
 
     return tile;
   }
