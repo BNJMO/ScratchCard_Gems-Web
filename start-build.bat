@@ -59,5 +59,26 @@ if %buildResult% NEQ 0 (
     exit /b %buildResult%
 )
 
-pause
+REM Create build zip archive
+echo [INFO] Creating build archive...
+for /f "usebackq delims=" %%A in (`node -p "require('./src/gameConfig.json').app.gameName"`) do set "gameName=%%A"
+for /f "usebackq delims=" %%A in (`node -p "require('./buildConfig.json').buildId"`) do set "buildId=%%A"
 
+set "zipName=%gameName%_%buildId%.zip"
+
+if not exist "dist\" (
+    echo [ERROR] dist folder not found. Skipping archive creation.
+    exit /b 1
+)
+
+powershell -NoProfile -Command "Compress-Archive -Path 'dist\\*' -DestinationPath '%zipName%' -Force"
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] Failed to create build archive.
+    exit /b 1
+)
+
+if /I "%~1"=="--no-pause" (
+    exit /b 0
+)
+
+pause

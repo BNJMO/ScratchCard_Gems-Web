@@ -6,7 +6,6 @@ import { CoverScratch } from "./coverScratch.js";
 import tileTapDownSoundUrl from "../../assets/sounds/TileTapDown.wav";
 import tileFlipSoundUrl from "../../assets/sounds/TileFlip.wav";
 import tileHoverSoundUrl from "../../assets/sounds/TileHover.wav";
-import gameStartSoundUrl from "../../assets/sounds/GameStart.wav";
 import roundWinSoundUrl from "../../assets/sounds/Win.wav";
 import roundLostSoundUrl from "../../assets/sounds/Lost.wav";
 import twoMatchSoundUrl from "../../assets/sounds/2Match.wav";
@@ -15,6 +14,7 @@ import winFrameSpriteUrl from "../../assets/sprites/winFrame.svg";
 import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
 import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
 import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
+import gameConfig from "../gameConfig.json";
 
 const optionalBackgroundSpriteModules = import.meta.glob(
   "../../assets/sprites/game_background.svg",
@@ -70,7 +70,6 @@ const SOUND_ALIASES = {
   tileHover: "mines.tileHover",
   tileTapDown: "mines.tileTapDown",
   tileFlip: "mines.tileFlip",
-  gameStart: "mines.gameStart",
   roundWin: "mines.roundWin",
   roundLost: "mines.roundLost",
   twoMatch: "mines.twoMatch",
@@ -340,14 +339,14 @@ export async function createGame(mount, opts = {}) {
 
   const iconSizePercentage = opts.iconSizePercentage ?? 0.7;
   const iconRevealedSizeFactor = opts.iconRevealedSizeFactor ?? 0.85;
-  const iconScaleMultiplier = Math.max(0, opts.cardIconScale ?? 1.0);
-  const iconOffsetX = Number(opts.cardIconOffsetX ?? 0) || 0;
-  const iconOffsetY = Number(opts.cardIconOffsetY ?? 0) || 0;
-  const matchShakeEnabled = opts.cardMatchShake ?? true;
+  const iconScaleMultiplier = Math.max(0, gameConfig.gameplay.card.iconScale ?? 1.0);
+  const iconOffsetX = Number(gameConfig.gameplay.card.iconOffsetX ?? 0) || 0;
+  const iconOffsetY = Number(gameConfig.gameplay.card.offsetYv ?? 0) || 0;
+  const matchShakeEnabled = gameConfig.gameplay.card.matchShake ?? true;
   const cardSpritesheetAnimationSpeed = Number.isFinite(
-    opts.cardSpritesheetAnimationSpeed
+    gameConfig.gameplay.card.spritesheetAnimationSpeed
   )
-    ? opts.cardSpritesheetAnimationSpeed
+    ? gameConfig.gameplay.card.spritesheetAnimationSpeed
     : DEFAULT_CARD_ANIMATION_SPEED;
   const cardsSpawnDuration = opts.cardsSpawnDuration ?? 350;
   const revealAllIntervalDelay = opts.revealAllIntervalDelay ?? 40;
@@ -417,23 +416,21 @@ export async function createGame(mount, opts = {}) {
     tileTapDown: opts.tileTapDownSoundPath ?? tileTapDownSoundUrl,
     tileFlip: opts.tileFlipSoundPath ?? tileFlipSoundUrl,
     tileHover: opts.tileHoverSoundPath ?? tileHoverSoundUrl,
-    gameStart: opts.gameStartSoundPath ?? gameStartSoundUrl,
     roundWin: opts.roundWinSoundPath ?? roundWinSoundUrl,
     roundLost: opts.roundLostSoundPath ?? roundLostSoundUrl,
     twoMatch: opts.twoMatchSoundPath ?? twoMatchSoundUrl,
   };
 
-  const cardIconType = opts.cardIconType
-    ?? (opts.useAnimatedSpritesheets === false ? "static" : "animated");
-
-  const cardTypeEntries = cardIconType === "animated"
+  const cardType = gameConfig?.gameplay?.card?.iconType ?? "static"
+  console.log("Card types: " + cardType);
+  const cardTypeEntries = cardType === "animated"
     ? await loadCardTypeAnimations()
     : await loadCardTypeTextures({
         svgResolution: svgRasterizationResolution,
       });
   if (!cardTypeEntries.length) {
     throw new Error(
-      cardIconType === "static"
+      cardType === "static"
         ? "No scratch card textures found under assets/sprites/cardTypes"
         : "No scratch card textures found under assets/sprites/spritesheets"
     );
@@ -614,6 +611,7 @@ export async function createGame(mount, opts = {}) {
   const manualMatchTracker = new Map();
   const manualShakingCards = new Set();
   const scheduledAutoRevealTimers = new Set();
+  let winPopupAmountValue = 0;
 
   function clearScheduledAutoReveal(card) {
     if (!card) return;
@@ -694,6 +692,13 @@ export async function createGame(mount, opts = {}) {
       card?.hideWinFrame?.();
       card?.stopIconAnimation?.({ resetToFirstFrame: true });
     }
+  }
+
+  function setWinPopupAmount(value) {
+    const numeric = Number(value);
+    const normalized = Number.isFinite(numeric) ? Math.max(0, numeric) : 0;
+    winPopupAmountValue = normalized;
+    scene.setWinPopupAmount?.(normalized);
   }
 
   function applyRoundOutcomeMeta(meta = {}, assignments = []) {
@@ -958,6 +963,10 @@ export async function createGame(mount, opts = {}) {
         }
       }
 
+      if (currentRoundOutcome.betResult === "win") {
+        scene.showWinPopup?.({ amount: winPopupAmountValue });
+      }
+
       currentRoundOutcome.winningCards.clear();
 
       if (currentRoundOutcome.soundKey) {
@@ -1082,7 +1091,6 @@ export async function createGame(mount, opts = {}) {
   coverScratch.init();
 
   registerCards();
-  soundManager.play("gameStart");
 
   function reset() {
     rules.reset();
@@ -1221,6 +1229,7 @@ export async function createGame(mount, opts = {}) {
     getAutoResetDelay: () => autoResetDelayMs,
     setAnimationsEnabled,
     setRoundAssignments,
+    setWinPopupAmount,
     getCardContentKeys: getAvailableContentKeys,
   };
 }
