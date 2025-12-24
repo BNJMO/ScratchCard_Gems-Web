@@ -1085,13 +1085,13 @@ export async function createGame(mount, opts = {}) {
     }),
   });
 
-  coverScratch = new CoverScratch({
-    scene,
-    radius: opts.coverRevealRadius,
-    blurSize: opts.coverRevealBlurSize,
-    padding: opts.coverRevealPadding,
-  });
   if (isScratchMode) {
+    coverScratch = new CoverScratch({
+      scene,
+      radius: opts.coverRevealRadius,
+      blurSize: opts.coverRevealBlurSize,
+      padding: opts.coverRevealPadding,
+    });
     coverScratch.init();
   }
 
