@@ -423,6 +423,17 @@ export async function createGame(mount, opts = {}) {
 
   const gameMode = String(gameConfig?.gameplay?.gameMode ?? "").toLowerCase();
   const isScratchMode = gameMode === "scratch";
+  const scratchRevealRadius = (() => {
+    const fromOpts = Number(opts.scratchRevealRadius);
+    if (Number.isFinite(fromOpts)) {
+      return Math.max(0, fromOpts);
+    }
+    const fromConfig = Number(gameConfig?.gameplay?.scratch?.revealRadius);
+    if (Number.isFinite(fromConfig)) {
+      return Math.max(0, fromConfig);
+    }
+    return 50;
+  })();
 
   const cardType = gameConfig?.gameplay?.card?.iconType ?? "static"
   console.log("Card types: " + cardType);
@@ -494,6 +505,7 @@ export async function createGame(mount, opts = {}) {
   const soundManager = createSoundManager(sound, soundEffectPaths);
 
   let coverScratch = null;
+  let scratchInteractionEnabled = false;
 
   const contentLibrary = {};
   await Promise.all(
@@ -739,6 +751,12 @@ export async function createGame(mount, opts = {}) {
       card._assignedContent = currentAssignments.get(key) ?? null;
       card._pendingWinningReveal = false;
       card._randomSelectionPending = false;
+      if (isScratchMode) {
+        card.setTileVisible?.(false);
+        card.clearContentPreview?.();
+      } else {
+        card.setTileVisible?.(true);
+      }
       clearScheduledAutoReveal(card);
       card.stopMatchShake?.();
     }
@@ -1033,6 +1051,7 @@ export async function createGame(mount, opts = {}) {
   function handleCardTap(card) {
     const autoMode = isAutoModeActive(getMode);
     if (card.revealed || card._animating || rules.gameOver) return;
+    if (isScratchMode && !scratchInteractionEnabled) return;
 
     if (autoMode) {
       return;
@@ -1061,6 +1080,22 @@ export async function createGame(mount, opts = {}) {
     }
   }
 
+  function handlePointerMove(card, event) {
+    if (!isScratchMode || !scratchInteractionEnabled) return;
+    if (card.revealed || card._animating || rules.gameOver) return;
+    if (rules.waitingForChoice) return;
+    const global = event?.global;
+    if (!global) return;
+    const center = typeof card.getGlobalCenter === "function"
+      ? card.getGlobalCenter()
+      : null;
+    if (!center) return;
+    const dx = global.x - center.x;
+    const dy = global.y - center.y;
+    if (dx * dx + dy * dy > scratchRevealRadius * scratchRevealRadius) return;
+    handleCardTap(card);
+  }
+
   function handlePointerDown(card) {
     if (card.revealed || card._animating || rules.gameOver) return;
     if (isAutoModeActive(getMode)) return;
@@ -1082,6 +1117,7 @@ export async function createGame(mount, opts = {}) {
       onPointerUp: handlePointerUp,
       onPointerUpOutside: handlePointerUp,
       onPointerTap: handleCardTap,
+      onPointerMove: handlePointerMove,
     }),
   });
 
@@ -1094,6 +1130,7 @@ export async function createGame(mount, opts = {}) {
     });
     coverScratch.init();
     coverScratch.setEnabled(false);
+    scratchInteractionEnabled = false;
   }
 
   registerCards();
@@ -1113,6 +1150,7 @@ export async function createGame(mount, opts = {}) {
         onPointerUp: handlePointerUp,
         onPointerUpOutside: handlePointerUp,
         onPointerTap: handleCardTap,
+        onPointerMove: handlePointerMove,
       }),
     });
     coverScratch?.syncWithLayout();
@@ -1137,7 +1175,20 @@ export async function createGame(mount, opts = {}) {
     }
     rules.setAssignments(currentAssignments);
     for (const [key, card] of cardsByKey.entries()) {
-      card._assignedContent = currentAssignments.get(key) ?? null;
+      const assignedKey = currentAssignments.get(key) ?? null;
+      card._assignedContent = assignedKey;
+      if (isScratchMode) {
+        const content = assignedKey != null ? contentLibrary[assignedKey] : null;
+        if (content) {
+          card.showContentPreview?.(content, { useRevealedSizing: true });
+        } else {
+          card.clearContentPreview?.();
+        }
+        card.setTileVisible?.(false);
+      } else {
+        card.clearContentPreview?.();
+        card.setTileVisible?.(true);
+      }
     }
     notifyStateChange();
   }
@@ -1223,7 +1274,9 @@ export async function createGame(mount, opts = {}) {
 
   function setScratchEnabled(enabled) {
     if (!isScratchMode) return;
-    coverScratch?.setEnabled(Boolean(enabled));
+    const nextEnabled = Boolean(enabled);
+    scratchInteractionEnabled = nextEnabled;
+    coverScratch?.setEnabled(nextEnabled);
   }
 
   return {
