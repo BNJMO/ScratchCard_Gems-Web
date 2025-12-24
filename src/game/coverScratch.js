@@ -6,6 +6,7 @@ export class CoverScratch {
     this.radiusOption = radius;
     this.blurSizeOption = blurSize;
     this.padding = Math.max(0, Number(padding) || 0);
+    this.enabled = true;
 
     this.coverGraphics = null;
     this.maskTexture = null;
@@ -134,6 +135,14 @@ export class CoverScratch {
 
     // Clear all scratches - fill mask with white to show full cover
     this.#clearMask();
+  }
+
+  setEnabled(enabled = true) {
+    this.enabled = Boolean(enabled);
+    if (!this.enabled) {
+      this._dragging = false;
+      this._lastDrawnPoint = null;
+    }
   }
 
   fadeOut(duration = 1000) {
@@ -297,6 +306,7 @@ export class CoverScratch {
   }
 
   #scratch(globalX, globalY) {
+    if (!this.enabled) return;
     if (!this.brush || !this.maskTexture || !this.scene?.board || !this.line) return;
 
     const app = this.scene.app;
@@ -382,7 +392,7 @@ export class CoverScratch {
   }
 
   #handlePointerDown(event) {
-    if (!event || !event.global) return;
+    if (!this.enabled || !event || !event.global) return;
     this._dragging = true;
     this.#scratch(event.global.x, event.global.y);
   }
@@ -393,7 +403,7 @@ export class CoverScratch {
   }
 
   #handlePointerMove(event) {
-    if (!event || !event.global) return;
+    if (!this.enabled || !event || !event.global) return;
     this.#scratch(event.global.x, event.global.y);
   }
 

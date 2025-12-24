@@ -629,6 +629,7 @@ function prepareForNewRoundState() {
   cashoutAvailable = false;
   clearSelectionDelay();
   const isAutoMode = controlPanelMode === "auto";
+  game?.setScratchEnabled?.(true);
   if (isAutoMode) {
     setControlPanelBetMode("bet");
     setControlPanelBetState(false);
@@ -658,6 +659,7 @@ function prepareForNewRoundState() {
 function finalizeRound() {
   roundActive = false;
   cashoutAvailable = false;
+  game?.setScratchEnabled?.(false);
   clearSelectionDelay();
   setControlPanelBetMode("bet");
   setControlPanelRandomState(false);

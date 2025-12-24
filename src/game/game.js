@@ -1093,6 +1093,7 @@ export async function createGame(mount, opts = {}) {
       padding: opts.coverRevealPadding,
     });
     coverScratch.init();
+    coverScratch.setEnabled(false);
   }
 
   registerCards();
@@ -1220,6 +1221,11 @@ export async function createGame(mount, opts = {}) {
     return Object.keys(contentLibrary);
   }
 
+  function setScratchEnabled(enabled) {
+    if (!isScratchMode) return;
+    coverScratch?.setEnabled(Boolean(enabled));
+  }
+
   return {
     app: scene.app,
     reset,
@@ -1236,5 +1242,6 @@ export async function createGame(mount, opts = {}) {
     setRoundAssignments,
     setWinPopupAmount,
     getCardContentKeys: getAvailableContentKeys,
+    setScratchEnabled,
   };
 }
