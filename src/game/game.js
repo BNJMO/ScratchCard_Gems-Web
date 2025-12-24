@@ -1067,7 +1067,9 @@ export async function createGame(mount, opts = {}) {
   function handlePointerOver(card) {
     if (card.revealed || card._animating || rules.gameOver) return;
     if (isAutoModeActive(getMode)) return;
-    soundManager.play("tileHover");
+    if (!isScratchMode) {
+      soundManager.play("tileHover");
+    }
     card.hover(true);
   }
 
