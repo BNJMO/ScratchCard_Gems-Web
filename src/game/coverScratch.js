@@ -198,7 +198,7 @@ export class CoverScratch {
 
     // Create the cover sprite from image (on top of the board)
     if (!this.coverGraphics) {
-      const coverTexture = await Assets.load('assets/sprites/scratchCover.png');
+      const coverTexture = await Assets.load('assets/sprites/scratch_cover.png');
       this.coverGraphics = new Sprite(coverTexture);
       this.coverGraphics.eventMode = "none";
       // Add cover above the board
