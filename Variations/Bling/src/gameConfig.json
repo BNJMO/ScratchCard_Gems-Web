@@ -1,7 +1,19 @@
 {
   "app": {
     "vitePath": "/_Games/mine_crash/clients/lilbaby/",
-    "gameName": "Flipping Cards - Bling"
+    "gameName": "Flipping Cards - Bling",
+    "fileExtensions": {
+      "sounds": ".wav",
+      "cardTypes": ".png",
+      "scratchMasks": ".png",
+      "gameBackground": ".svg",
+      "scratchCover": ".png",
+      "spark": ".svg",
+      "tile_flipped": ".svg",
+      "tile_hovered": ".png",
+      "tile_unflipped": ".png",
+      "winFrame": ".svg"
+    }
   },
   "gameplay": {
     "gridSize": 3,
@@ -18,6 +30,10 @@
       "offsetYv": -5,
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true
+    },
+    "scratch": {
+      "revealRadius": 40,
+      "coverFadeOutDuration": 200
     },
     "spritesheetProvider": {
       "columns": 3,
