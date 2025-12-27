@@ -1,7 +1,19 @@
 {
   "app": {
     "vitePath": "/ScratchCard_Gems-Web/",
-    "gameName": "Flipping Cards - Gems"
+    "gameName": "Flipping Cards - Gems",
+    "fileExtensions": {
+      "sounds": ".svg",
+      "cardTypes": ".svg",
+      "scratchMasks": ".png",
+      "gameBackground": ".svg",
+      "scratchCover": ".png",
+      "spark": ".png",
+      "tile_flipped": ".svg",
+      "tile_hovered": ".svg",
+      "tile_unflipped": ".svg",
+      "winFrame": ".svg"
+    }
   },
   "gameplay": {
     "gridSize": 3,
