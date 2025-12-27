@@ -4,12 +4,34 @@ import { ControlPanel } from "./controlPanel/controlPanel.js";
 import { ServerRelay } from "./serverRelay.js";
 import { createServerDummy } from "./serverDummy/serverDummy.js";
 import localConfig from "./gameConfig.json";
+import { getFileExtension, resolveAssetFromGlob } from "./game/assetResolver.js";
 
-import tileTapDownSoundUrl from "../assets/sounds/TileTapDown.wav";
-import tileFlipSoundUrl from "../assets/sounds/TileFlip.wav";
-import tileHoverSoundUrl from "../assets/sounds/TileHover.wav";
-import roundWinSoundUrl from "../assets/sounds/Win.wav";
-import roundLostSoundUrl from "../assets/sounds/Lost.wav";
+const SOUND_MODULES = import.meta.glob("../assets/sounds/*.*", { eager: true });
+const SOUND_EXTENSION = getFileExtension("sounds", ".wav");
+const tileTapDownSoundUrl = resolveAssetFromGlob(
+  SOUND_MODULES,
+  "TileTapDown",
+  {
+    extension: SOUND_EXTENSION,
+    fallbackExtension: ".wav",
+  }
+);
+const tileFlipSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "TileFlip", {
+  extension: SOUND_EXTENSION,
+  fallbackExtension: ".wav",
+});
+const tileHoverSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "TileHover", {
+  extension: SOUND_EXTENSION,
+  fallbackExtension: ".wav",
+});
+const roundWinSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "Win", {
+  extension: SOUND_EXTENSION,
+  fallbackExtension: ".wav",
+});
+const roundLostSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "Lost", {
+  extension: SOUND_EXTENSION,
+  fallbackExtension: ".wav",
+});
 
 /* Build Log */
 const localGameName = localConfig?.app?.gameName ?? "Unknown";

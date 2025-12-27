@@ -1,4 +1,27 @@
 import { Assets, BlurFilter, Graphics, Rectangle, RenderTexture, Sprite } from "pixi.js";
+import { getFileExtension, resolveAssetFromGlob } from "./assetResolver.js";
+
+const SPRITE_MODULES = import.meta.glob("../../assets/sprites/*.*", {
+  eager: true,
+});
+const SCRATCH_MASK_MODULES = import.meta.glob(
+  "../../assets/sprites/scratchMasks/*.*",
+  { eager: true }
+);
+
+const SCRATCH_COVER_EXTENSION = getFileExtension("scratchCover", ".png");
+const SCRATCH_MASK_EXTENSION = getFileExtension("scratchMasks", ".png");
+const scratchCoverUrl = resolveAssetFromGlob(SPRITE_MODULES, "scratchCover", {
+  extension: SCRATCH_COVER_EXTENSION,
+  fallbackExtension: ".png",
+});
+
+function resolveScratchMaskPath(index) {
+  return resolveAssetFromGlob(SCRATCH_MASK_MODULES, `scratchMask_${index}`, {
+    extension: SCRATCH_MASK_EXTENSION,
+    fallbackExtension: ".png",
+  });
+}
 
 export class CoverScratch {
   constructor({ scene, radius, blurSize, padding = 16 } = {}) {
@@ -198,7 +221,11 @@ export class CoverScratch {
 
     // Create the cover sprite from image (on top of the board)
     if (!this.coverGraphics) {
-      const coverTexture = await Assets.load('assets/sprites/scratchCover.png');
+      if (!scratchCoverUrl) {
+        console.warn("Scratch cover asset not found for configured extension.");
+        return false;
+      }
+      const coverTexture = await Assets.load(scratchCoverUrl);
       this.coverGraphics = new Sprite(coverTexture);
       this.coverGraphics.eventMode = "none";
       // Add cover above the board
@@ -239,8 +266,14 @@ export class CoverScratch {
     // Try to load masks with indices 0-20 (adjust range as needed)
     for (let index = 0; index < 20; index++) {
       try {
-        const path = `assets/sprites/scratchMasks/scratchMask_${index}.png`;
-        const texture = await Assets.load(path);
+        const maskPath = resolveScratchMaskPath(index);
+        if (!maskPath) {
+          if (index === 0) {
+            console.warn("No scratch mask assets found for configured extension.");
+          }
+          break;
+        }
+        const texture = await Assets.load(maskPath);
         masks.push(texture);
         console.log(`Loaded brush mask ${index}`);
       } catch (error) {
