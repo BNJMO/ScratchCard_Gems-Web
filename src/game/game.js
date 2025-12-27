@@ -17,7 +17,7 @@ import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
 import gameConfig from "../gameConfig.json";
 
 const optionalBackgroundSpriteModules = import.meta.glob(
-  "../../assets/sprites/game_background.svg",
+  "../../assets/sprites/gameBackground.svg",
   {
     eager: true,
   }
@@ -25,7 +25,7 @@ const optionalBackgroundSpriteModules = import.meta.glob(
 
 const gameBackgroundSpriteUrl = (() => {
   const module =
-    optionalBackgroundSpriteModules["../../assets/sprites/game_background.svg"];
+    optionalBackgroundSpriteModules["../../assets/sprites/gameBackground.svg"];
   if (!module) {
     return null;
   }
