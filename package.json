@@ -8,13 +8,17 @@
     "build": "vite build",
     "preview": "vite preview",
     "serve": "node server.js",
-    "start": "npm run serve"
+    "start": "npm run serve",
+    "scratch-engine-manager:dev": "electron scratch-engine-manager/main.js",
+    "scratch-engine-manager:build": "electron-builder --config scratch-engine-manager/electron-builder.json"
   },
   "dependencies": {
     "pixi.js": "^8.5.2",
     "@pixi/sound": "^6.0.1"
   },
   "devDependencies": {
+    "electron": "^30.0.8",
+    "electron-builder": "^24.13.3",
     "vite": "^5.4.11"
   },
   "keywords": [
@@ -26,4 +30,3 @@
   "author": "",
   "license": "MIT"
 }
-

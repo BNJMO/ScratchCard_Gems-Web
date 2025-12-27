@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scratch Engine Manager</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <h1 class="app-title">Scratch Engine Manager</h1>
+        <div class="section">
+          <label class="section-label" for="variation-select">Selected game variation:</label>
+          <select id="variation-select" class="variation-select">
+            <option value="">Select One...</option>
+          </select>
+        </div>
+        <div class="section spacer"></div>
+        <div class="section">
+          <div class="section-label">Actions:</div>
+          <div class="button-stack">
+            <button class="action-button" type="button">Replace Assets</button>
+            <button class="action-button" type="button">Start Local Server</button>
+            <button class="action-button" type="button">Start Build</button>
+          </div>
+        </div>
+      </aside>
+      <main class="content">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="log" type="button" role="tab">Log</button>
+          <button class="tab" data-tab="game-config" type="button" role="tab">Game Config</button>
+          <button class="tab" data-tab="build-config" type="button" role="tab">Build Config</button>
+        </div>
+        <div class="tab-panel">
+          <pre id="tab-content" class="tab-content"></pre>
+        </div>
+      </main>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>
