@@ -3,40 +3,103 @@ import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
 import { loadCardTypeAnimations } from "./spritesheetProvider.js";
 import { CoverScratch } from "./coverScratch.js";
-import tileTapDownSoundUrl from "../../assets/sounds/TileTapDown.wav";
-import tileFlipSoundUrl from "../../assets/sounds/TileFlip.wav";
-import tileHoverSoundUrl from "../../assets/sounds/TileHover.wav";
-import roundWinSoundUrl from "../../assets/sounds/Win.wav";
-import roundLostSoundUrl from "../../assets/sounds/Lost.wav";
-import twoMatchSoundUrl from "../../assets/sounds/2Match.wav";
-import sparkSpriteUrl from "../../assets/sprites/spark.png";
-import winFrameSpriteUrl from "../../assets/sprites/winFrame.svg";
-import tileUnflippedSpriteUrl from "../../assets/sprites/tile_unflipped.svg";
-import tileHoveredSpriteUrl from "../../assets/sprites/tile_hovered.svg";
-import tileFlippedSpriteUrl from "../../assets/sprites/tile_flipped.svg";
+import {
+  getFileExtension,
+  resolveAssetFromGlob,
+  filterEntriesByExtension,
+} from "./assetResolver.js";
 import gameConfig from "../gameConfig.json";
 
+const SOUND_MODULES = import.meta.glob("../../assets/sounds/*.*", {
+  eager: true,
+});
+const SPRITE_MODULES = import.meta.glob("../../assets/sprites/*.*", {
+  eager: true,
+});
+
 const optionalBackgroundSpriteModules = import.meta.glob(
-  "../../assets/sprites/gameBackground.svg",
+  "../../assets/sprites/gameBackground.*",
   {
     eager: true,
   }
 );
 
-const gameBackgroundSpriteUrl = (() => {
-  const module =
-    optionalBackgroundSpriteModules["../../assets/sprites/gameBackground.svg"];
-  if (!module) {
-    return null;
+const SOUND_EXTENSION = getFileExtension("sounds", ".wav");
+const CARD_TYPE_EXTENSION = getFileExtension("cardTypes", ".svg");
+const GAME_BACKGROUND_EXTENSION = getFileExtension("gameBackground", ".svg");
+
+const tileTapDownSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "TileTapDown", {
+  extension: SOUND_EXTENSION,
+  fallbackExtension: ".wav",
+});
+const tileFlipSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "TileFlip", {
+  extension: SOUND_EXTENSION,
+  fallbackExtension: ".wav",
+});
+const tileHoverSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "TileHover", {
+  extension: SOUND_EXTENSION,
+  fallbackExtension: ".wav",
+});
+const roundWinSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "Win", {
+  extension: SOUND_EXTENSION,
+  fallbackExtension: ".wav",
+});
+const roundLostSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "Lost", {
+  extension: SOUND_EXTENSION,
+  fallbackExtension: ".wav",
+});
+const twoMatchSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "2Match", {
+  extension: SOUND_EXTENSION,
+  fallbackExtension: ".wav",
+});
+
+const sparkSpriteUrl = resolveAssetFromGlob(SPRITE_MODULES, "spark", {
+  extension: getFileExtension("spark", ".png"),
+  fallbackExtension: ".png",
+});
+const winFrameSpriteUrl = resolveAssetFromGlob(SPRITE_MODULES, "winFrame", {
+  extension: getFileExtension("winFrame", ".svg"),
+  fallbackExtension: ".svg",
+});
+const tileUnflippedSpriteUrl = resolveAssetFromGlob(
+  SPRITE_MODULES,
+  "tile_unflipped",
+  {
+    extension: getFileExtension("tile_unflipped", ".svg"),
+    fallbackExtension: ".svg",
   }
-  return typeof module === "string" ? module : module?.default ?? null;
-})();
+);
+const tileHoveredSpriteUrl = resolveAssetFromGlob(
+  SPRITE_MODULES,
+  "tile_hovered",
+  {
+    extension: getFileExtension("tile_hovered", ".svg"),
+    fallbackExtension: ".svg",
+  }
+);
+const tileFlippedSpriteUrl = resolveAssetFromGlob(
+  SPRITE_MODULES,
+  "tile_flipped",
+  {
+    extension: getFileExtension("tile_flipped", ".svg"),
+    fallbackExtension: ".svg",
+  }
+);
+
+const gameBackgroundSpriteUrl = resolveAssetFromGlob(
+  optionalBackgroundSpriteModules,
+  "gameBackground",
+  {
+    extension: GAME_BACKGROUND_EXTENSION,
+    fallbackExtension: ".svg",
+  }
+);
 
 const DEFAULT_CARD_ANIMATION_SPEED = 0.16;
 const MS_PER_60FPS_FRAME = 1000 / 60;
 
 const CARD_TYPE_TEXTURE_MODULES = import.meta.glob(
-  "../../assets/sprites/cardTypes/static/cardType_*.svg",
+  "../../assets/sprites/cardTypes/static/cardType_*.*",
   { eager: true }
 );
 
@@ -135,7 +198,13 @@ async function loadTexture(path, options = {}) {
 }
 
 function getCardTypeTextureEntries() {
-  return Object.entries(CARD_TYPE_TEXTURE_MODULES)
+  const filteredEntries = filterEntriesByExtension(
+    Object.entries(CARD_TYPE_TEXTURE_MODULES),
+    CARD_TYPE_EXTENSION,
+    ".svg"
+  );
+
+  return filteredEntries
     .map(([path, mod]) => {
       const texturePath = typeof mod === "string" ? mod : mod?.default ?? null;
       if (!texturePath) {
