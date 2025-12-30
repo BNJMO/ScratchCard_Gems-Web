@@ -52,6 +52,15 @@
                         BorderBrush="#3E8EDE"
                         CornerRadius="6"
                         Padding="10,6"/>
+                <TextBox Text="{Binding LocalServerUrl}"
+                         IsReadOnly="True"
+                         Background="#1C1F26"
+                         Foreground="#E6E8ED"
+                         BorderBrush="#3B414F"
+                         CornerRadius="6"
+                         Padding="8"
+                         FontFamily="Consolas"
+                         Margin="0,6,0,0"/>
                 <Button Content="Start Build"
                         Command="{Binding StartBuildCommand}"
                         Background="#3E8EDE"

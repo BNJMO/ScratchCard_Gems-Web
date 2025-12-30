@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Avalonia;
@@ -23,6 +25,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly string? gameConfigPath;
     private readonly string? buildConfigPath;
     private const string DefaultVariationOption = "Select Variation";
+    private const string DefaultLocalServerUrl = "Local Server URL";
+    private const int LocalServerPort = 3000;
     private string gameConfigSnapshot = string.Empty;
     private string buildConfigSnapshot = string.Empty;
     private readonly object localServerLock = new();
@@ -81,6 +85,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string localServerButtonLabel = "Start Local Server";
+
+    [ObservableProperty]
+    private string localServerUrl = DefaultLocalServerUrl;
 
     [RelayCommand]
     private void ReplaceAssets()
@@ -314,6 +321,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 localServerProcess = process;
             }
 
+            LocalServerUrl = BuildLocalServerUrl();
             IsLocalServerRunning = true;
             _ = MonitorLocalServerAsync(process);
         }
@@ -1032,6 +1040,10 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnIsLocalServerRunningChanged(bool value)
     {
         LocalServerButtonLabel = value ? "Stop Local Server" : "Start Local Server";
+        if (!value)
+        {
+            LocalServerUrl = DefaultLocalServerUrl;
+        }
     }
 
     public void StopLocalServer()
@@ -1119,6 +1131,32 @@ public partial class MainWindowViewModel : ViewModelBase
         _ = ReadStreamAsync(process.StandardError, AppendError);
 
         return process;
+    }
+
+    private string BuildLocalServerUrl()
+    {
+        var ip = GetLocalIpAddress() ?? "localhost";
+        return $"http://{ip}:{LocalServerPort}";
+    }
+
+    private static string? GetLocalIpAddress()
+    {
+        try
+        {
+            foreach (var ip in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(ip))
+                {
+                    return ip.ToString();
+                }
+            }
+        }
+        catch
+        {
+            // ignored - fallback will be used
+        }
+
+        return null;
     }
 
     private async Task MonitorLocalServerAsync(Process process)

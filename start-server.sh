@@ -34,10 +34,9 @@ fi
 echo "🚀 Starting Vite development server..."
 echo ""
 echo "The game will open automatically in your browser."
-echo "If not, navigate to: http://localhost:3000"
+echo "If not, navigate to: http://<your-ip>:3000"
 echo ""
 echo "Press Ctrl+C to stop the server."
 echo ""
 
-npm run dev
-
+npm run dev -- --host 0.0.0.0 --port 3000
