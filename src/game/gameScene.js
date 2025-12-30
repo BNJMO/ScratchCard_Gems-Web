@@ -192,6 +192,7 @@ export class GameScene {
 
     this.board.position.set(centerX, centerY);
     this._lastLayout = layout;
+    this.#layoutBackgroundSprite();
   }
 
   resize() {
@@ -208,10 +209,13 @@ export class GameScene {
     const size = Math.floor(Math.min(width, height));
     this.app.renderer.resize(size, size);
     this.#syncCanvasCssSize(size);
-    this.#layoutBackgroundSprite();
+    const layout = this.#layoutSizes();
     if (this.cards.length > 0) {
-      this.layoutCards();
+      this.layoutCards(layout);
+    } else {
+      this._lastLayout = layout;
     }
+    this.#layoutBackgroundSprite();
 
     const winPopupWidth = size * 0.40;
     const winPopupHeight = size * 0.15;
@@ -238,6 +242,12 @@ export class GameScene {
     const rendererHeight = this.app.renderer.height;
     if (rendererWidth <= 0 || rendererHeight <= 0) return;
 
+    const layout = this._lastLayout ?? this.#layoutSizes();
+    const targetWidth = Math.max(1, layout?.contentSize ?? rendererWidth);
+    const targetHeight = Math.max(1, layout?.contentSize ?? rendererHeight);
+    const centerX = layout?.boardCenterX ?? rendererWidth / 2;
+    const centerY = layout?.boardCenterY ?? rendererHeight / 2;
+
     const texture = this.backgroundSprite.texture;
     const textureWidth = texture?.orig?.width || texture?.width || 0;
     const textureHeight = texture?.orig?.height || texture?.height || 0;
@@ -246,14 +256,14 @@ export class GameScene {
     }
 
     const scale = Math.max(
-      rendererWidth / textureWidth,
-      rendererHeight / textureHeight
+      targetWidth / textureWidth,
+      targetHeight / textureHeight
     );
 
     this.backgroundSprite.scale.set(scale);
     this.backgroundSprite.position.set(
-      rendererWidth / 2,
-      rendererHeight / 2
+      centerX,
+      centerY
     );
   }
 
