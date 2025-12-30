@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Avalonia;
@@ -22,6 +24,9 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly string? repositoryRoot;
     private readonly string? gameConfigPath;
     private readonly string? buildConfigPath;
+    private const string DefaultVariationOption = "Select Variation";
+    private const string DefaultLocalServerUrl = "Local Server URL";
+    private const int LocalServerPort = 3000;
     private string gameConfigSnapshot = string.Empty;
     private string buildConfigSnapshot = string.Empty;
     private readonly object localServerLock = new();
@@ -34,8 +39,8 @@ public partial class MainWindowViewModel : ViewModelBase
         repositoryRoot = FindRepositoryRoot();
         gameConfigPath = repositoryRoot is null ? null : Path.Combine(repositoryRoot, "src", "gameConfig.json");
         buildConfigPath = repositoryRoot is null ? null : Path.Combine(repositoryRoot, "buildConfig.json");
-        VariationOptions = new ObservableCollection<string>(LoadVariations(repositoryRoot));
-        SelectedVariation = VariationOptions.FirstOrDefault();
+        VariationOptions = new ObservableCollection<string>(BuildVariationOptions(repositoryRoot));
+        SelectedVariation = DefaultVariationOption;
         LoadConfigText();
     }
 
@@ -46,12 +51,15 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string logText = string.Empty;
 
-    public ObservableCollection<ConfigValueEntry> GameConfigEntries { get; } = new();
+    public ObservableCollection<ConfigDisplayItem> GameConfigEntries { get; } = new();
 
-    public ObservableCollection<ConfigValueEntry> BuildConfigEntries { get; } = new();
+    public ObservableCollection<ConfigDisplayItem> BuildConfigEntries { get; } = new();
 
     [ObservableProperty]
     private string? selectedVariation;
+
+    [ObservableProperty]
+    private bool isVariationSelected;
 
     [ObservableProperty]
     private string gameConfigText = string.Empty;
@@ -78,6 +86,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string localServerButtonLabel = "Start Local Server";
 
+    [ObservableProperty]
+    private string localServerUrl = DefaultLocalServerUrl;
+
     [RelayCommand]
     private void ReplaceAssets()
     {
@@ -88,13 +99,14 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(SelectedVariation))
+        if (!IsActualVariation(SelectedVariation))
         {
             AppendError("No variation selected. Replace Assets aborted.");
             return;
         }
 
-        var variationRoot = Path.Combine(repositoryRoot, "Variations", SelectedVariation);
+        var variationName = SelectedVariation!;
+        var variationRoot = Path.Combine(repositoryRoot, "Variations", variationName);
         if (!Directory.Exists(variationRoot))
         {
             AppendError($"Variation folder not found: {variationRoot}");
@@ -187,6 +199,40 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void RefreshGameConfig()
+    {
+        if (string.IsNullOrWhiteSpace(gameConfigPath))
+        {
+            AppendError("Game config path not found.");
+            return;
+        }
+
+        GameConfigText = LoadConfigFile(gameConfigPath);
+        gameConfigNode = TryParseJson(GameConfigText);
+        PopulateConfigEntries(GameConfigEntries, gameConfigNode, OnGameConfigEntryChanged);
+        gameConfigSnapshot = GameConfigText;
+        IsGameConfigDirty = false;
+        AppendSuccess("Reloaded gameConfig.json.");
+    }
+
+    [RelayCommand]
+    private void RefreshBuildConfig()
+    {
+        if (string.IsNullOrWhiteSpace(buildConfigPath))
+        {
+            AppendError("Build config path not found.");
+            return;
+        }
+
+        BuildConfigText = LoadConfigFile(buildConfigPath);
+        buildConfigNode = TryParseJson(BuildConfigText);
+        PopulateConfigEntries(BuildConfigEntries, buildConfigNode, OnBuildConfigEntryChanged);
+        buildConfigSnapshot = BuildConfigText;
+        IsBuildConfigDirty = false;
+        AppendSuccess("Reloaded buildConfig.json.");
+    }
+
+    [RelayCommand]
     private void SaveGameConfig()
     {
         if (string.IsNullOrWhiteSpace(gameConfigPath))
@@ -275,6 +321,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 localServerProcess = process;
             }
 
+            LocalServerUrl = BuildLocalServerUrl();
             IsLocalServerRunning = true;
             _ = MonitorLocalServerAsync(process);
         }
@@ -347,25 +394,38 @@ public partial class MainWindowViewModel : ViewModelBase
         return null;
     }
 
-    private static string[] LoadVariations(string? rootPath)
+    private static IEnumerable<string> BuildVariationOptions(string? rootPath)
     {
+        yield return DefaultVariationOption;
+
         if (string.IsNullOrWhiteSpace(rootPath))
         {
-            return Array.Empty<string>();
+            yield break;
         }
 
         var variationsPath = Path.Combine(rootPath, "Variations");
         if (!Directory.Exists(variationsPath))
         {
-            return Array.Empty<string>();
+            yield break;
         }
 
-        return Directory.GetDirectories(variationsPath)
+        foreach (var name in Directory.GetDirectories(variationsPath)
             .Select(Path.GetFileName)
             .Where(name => !string.IsNullOrWhiteSpace(name))
-            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
-            .ToArray()!;
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase))
+        {
+            yield return name!;
+        }
     }
+
+    partial void OnSelectedVariationChanged(string? value)
+    {
+        IsVariationSelected = IsActualVariation(value);
+    }
+
+    private static bool IsActualVariation(string? variation) =>
+        !string.IsNullOrWhiteSpace(variation) &&
+        !string.Equals(variation, DefaultVariationOption, StringComparison.Ordinal);
 
     private void LoadConfigText()
     {
@@ -496,7 +556,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     private void PopulateConfigEntries(
-        ObservableCollection<ConfigValueEntry> target,
+        ObservableCollection<ConfigDisplayItem> target,
         JsonNode? rootNode,
         Action<ConfigValueEntry> onValueChanged)
     {
@@ -507,15 +567,24 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         var path = new List<ConfigPathSegment>();
-        CollectConfigEntries(rootNode, path, target, onValueChanged);
-        ApplyHierarchyPresentation(target);
+        var items = new List<ConfigDisplayItem>();
+        CollectConfigItems(rootNode, path, items, 0, onValueChanged, () => UpdateVisibility(items));
+        ApplyHierarchyPresentation(items);
+        UpdateVisibility(items);
+
+        foreach (var item in items)
+        {
+            target.Add(item);
+        }
     }
 
-    private void CollectConfigEntries(
+    private void CollectConfigItems(
         JsonNode? node,
         List<ConfigPathSegment> path,
-        ObservableCollection<ConfigValueEntry> target,
-        Action<ConfigValueEntry> onValueChanged)
+        List<ConfigDisplayItem> target,
+        int depth,
+        Action<ConfigValueEntry> onValueChanged,
+        Action visibilityUpdater)
     {
         if (node is null)
         {
@@ -524,10 +593,17 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (node is JsonObject obj)
         {
+            var isRoot = path.Count == 0;
+            if (!isRoot)
+            {
+                target.Add(new ConfigGroupEntry(GetCurrentLabel(path), depth, _ => visibilityUpdater()));
+            }
+
+            var childDepth = isRoot ? depth : depth + 1;
             foreach (var entry in obj)
             {
                 path.Add(new ConfigPathSegment(entry.Key, null));
-                CollectConfigEntries(entry.Value, path, target, onValueChanged);
+                CollectConfigItems(entry.Value, path, target, childDepth, onValueChanged, visibilityUpdater);
                 path.RemoveAt(path.Count - 1);
             }
 
@@ -536,10 +612,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (node is JsonArray array)
         {
+            if (path.Count > 0)
+            {
+                target.Add(new ConfigGroupEntry(GetCurrentLabel(path), depth, _ => visibilityUpdater()));
+            }
+
             for (var i = 0; i < array.Count; i++)
             {
                 path.Add(new ConfigPathSegment(null, i));
-                CollectConfigEntries(array[i], path, target, onValueChanged);
+                CollectConfigItems(array[i], path, target, depth + 1, onValueChanged, visibilityUpdater);
                 path.RemoveAt(path.Count - 1);
             }
 
@@ -551,7 +632,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var displayPath = BuildDisplayPath(path);
             var (valueText, valueType) = ExtractValue(valueNode);
             var segments = path.ToArray();
-            target.Add(new ConfigValueEntry(displayPath, segments, valueText, valueType, onValueChanged));
+            target.Add(new ConfigValueEntry(displayPath, segments, valueText, valueType, depth, onValueChanged));
         }
     }
 
@@ -572,6 +653,38 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         return result;
+    }
+
+    private static string GetCurrentLabel(IReadOnlyList<ConfigPathSegment> path)
+    {
+        if (path.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var segment = path[^1];
+        return segment.PropertyName ?? $"[{segment.Index}]";
+    }
+
+    private void UpdateVisibility(IReadOnlyList<ConfigDisplayItem> items)
+    {
+        var expansionStack = new Stack<bool>();
+
+        foreach (var item in items)
+        {
+            while (expansionStack.Count > item.Depth)
+            {
+                expansionStack.Pop();
+            }
+
+            var ancestorsExpanded = expansionStack.All(expanded => expanded);
+            item.IsVisible = ancestorsExpanded;
+
+            if (item is ConfigGroupEntry group)
+            {
+                expansionStack.Push(group.IsExpanded);
+            }
+        }
     }
 
     private static (string valueText, ConfigValueType valueType) ExtractValue(JsonValue node)
@@ -610,17 +723,24 @@ public partial class MainWindowViewModel : ViewModelBase
         return (json.Trim('"'), ConfigValueType.Unknown);
     }
 
-    private void ApplyHierarchyPresentation(ObservableCollection<ConfigValueEntry> target)
+    private void ApplyHierarchyPresentation(IReadOnlyList<ConfigDisplayItem> items)
     {
         var groupColors = new Dictionary<string, IBrush>(StringComparer.Ordinal);
         var random = new Random(7319);
         IReadOnlyList<ConfigPathSegment>? previousSegments = null;
 
-        foreach (var entry in target)
+        foreach (var item in items)
         {
-            entry.DisplaySegments = BuildDisplaySegments(entry.Segments, groupColors, random);
-            entry.ItemMargin = BuildHierarchyMargin(entry.Segments, previousSegments);
-            previousSegments = entry.Segments;
+            if (item is ConfigValueEntry entry)
+            {
+                entry.DisplaySegments = BuildDisplaySegments(entry.Segments, groupColors, random);
+                entry.ItemMargin = BuildHierarchyMargin(entry.Segments, previousSegments);
+                previousSegments = entry.Segments;
+            }
+            else
+            {
+                previousSegments = null;
+            }
         }
     }
 
@@ -920,6 +1040,10 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnIsLocalServerRunningChanged(bool value)
     {
         LocalServerButtonLabel = value ? "Stop Local Server" : "Start Local Server";
+        if (!value)
+        {
+            LocalServerUrl = DefaultLocalServerUrl;
+        }
     }
 
     public void StopLocalServer()
@@ -1007,6 +1131,32 @@ public partial class MainWindowViewModel : ViewModelBase
         _ = ReadStreamAsync(process.StandardError, AppendError);
 
         return process;
+    }
+
+    private string BuildLocalServerUrl()
+    {
+        var ip = GetLocalIpAddress() ?? "localhost";
+        return $"http://{ip}:{LocalServerPort}";
+    }
+
+    private static string? GetLocalIpAddress()
+    {
+        try
+        {
+            foreach (var ip in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(ip))
+                {
+                    return ip.ToString();
+                }
+            }
+        }
+        catch
+        {
+            // ignored - fallback will be used
+        }
+
+        return null;
     }
 
     private async Task MonitorLocalServerAsync(Process process)

@@ -19,7 +19,47 @@ public readonly record struct ConfigPathSegment(string? PropertyName, int? Index
 
 public sealed record ConfigPathDisplaySegment(string Text, IBrush Foreground);
 
-public sealed partial class ConfigValueEntry : ObservableObject
+public abstract partial class ConfigDisplayItem : ObservableObject
+{
+    protected ConfigDisplayItem(int depth)
+    {
+        Depth = depth;
+    }
+
+    public int Depth { get; }
+
+    [ObservableProperty]
+    private bool isVisible = true;
+
+    public Thickness Indent => new(Depth * 16, 0, 0, 0);
+}
+
+public sealed partial class ConfigGroupEntry : ConfigDisplayItem
+{
+    private readonly Action<ConfigGroupEntry>? onToggle;
+
+    public ConfigGroupEntry(string label, int depth, Action<ConfigGroupEntry>? onToggle = null)
+        : base(depth)
+    {
+        Label = label;
+        this.onToggle = onToggle;
+    }
+
+    public string Label { get; }
+
+    [ObservableProperty]
+    private bool isExpanded;
+
+    public string ExpansionGlyph => IsExpanded ? "▼" : "▶";
+
+    partial void OnIsExpandedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ExpansionGlyph));
+        onToggle?.Invoke(this);
+    }
+}
+
+public sealed partial class ConfigValueEntry : ConfigDisplayItem
 {
     private readonly Action<ConfigValueEntry>? onValueChanged;
 
@@ -28,7 +68,9 @@ public sealed partial class ConfigValueEntry : ObservableObject
         IReadOnlyList<ConfigPathSegment> segments,
         string value,
         ConfigValueType valueType,
+        int depth,
         Action<ConfigValueEntry>? onValueChanged = null)
+        : base(depth)
     {
         Path = path;
         Segments = segments;
