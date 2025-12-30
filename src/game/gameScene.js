@@ -208,9 +208,12 @@ export class GameScene {
     const size = Math.floor(Math.min(width, height));
     this.app.renderer.resize(size, size);
     this.#syncCanvasCssSize(size);
-    this.#layoutBackgroundSprite();
+    const layout = this.#layoutSizes();
+    this.#layoutBackgroundSprite(layout);
     if (this.cards.length > 0) {
-      this.layoutCards();
+      this.layoutCards(layout);
+    } else {
+      this._lastLayout = layout;
     }
 
     const winPopupWidth = size * 0.40;
@@ -231,7 +234,7 @@ export class GameScene {
     return fallback;
   }
 
-  #layoutBackgroundSprite() {
+  #layoutBackgroundSprite(layout = this._lastLayout ?? this.#layoutSizes()) {
     if (!this.app || !this.backgroundSprite) return;
 
     const rendererWidth = this.app.renderer.width;
@@ -245,15 +248,26 @@ export class GameScene {
       return;
     }
 
+    const hasLayoutSize =
+      layout &&
+      Number.isFinite(layout.contentSize) &&
+      layout.contentSize > 0;
+    const targetSize = hasLayoutSize
+      ? Math.max(1, layout.contentSize)
+      : null;
+
+    const targetWidth = targetSize ?? rendererWidth;
+    const targetHeight = targetSize ?? rendererHeight;
+
     const scale = Math.max(
-      rendererWidth / textureWidth,
-      rendererHeight / textureHeight
+      targetWidth / textureWidth,
+      targetHeight / textureHeight
     );
 
     this.backgroundSprite.scale.set(scale);
     this.backgroundSprite.position.set(
-      rendererWidth / 2,
-      rendererHeight / 2
+      layout?.boardCenterX ?? rendererWidth / 2,
+      layout?.boardCenterY ?? rendererHeight / 2
     );
   }
 
