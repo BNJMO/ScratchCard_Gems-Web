@@ -1,5 +1,4 @@
 import { Assets, Rectangle, Texture } from "pixi.js";
-import { filterEntriesByExtension, getFileExtension } from "./assetResolver.js";
 import gameConfig from "../gameConfig.json";
 
 const spritesheetConfig = gameConfig?.gameplay?.spritesheetProvider ?? {};
@@ -44,25 +43,20 @@ const SPRITESHEET_RESOLUTION_FACTOR = Number.isFinite(
   ? spritesheetConfig.resolutionFactor
   : 0.75;
 const CARD_TYPE_COUNT = SPRITESHEET_COLUMNS * SPRITESHEET_ROWS;
-const CARD_TYPE_EXTENSION = getFileExtension("cardTypes", ".png");
 
 const SPRITESHEET_MODULES = import.meta.glob(
-  "../../assets/sprites/cardTypes/animated/cardType_*.*",
+  "../../assets/sprites/cardTypes/animated/*.png",
   { eager: true }
 );
 
-const SPRITESHEET_ENTRIES = filterEntriesByExtension(
-  Object.entries(SPRITESHEET_MODULES),
-  CARD_TYPE_EXTENSION,
-  ".png"
-)
+const SPRITESHEET_ENTRIES = Object.entries(SPRITESHEET_MODULES)
   .map(([path, mod]) => {
     const texturePath =
       typeof mod === "string" ? mod : mod?.default ?? mod ?? null;
     if (!texturePath) {
       return null;
     }
-    const match = path.match(/\/([0-9]+)\.[^/]+$/i);
+    const match = path.match(/\/([0-9]+)\.png$/i);
     const order = match ? Number.parseInt(match[1], 10) : Number.NaN;
     return {
       path,
