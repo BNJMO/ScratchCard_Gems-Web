@@ -16,7 +16,8 @@
     }
   },
   "gameplay": {
-    "gridSize": 3,
+    "gridRows": 3,
+    "gridColumns": 3,
     "gameMode": "flip",
     "hover": {
       "enabled": true,
