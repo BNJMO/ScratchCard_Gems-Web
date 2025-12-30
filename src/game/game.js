@@ -1186,7 +1186,9 @@ export async function createGame(mount, opts = {}) {
   function handlePointerDown(card) {
     if (card.revealed || card._animating || rules.gameOver) return;
     if (isAutoModeActive(getMode)) return;
-    soundManager.play("tileTapDown");
+    if (!isScratchMode) {
+      soundManager.play("tileTapDown");
+    }
     card.setPressed(true);
   }
 
