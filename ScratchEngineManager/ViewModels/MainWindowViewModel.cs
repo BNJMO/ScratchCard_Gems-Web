@@ -98,7 +98,8 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        var variationRoot = Path.Combine(repositoryRoot, "Variations", SelectedVariation);
+        var variationName = SelectedVariation!;
+        var variationRoot = Path.Combine(repositoryRoot, "Variations", variationName);
         if (!Directory.Exists(variationRoot))
         {
             AppendError($"Variation folder not found: {variationRoot}");
