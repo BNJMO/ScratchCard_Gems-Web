@@ -47,9 +47,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string logText = string.Empty;
 
-    public ObservableCollection<ConfigValueEntry> GameConfigEntries { get; } = new();
+    public ObservableCollection<ConfigDisplayItem> GameConfigEntries { get; } = new();
 
-    public ObservableCollection<ConfigValueEntry> BuildConfigEntries { get; } = new();
+    public ObservableCollection<ConfigDisplayItem> BuildConfigEntries { get; } = new();
 
     [ObservableProperty]
     private string? selectedVariation;
@@ -547,7 +547,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     private void PopulateConfigEntries(
-        ObservableCollection<ConfigValueEntry> target,
+        ObservableCollection<ConfigDisplayItem> target,
         JsonNode? rootNode,
         Action<ConfigValueEntry> onValueChanged)
     {
@@ -558,15 +558,24 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         var path = new List<ConfigPathSegment>();
-        CollectConfigEntries(rootNode, path, target, onValueChanged);
-        ApplyHierarchyPresentation(target);
+        var items = new List<ConfigDisplayItem>();
+        CollectConfigItems(rootNode, path, items, 0, onValueChanged, () => UpdateVisibility(items));
+        ApplyHierarchyPresentation(items);
+        UpdateVisibility(items);
+
+        foreach (var item in items)
+        {
+            target.Add(item);
+        }
     }
 
-    private void CollectConfigEntries(
+    private void CollectConfigItems(
         JsonNode? node,
         List<ConfigPathSegment> path,
-        ObservableCollection<ConfigValueEntry> target,
-        Action<ConfigValueEntry> onValueChanged)
+        List<ConfigDisplayItem> target,
+        int depth,
+        Action<ConfigValueEntry> onValueChanged,
+        Action visibilityUpdater)
     {
         if (node is null)
         {
@@ -575,10 +584,17 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (node is JsonObject obj)
         {
+            var isRoot = path.Count == 0;
+            if (!isRoot)
+            {
+                target.Add(new ConfigGroupEntry(GetCurrentLabel(path), depth, _ => visibilityUpdater()));
+            }
+
+            var childDepth = isRoot ? depth : depth + 1;
             foreach (var entry in obj)
             {
                 path.Add(new ConfigPathSegment(entry.Key, null));
-                CollectConfigEntries(entry.Value, path, target, onValueChanged);
+                CollectConfigItems(entry.Value, path, target, childDepth, onValueChanged, visibilityUpdater);
                 path.RemoveAt(path.Count - 1);
             }
 
@@ -587,10 +603,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (node is JsonArray array)
         {
+            if (path.Count > 0)
+            {
+                target.Add(new ConfigGroupEntry(GetCurrentLabel(path), depth, _ => visibilityUpdater()));
+            }
+
             for (var i = 0; i < array.Count; i++)
             {
                 path.Add(new ConfigPathSegment(null, i));
-                CollectConfigEntries(array[i], path, target, onValueChanged);
+                CollectConfigItems(array[i], path, target, depth + 1, onValueChanged, visibilityUpdater);
                 path.RemoveAt(path.Count - 1);
             }
 
@@ -602,7 +623,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var displayPath = BuildDisplayPath(path);
             var (valueText, valueType) = ExtractValue(valueNode);
             var segments = path.ToArray();
-            target.Add(new ConfigValueEntry(displayPath, segments, valueText, valueType, onValueChanged));
+            target.Add(new ConfigValueEntry(displayPath, segments, valueText, valueType, depth, onValueChanged));
         }
     }
 
@@ -623,6 +644,38 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         return result;
+    }
+
+    private static string GetCurrentLabel(IReadOnlyList<ConfigPathSegment> path)
+    {
+        if (path.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var segment = path[^1];
+        return segment.PropertyName ?? $"[{segment.Index}]";
+    }
+
+    private void UpdateVisibility(IReadOnlyList<ConfigDisplayItem> items)
+    {
+        var expansionStack = new Stack<bool>();
+
+        foreach (var item in items)
+        {
+            while (expansionStack.Count > item.Depth)
+            {
+                expansionStack.Pop();
+            }
+
+            var ancestorsExpanded = expansionStack.All(expanded => expanded);
+            item.IsVisible = ancestorsExpanded;
+
+            if (item is ConfigGroupEntry group)
+            {
+                expansionStack.Push(group.IsExpanded);
+            }
+        }
     }
 
     private static (string valueText, ConfigValueType valueType) ExtractValue(JsonValue node)
@@ -661,17 +714,24 @@ public partial class MainWindowViewModel : ViewModelBase
         return (json.Trim('"'), ConfigValueType.Unknown);
     }
 
-    private void ApplyHierarchyPresentation(ObservableCollection<ConfigValueEntry> target)
+    private void ApplyHierarchyPresentation(IReadOnlyList<ConfigDisplayItem> items)
     {
         var groupColors = new Dictionary<string, IBrush>(StringComparer.Ordinal);
         var random = new Random(7319);
         IReadOnlyList<ConfigPathSegment>? previousSegments = null;
 
-        foreach (var entry in target)
+        foreach (var item in items)
         {
-            entry.DisplaySegments = BuildDisplaySegments(entry.Segments, groupColors, random);
-            entry.ItemMargin = BuildHierarchyMargin(entry.Segments, previousSegments);
-            previousSegments = entry.Segments;
+            if (item is ConfigValueEntry entry)
+            {
+                entry.DisplaySegments = BuildDisplaySegments(entry.Segments, groupColors, random);
+                entry.ItemMargin = BuildHierarchyMargin(entry.Segments, previousSegments);
+                previousSegments = entry.Segments;
+            }
+            else
+            {
+                previousSegments = null;
+            }
         }
     }
 
