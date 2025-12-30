@@ -395,20 +395,20 @@ export async function createGame(mount, opts = {}) {
   const legacyGrid = Number(gameConfig?.gameplay?.gridSize);
   const GRID_ROWS = Math.max(
     1,
-    Number.isFinite(opts.gridRows)
-      ? opts.gridRows
-      : Number.isFinite(configRows)
+    Number.isFinite(configRows)
       ? configRows
+      : Number.isFinite(opts.gridRows)
+      ? opts.gridRows
       : Number.isFinite(legacyGrid)
       ? legacyGrid
       : 3
   );
   const GRID_COLUMNS = Math.max(
     1,
-    Number.isFinite(opts.gridColumns)
-      ? opts.gridColumns
-      : Number.isFinite(configColumns)
+    Number.isFinite(configColumns)
       ? configColumns
+      : Number.isFinite(opts.gridColumns)
+      ? opts.gridColumns
       : Number.isFinite(legacyGrid)
       ? legacyGrid
       : 3
@@ -1290,6 +1290,19 @@ export async function createGame(mount, opts = {}) {
       ) {
         const key = `${entry.row},${entry.col}`;
         currentAssignments.set(key, entry.contentKey ?? entry.result ?? null);
+      }
+    }
+    if (currentAssignments.size < scene.cards.length) {
+      const fallbackKeys = Object.keys(contentLibrary);
+      for (const card of scene.cards) {
+        const key = `${card.row},${card.col}`;
+        if (!currentAssignments.has(key)) {
+          const choice =
+            fallbackKeys.length > 0
+              ? fallbackKeys[Math.floor(Math.random() * fallbackKeys.length)]
+              : null;
+          currentAssignments.set(key, choice);
+        }
       }
     }
     rules.setAssignments(currentAssignments);

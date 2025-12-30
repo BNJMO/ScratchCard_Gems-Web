@@ -97,6 +97,8 @@ const GRID_COLUMNS = Math.max(
     ? GAMEPLAY_CONFIG.gridSize
     : 3
 );
+let currentGridRows = GRID_ROWS;
+let currentGridColumns = GRID_COLUMNS;
 const cardIconType =
   CARD_CONFIG.iconType === "animated" || CARD_CONFIG.iconType === "static"
     ? CARD_CONFIG.iconType
@@ -641,7 +643,7 @@ function applyRoundInteractiveState(state) {
 
   const revealedCount = state?.revealed ?? 0;
   const totalTiles =
-    state?.totalTiles ?? GRID_ROWS * GRID_COLUMNS;
+    state?.totalTiles ?? currentGridRows * currentGridColumns;
 
   if (selectionPending || state?.waitingForChoice) {
     setControlPanelBetState(false);
@@ -807,8 +809,8 @@ function shuffleArray(values = []) {
 
 function createCardPositions() {
   const positions = [];
-  for (let row = 0; row < GRID_ROWS; row += 1) {
-    for (let col = 0; col < GRID_COLUMNS; col += 1) {
+  for (let row = 0; row < currentGridRows; row += 1) {
+    for (let col = 0; col < currentGridColumns; col += 1) {
       positions.push({ row, col });
     }
   }
@@ -1212,6 +1214,12 @@ const opts = {
     );
     const state = game?.getState?.();
     if (state) {
+      if (Number.isFinite(state.gridRows)) {
+        currentGridRows = Math.max(1, state.gridRows);
+      }
+      if (Number.isFinite(state.gridColumns)) {
+        currentGridColumns = Math.max(1, state.gridColumns);
+      }
       const totalTiles =
         state.totalTiles ??
         (state.gridRows && state.gridColumns
