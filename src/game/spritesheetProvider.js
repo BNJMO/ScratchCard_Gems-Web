@@ -45,9 +45,10 @@ const SPRITESHEET_RESOLUTION_FACTOR = Number.isFinite(
   : 0.75;
 const CARD_TYPE_COUNT = SPRITESHEET_COLUMNS * SPRITESHEET_ROWS;
 const CARD_TYPE_EXTENSION = getFileExtension("cardTypes", ".png");
+const SPRITESHEET_FILENAME_REGEX = /\/([0-9]{4})\.[^/]+$/i;
 
 const SPRITESHEET_MODULES = import.meta.glob(
-  "../../assets/sprites/cardTypes/animated/cardType_*.*",
+  "../../assets/sprites/cardTypes/animated/[0-9][0-9][0-9][0-9].*",
   { eager: true }
 );
 
@@ -62,7 +63,10 @@ const SPRITESHEET_ENTRIES = filterEntriesByExtension(
     if (!texturePath) {
       return null;
     }
-    const match = path.match(/\/([0-9]+)\.[^/]+$/i);
+    const match = path.match(SPRITESHEET_FILENAME_REGEX);
+    if (!match) {
+      return null;
+    }
     const order = match ? Number.parseInt(match[1], 10) : Number.NaN;
     return {
       path,
