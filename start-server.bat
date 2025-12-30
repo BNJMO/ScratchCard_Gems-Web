@@ -5,15 +5,39 @@ echo   Mines Game - Starting Server
 echo ========================================
 echo.
 
-REM Check if Node.js is installed
+set NODE_OK=0
+
 where node >nul 2>nul
-if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Node.js is not installed!
-    echo.
-    echo Please install Node.js from: https://nodejs.org/
-    echo.
-    pause
-    exit /b 1
+if %ERRORLEVEL% EQU 0 set NODE_OK=1
+
+if %NODE_OK% EQU 0 (
+    echo [INFO] Node.js not detected. Attempting installation...
+    where winget >nul 2>nul
+    if %ERRORLEVEL% EQU 0 (
+        echo [INFO] Installing Node.js LTS with winget...
+        winget install -e --id OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements
+    ) else (
+        if exist "%ProgramData%\chocolatey\bin\choco.exe" (
+            echo [INFO] Installing Node.js LTS with Chocolatey...
+            choco install -y nodejs-lts
+        ) else (
+            echo [ERROR] Neither winget nor Chocolatey is available to install Node.js.
+            echo Please install Node.js manually from: https://nodejs.org/
+            echo.
+            pause
+            exit /b 1
+        )
+    )
+
+    where node >nul 2>nul
+    if %ERRORLEVEL% EQU 0 (
+        set NODE_OK=1
+    ) else (
+        echo [ERROR] Node.js installation failed. Please install manually from: https://nodejs.org/
+        echo.
+        pause
+        exit /b 1
+    )
 )
 
 REM Check if node_modules exists
