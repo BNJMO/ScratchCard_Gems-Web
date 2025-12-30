@@ -390,7 +390,29 @@ function isAutoModeActive(getMode) {
 }
 
 export async function createGame(mount, opts = {}) {
-  const GRID = 3;
+  const configRows = Number(gameConfig?.gameplay?.gridRows);
+  const configColumns = Number(gameConfig?.gameplay?.gridColumns);
+  const legacyGrid = Number(gameConfig?.gameplay?.gridSize);
+  const GRID_ROWS = Math.max(
+    1,
+    Number.isFinite(configRows)
+      ? configRows
+      : Number.isFinite(opts.gridRows)
+      ? opts.gridRows
+      : Number.isFinite(legacyGrid)
+      ? legacyGrid
+      : 3
+  );
+  const GRID_COLUMNS = Math.max(
+    1,
+    Number.isFinite(configColumns)
+      ? configColumns
+      : Number.isFinite(opts.gridColumns)
+      ? opts.gridColumns
+      : Number.isFinite(legacyGrid)
+      ? legacyGrid
+      : 3
+  );
   const fontFamily =
     opts.fontFamily ?? "Inter, system-ui, -apple-system, Segoe UI, Arial";
   const initialSize = Math.max(1, opts.size ?? 400);
@@ -648,7 +670,8 @@ export async function createGame(mount, opts = {}) {
     initialSize,
     palette,
     fontFamily,
-    gridSize: GRID,
+    gridRows: GRID_ROWS,
+    gridColumns: GRID_COLUMNS,
     strokeWidth,
     cardOptions: {
       icon: {
@@ -686,7 +709,10 @@ export async function createGame(mount, opts = {}) {
 
   await scene.init();
 
-  const rules = new GameRules({ gridSize: GRID });
+  const rules = new GameRules({
+    gridRows: GRID_ROWS,
+    gridColumns: GRID_COLUMNS,
+  });
 
   const cardsByKey = new Map();
   const currentAssignments = new Map();
@@ -1264,6 +1290,19 @@ export async function createGame(mount, opts = {}) {
       ) {
         const key = `${entry.row},${entry.col}`;
         currentAssignments.set(key, entry.contentKey ?? entry.result ?? null);
+      }
+    }
+    if (currentAssignments.size < scene.cards.length) {
+      const fallbackKeys = Object.keys(contentLibrary);
+      for (const card of scene.cards) {
+        const key = `${card.row},${card.col}`;
+        if (!currentAssignments.has(key)) {
+          const choice =
+            fallbackKeys.length > 0
+              ? fallbackKeys[Math.floor(Math.random() * fallbackKeys.length)]
+              : null;
+          currentAssignments.set(key, choice);
+        }
       }
     }
     rules.setAssignments(currentAssignments);

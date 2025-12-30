@@ -81,9 +81,24 @@ const GAME_NAME =
   typeof APP_CONFIG.gameName === "string" && APP_CONFIG.gameName.trim()
     ? APP_CONFIG.gameName
     : "Flip Cards - Gems";
-const GRID_SIZE = Number.isFinite(GAMEPLAY_CONFIG.gridSize)
-  ? GAMEPLAY_CONFIG.gridSize
-  : 3;
+const GRID_ROWS = Math.max(
+  1,
+  Number.isFinite(GAMEPLAY_CONFIG.gridRows)
+    ? GAMEPLAY_CONFIG.gridRows
+    : Number.isFinite(GAMEPLAY_CONFIG.gridSize)
+    ? GAMEPLAY_CONFIG.gridSize
+    : 3
+);
+const GRID_COLUMNS = Math.max(
+  1,
+  Number.isFinite(GAMEPLAY_CONFIG.gridColumns)
+    ? GAMEPLAY_CONFIG.gridColumns
+    : Number.isFinite(GAMEPLAY_CONFIG.gridSize)
+    ? GAMEPLAY_CONFIG.gridSize
+    : 3
+);
+let currentGridRows = GRID_ROWS;
+let currentGridColumns = GRID_COLUMNS;
 const cardIconType =
   CARD_CONFIG.iconType === "animated" || CARD_CONFIG.iconType === "static"
     ? CARD_CONFIG.iconType
@@ -627,7 +642,8 @@ function applyRoundInteractiveState(state) {
   }
 
   const revealedCount = state?.revealed ?? 0;
-  const totalTiles = state?.totalTiles ?? GRID_SIZE * GRID_SIZE;
+  const totalTiles =
+    state?.totalTiles ?? currentGridRows * currentGridColumns;
 
   if (selectionPending || state?.waitingForChoice) {
     setControlPanelBetState(false);
@@ -793,8 +809,8 @@ function shuffleArray(values = []) {
 
 function createCardPositions() {
   const positions = [];
-  for (let row = 0; row < GRID_SIZE; row += 1) {
-    for (let col = 0; col < GRID_SIZE; col += 1) {
+  for (let row = 0; row < currentGridRows; row += 1) {
+    for (let col = 0; col < currentGridColumns; col += 1) {
       positions.push({ row, col });
     }
   }
@@ -1008,7 +1024,8 @@ const opts = {
   size: 600,
   backgroundColor: "#091B26",
   fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Arial",
-  grid: GRID_SIZE,
+  gridRows: GRID_ROWS,
+  gridColumns: GRID_COLUMNS,
   mines: 1,
   autoResetDelayMs: AUTO_RESET_DELAY_MS,
   iconSizePercentage: 0.7,
@@ -1052,7 +1069,7 @@ const opts = {
   onChange: handleGameStateChange,
 };
 
-  const totalTiles = opts.grid * opts.grid;
+  const totalTiles = opts.gridRows * opts.gridColumns;
   const maxMines = Math.max(1, totalTiles - 1);
   const initialMines = Math.max(1, Math.min(opts.mines ?? 1, maxMines));
   opts.mines = initialMines;
@@ -1197,7 +1214,17 @@ const opts = {
     );
     const state = game?.getState?.();
     if (state) {
-      const totalTiles = state.totalTiles ?? state.grid * state.grid;
+      if (Number.isFinite(state.gridRows)) {
+        currentGridRows = Math.max(1, state.gridRows);
+      }
+      if (Number.isFinite(state.gridColumns)) {
+        currentGridColumns = Math.max(1, state.gridColumns);
+      }
+      const totalTiles =
+        state.totalTiles ??
+        (state.gridRows && state.gridColumns
+          ? state.gridRows * state.gridColumns
+          : state.grid * state.grid);
       if (totalTiles != null) {
         controlPanel?.setTotalTiles?.(totalTiles, { emit: false });
       }

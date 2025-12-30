@@ -89,13 +89,15 @@ export class CoverScratch {
     const app = this.scene?.app;
     if (!layout || !app || !this.scene?.board) return;
 
-    const contentSize = layout.contentSize ?? 0;
-    const half = contentSize / 2;
+    const contentWidth = layout.contentWidth ?? layout.contentSize ?? 0;
+    const contentHeight = layout.contentHeight ?? layout.contentSize ?? 0;
+    const halfWidth = contentWidth / 2;
+    const halfHeight = contentHeight / 2;
 
-    this.coverBounds.x = -half - this.padding;
-    this.coverBounds.y = -half - this.padding;
-    this.coverBounds.width = contentSize + this.padding * 2;
-    this.coverBounds.height = contentSize + this.padding * 2;
+    this.coverBounds.x = -halfWidth - this.padding;
+    this.coverBounds.y = -halfHeight - this.padding;
+    this.coverBounds.width = contentWidth + this.padding * 2;
+    this.coverBounds.height = contentHeight + this.padding * 2;
 
     const targetRadius = this.radiusOption ?? Math.max(12, Math.floor((layout.tileSize ?? 64) * 0.3));
     const targetBlur = this.blurSizeOption ?? Math.max(8, Math.floor(targetRadius * 0.25));
