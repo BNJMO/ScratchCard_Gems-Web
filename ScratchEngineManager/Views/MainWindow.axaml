@@ -39,6 +39,7 @@
                            FontWeight="SemiBold"/>
                 <Button Content="Replace Assets"
                         Command="{Binding ReplaceAssetsCommand}"
+                        IsEnabled="{Binding IsVariationSelected}"
                         Background="#3E8EDE"
                         Foreground="#F7F8FA"
                         BorderBrush="#3E8EDE"

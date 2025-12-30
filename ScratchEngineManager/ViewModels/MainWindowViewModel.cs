@@ -22,6 +22,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly string? repositoryRoot;
     private readonly string? gameConfigPath;
     private readonly string? buildConfigPath;
+    private const string DefaultVariationOption = "Select Variation";
     private string gameConfigSnapshot = string.Empty;
     private string buildConfigSnapshot = string.Empty;
     private readonly object localServerLock = new();
@@ -34,8 +35,8 @@ public partial class MainWindowViewModel : ViewModelBase
         repositoryRoot = FindRepositoryRoot();
         gameConfigPath = repositoryRoot is null ? null : Path.Combine(repositoryRoot, "src", "gameConfig.json");
         buildConfigPath = repositoryRoot is null ? null : Path.Combine(repositoryRoot, "buildConfig.json");
-        VariationOptions = new ObservableCollection<string>(LoadVariations(repositoryRoot));
-        SelectedVariation = VariationOptions.FirstOrDefault();
+        VariationOptions = new ObservableCollection<string>(BuildVariationOptions(repositoryRoot));
+        SelectedVariation = DefaultVariationOption;
         LoadConfigText();
     }
 
@@ -52,6 +53,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string? selectedVariation;
+
+    [ObservableProperty]
+    private bool isVariationSelected;
 
     [ObservableProperty]
     private string gameConfigText = string.Empty;
@@ -88,7 +92,7 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(SelectedVariation))
+        if (!IsActualVariation(SelectedVariation))
         {
             AppendError("No variation selected. Replace Assets aborted.");
             return;
@@ -347,25 +351,38 @@ public partial class MainWindowViewModel : ViewModelBase
         return null;
     }
 
-    private static string[] LoadVariations(string? rootPath)
+    private static IEnumerable<string> BuildVariationOptions(string? rootPath)
     {
+        yield return DefaultVariationOption;
+
         if (string.IsNullOrWhiteSpace(rootPath))
         {
-            return Array.Empty<string>();
+            yield break;
         }
 
         var variationsPath = Path.Combine(rootPath, "Variations");
         if (!Directory.Exists(variationsPath))
         {
-            return Array.Empty<string>();
+            yield break;
         }
 
-        return Directory.GetDirectories(variationsPath)
+        foreach (var name in Directory.GetDirectories(variationsPath)
             .Select(Path.GetFileName)
             .Where(name => !string.IsNullOrWhiteSpace(name))
-            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
-            .ToArray()!;
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase))
+        {
+            yield return name!;
+        }
     }
+
+    partial void OnSelectedVariationChanged(string? value)
+    {
+        IsVariationSelected = IsActualVariation(value);
+    }
+
+    private static bool IsActualVariation(string? variation) =>
+        !string.IsNullOrWhiteSpace(variation) &&
+        !string.Equals(variation, DefaultVariationOption, StringComparison.Ordinal);
 
     private void LoadConfigText()
     {
