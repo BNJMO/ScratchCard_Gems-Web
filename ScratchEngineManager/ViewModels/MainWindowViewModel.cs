@@ -191,6 +191,40 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void RefreshGameConfig()
+    {
+        if (string.IsNullOrWhiteSpace(gameConfigPath))
+        {
+            AppendError("Game config path not found.");
+            return;
+        }
+
+        GameConfigText = LoadConfigFile(gameConfigPath);
+        gameConfigNode = TryParseJson(GameConfigText);
+        PopulateConfigEntries(GameConfigEntries, gameConfigNode, OnGameConfigEntryChanged);
+        gameConfigSnapshot = GameConfigText;
+        IsGameConfigDirty = false;
+        AppendSuccess("Reloaded gameConfig.json.");
+    }
+
+    [RelayCommand]
+    private void RefreshBuildConfig()
+    {
+        if (string.IsNullOrWhiteSpace(buildConfigPath))
+        {
+            AppendError("Build config path not found.");
+            return;
+        }
+
+        BuildConfigText = LoadConfigFile(buildConfigPath);
+        buildConfigNode = TryParseJson(BuildConfigText);
+        PopulateConfigEntries(BuildConfigEntries, buildConfigNode, OnBuildConfigEntryChanged);
+        buildConfigSnapshot = BuildConfigText;
+        IsBuildConfigDirty = false;
+        AppendSuccess("Reloaded buildConfig.json.");
+    }
+
+    [RelayCommand]
     private void SaveGameConfig()
     {
         if (string.IsNullOrWhiteSpace(gameConfigPath))
