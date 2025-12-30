@@ -242,7 +242,7 @@ export class GameScene {
     const rendererHeight = this.app.renderer.height;
     if (rendererWidth <= 0 || rendererHeight <= 0) return;
 
-    const layout = this._lastLayout ?? this.#layoutSizes();
+    const layout = this.getBoardLayout() ?? this.#layoutSizes();
     const targetWidth = Math.max(1, layout?.contentSize ?? rendererWidth);
     const targetHeight = Math.max(1, layout?.contentSize ?? rendererHeight);
     const centerX = layout?.boardCenterX ?? rendererWidth / 2;
