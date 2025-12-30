@@ -12,7 +12,8 @@ export class GameScene {
     palette,
     backgroundTexture,
     fontFamily = DEFAULT_FONT_FAMILY,
-    gridSize,
+    gridRows,
+    gridColumns,
     strokeWidth,
     cardOptions,
     layoutOptions,
@@ -25,7 +26,8 @@ export class GameScene {
     this.palette = palette;
     this.fontFamily = fontFamily;
     this.backgroundTexture = backgroundTexture ?? null;
-    this.gridSize = gridSize;
+    this.gridRows = Math.max(1, gridRows || 1);
+    this.gridColumns = Math.max(1, gridColumns || 1);
     this.strokeWidth = strokeWidth;
     this.cardOptions = {
       icon: cardOptions?.icon ?? {},
@@ -142,8 +144,8 @@ export class GameScene {
     this.clearGrid();
     const layout = this.#layoutSizes();
 
-    for (let r = 0; r < this.gridSize; r += 1) {
-      for (let c = 0; c < this.gridSize; c += 1) {
+    for (let r = 0; r < this.gridRows; r += 1) {
+      for (let c = 0; c < this.gridColumns; c += 1) {
         const card = new Card({
           app: this.app,
           palette: this.palette,
@@ -174,9 +176,16 @@ export class GameScene {
   layoutCards(layout = this.#layoutSizes()) {
     if (!this.cards.length) return;
 
-    const { tileSize, gap, contentSize, boardCenterX, boardCenterY } = layout;
-    const startX = -contentSize / 2;
-    const startY = -contentSize / 2;
+    const {
+      tileSize,
+      gap,
+      contentWidth,
+      contentHeight,
+      boardCenterX,
+      boardCenterY,
+    } = layout;
+    const startX = -contentWidth / 2;
+    const startY = -contentHeight / 2;
 
     for (const card of this.cards) {
       const scale = tileSize / card._tileSize;
@@ -359,14 +368,34 @@ export class GameScene {
     const boardSpace = Math.max(40, size - topSpace - 5);
     const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0.012;
     const gap = Math.max(1, Math.floor(boardSpace * gapValue));
-    const totalGaps = gap * (this.gridSize - 1);
-    const tileArea = Math.max(1, boardSpace - totalGaps);
-    const tileSize = Math.max(1, Math.floor(tileArea / this.gridSize));
-    const contentSize = tileSize * this.gridSize + totalGaps;
+    const totalHorizontalGaps = gap * Math.max(0, this.gridColumns - 1);
+    const totalVerticalGaps = gap * Math.max(0, this.gridRows - 1);
+    const tileAreaWidth = Math.max(1, boardSpace - totalHorizontalGaps);
+    const tileAreaHeight = Math.max(1, boardSpace - totalVerticalGaps);
+    const tileSize = Math.max(
+      1,
+      Math.floor(
+        Math.min(
+          tileAreaWidth / this.gridColumns,
+          tileAreaHeight / this.gridRows
+        )
+      )
+    );
+    const contentWidth = tileSize * this.gridColumns + totalHorizontalGaps;
+    const contentHeight = tileSize * this.gridRows + totalVerticalGaps;
+    const contentSize = Math.max(contentWidth, contentHeight);
     const boardCenterX = horizontal + availableWidth / 2;
     const boardCenterY = vertical + availableHeight / 2;
 
-    return { tileSize, gap, contentSize, boardCenterX, boardCenterY };
+    return {
+      tileSize,
+      gap,
+      contentWidth,
+      contentHeight,
+      contentSize,
+      boardCenterX,
+      boardCenterY,
+    };
   }
 
   getBoardLayout() {
@@ -382,14 +411,16 @@ export class GameScene {
     const layout = this._lastLayout;
     if (!layout) return null;
 
-    const contentSize = layout.contentSize ?? 0;
-    const half = contentSize / 2;
+    const width = layout.contentWidth ?? layout.contentSize ?? 0;
+    const height = layout.contentHeight ?? layout.contentSize ?? 0;
+    const halfWidth = width / 2;
+    const halfHeight = height / 2;
 
     return new Rectangle(
-      (layout.boardCenterX ?? 0) - half,
-      (layout.boardCenterY ?? 0) - half,
-      contentSize,
-      contentSize
+      (layout.boardCenterX ?? 0) - halfWidth,
+      (layout.boardCenterY ?? 0) - halfHeight,
+      width,
+      height
     );
   }
 

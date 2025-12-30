@@ -1,6 +1,7 @@
 export class GameRules {
-  constructor({ gridSize }) {
-    this.gridSize = gridSize;
+  constructor({ gridRows, gridColumns }) {
+    this.gridRows = Math.max(1, gridRows || 3);
+    this.gridColumns = Math.max(1, gridColumns || 3);
     this.reset();
   }
 
@@ -11,7 +12,7 @@ export class GameRules {
     this.revealedMap = new Map();
     this.assignments = new Map();
     this.revealedCount = 0;
-    this.totalTiles = this.gridSize * this.gridSize;
+    this.totalTiles = this.gridRows * this.gridColumns;
   }
 
   setAssignments(map) {
@@ -57,7 +58,9 @@ export class GameRules {
 
   getState() {
     return {
-      grid: this.gridSize,
+      grid: this.gridRows,
+      gridRows: this.gridRows,
+      gridColumns: this.gridColumns,
       totalTiles: this.totalTiles,
       revealed: this.revealedCount,
       gameOver: this.gameOver,
@@ -66,4 +69,3 @@ export class GameRules {
     };
   }
 }
-
