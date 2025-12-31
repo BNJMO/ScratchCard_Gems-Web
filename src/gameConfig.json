@@ -19,7 +19,7 @@
   "gameplay": {
     "gridRows": 3,
     "gridColumns": 3,
-    "gameMode": "scratch",
+    "gameMode": "flip",
     "hover": {
       "enabled": true,
       "enterDuration": 120,
