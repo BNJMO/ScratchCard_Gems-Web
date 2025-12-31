@@ -12,7 +12,8 @@
       "tile_flipped": ".svg",
       "tile_hovered": ".svg",
       "tile_unflipped": ".svg",
-      "winFrame": ".svg"
+      "winFrame": ".svg",
+      "winPopup": ".png"
     }
   },
   "gameplay": {
@@ -48,6 +49,20 @@
       "paddingRight": 0,
       "paddingBottom": 0,
       "resolutionFactor": 0.75
+    },
+    "winPopup": {
+      "useSprite": true,
+      "spriteName": "winPopup",
+      "scale": 0.6,
+      "offsetX": 0,
+      "offsetY": 0,
+      "showDuration": 2000,
+      "animationDuration": 300,
+      "showText": true,
+      "textColor": "#FFFFFF",
+      "amountColor": "#EAFF00",
+      "fontSize": 22,
+      "amountFontSize": 18
     }
   }
 }

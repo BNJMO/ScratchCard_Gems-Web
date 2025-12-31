@@ -702,6 +702,20 @@ export async function createGame(mount, opts = {}) {
       cardsSpawnDuration,
       disableAnimations,
     },
+    winPopupOptions: {
+      useSprite: gameConfig?.gameplay?.winPopup?.useSprite ?? true,
+      spriteName: gameConfig?.gameplay?.winPopup?.spriteName ?? "winPopup",
+      scale: gameConfig?.gameplay?.winPopup?.scale ?? 0.6,
+      offsetX: gameConfig?.gameplay?.winPopup?.offsetX ?? 0,
+      offsetY: gameConfig?.gameplay?.winPopup?.offsetY ?? 0,
+      showDuration: gameConfig?.gameplay?.winPopup?.showDuration ?? 2000,
+      animationDuration: gameConfig?.gameplay?.winPopup?.animationDuration ?? 300,
+      showText: gameConfig?.gameplay?.winPopup?.showText ?? true,
+      textColor: gameConfig?.gameplay?.winPopup?.textColor ?? "#FFFFFF",
+      amountColor: gameConfig?.gameplay?.winPopup?.amountColor ?? "#EAFF00",
+      fontSize: gameConfig?.gameplay?.winPopup?.fontSize ?? 22,
+      amountFontSize: gameConfig?.gameplay?.winPopup?.amountFontSize ?? 18,
+    },
     onResize: () => {
       coverScratch?.syncWithLayout();
     },
