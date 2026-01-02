@@ -1,6 +1,8 @@
 import { Application, Container, Graphics, Rectangle, Sprite, Text } from "pixi.js";
 import { Card } from "./card.js";
 import { WinPopup } from "./winPopup.js";
+import { SpriteWinPopup } from "./spriteWinPopup.js";
+import gameConfig from "../gameConfig.json";
 
 const DEFAULT_FONT_FAMILY = "Inter, system-ui, -apple-system, Segoe UI, Arial";
 
@@ -18,6 +20,7 @@ export class GameScene {
     cardOptions,
     layoutOptions,
     animationOptions,
+    winPopupOptions,
     onResize,
   }) {
     this.root = root;
@@ -53,6 +56,22 @@ export class GameScene {
       wiggleSelectionScale: animationOptions?.wiggleSelectionScale ?? 0.005,
       cardsSpawnDuration: animationOptions?.cardsSpawnDuration ?? 350,
       disableAnimations: animationOptions?.disableAnimations ?? false,
+    };
+    this.winPopupOptions = {
+      useSprite: winPopupOptions?.useSprite ?? gameConfig?.gameplay?.winPopup?.useSprite ?? true,
+      spriteName: winPopupOptions?.spriteName ?? gameConfig?.gameplay?.winPopup?.spriteName ?? "winPopup",
+      scale: winPopupOptions?.scale ?? gameConfig?.gameplay?.winPopup?.scale ?? 0.6,
+      offsetX: winPopupOptions?.offsetX ?? gameConfig?.gameplay?.winPopup?.offsetX ?? 0,
+      offsetY: winPopupOptions?.offsetY ?? gameConfig?.gameplay?.winPopup?.offsetY ?? 0,
+      showDuration: winPopupOptions?.showDuration ?? gameConfig?.gameplay?.winPopup?.showDuration ?? 2000,
+      animationDuration: winPopupOptions?.animationDuration ?? gameConfig?.gameplay?.winPopup?.animationDuration ?? 300,
+      showText: winPopupOptions?.showText ?? gameConfig?.gameplay?.winPopup?.showText ?? true,
+      textColor: winPopupOptions?.textColor ?? gameConfig?.gameplay?.winPopup?.textColor ?? "#FFFFFF",
+      amountColor: winPopupOptions?.amountColor ?? gameConfig?.gameplay?.winPopup?.amountColor ?? "#EAFF00",
+      fontSize: winPopupOptions?.fontSize ?? gameConfig?.gameplay?.winPopup?.fontSize ?? 22,
+      amountFontSize: winPopupOptions?.amountFontSize ?? gameConfig?.gameplay?.winPopup?.amountFontSize ?? 18,
+      textOffsetX: winPopupOptions?.textOffsetX ?? gameConfig?.gameplay?.winPopup?.textOffsetX ?? 0,
+      textOffsetY: winPopupOptions?.textOffsetY ?? gameConfig?.gameplay?.winPopup?.textOffsetY ?? 0,
     };
     this.onResize = onResize;
 
@@ -111,12 +130,31 @@ export class GameScene {
       "#0B1E29"
     );
 
-    this.winPopup = new WinPopup({
-      parent: this.root,
-      fontFamily: this.fontFamily,
-      accentColor,
-      backgroundColor,
-    });
+    if (this.winPopupOptions.useSprite) {
+      this.winPopup = new SpriteWinPopup({
+        parent: this.root,
+        spriteName: this.winPopupOptions.spriteName,
+        scale: this.winPopupOptions.scale,
+        offsetX: this.winPopupOptions.offsetX,
+        offsetY: this.winPopupOptions.offsetY,
+        showDuration: this.winPopupOptions.showDuration,
+        animationDuration: this.winPopupOptions.animationDuration,
+        showText: this.winPopupOptions.showText,
+        textColor: this.winPopupOptions.textColor,
+        amountColor: this.winPopupOptions.amountColor,
+        fontSize: this.winPopupOptions.fontSize,
+        amountFontSize: this.winPopupOptions.amountFontSize,
+        textOffsetX: this.winPopupOptions.textOffsetX,
+        textOffsetY: this.winPopupOptions.textOffsetY,
+      });
+    } else {
+      this.winPopup = new WinPopup({
+        parent: this.root,
+        fontFamily: this.fontFamily,
+        accentColor,
+        backgroundColor,
+      });
+    }
 
     this.#setupRootSizing();
     this.#setupWindowResizeListener();
@@ -222,9 +260,11 @@ export class GameScene {
       this.layoutCards();
     }
 
-    const winPopupWidth = size * 0.40;
-    const winPopupHeight = size * 0.15;
-    this.winPopup?.setSize?.({ width: winPopupWidth, height: winPopupHeight });
+    if (!this.winPopupOptions.useSprite) {
+      const winPopupWidth = size * 0.40;
+      const winPopupHeight = size * 0.15;
+      this.winPopup?.setSize?.({ width: winPopupWidth, height: winPopupHeight });
+    }
 
     this.onResize?.(size);
   }
@@ -293,6 +333,23 @@ export class GameScene {
 
   setWinPopupAmount(amount) {
     this.winPopup?.setAmount?.(amount);
+  }
+
+  updateWinPopupOptions(newOptions = {}) {
+    this.winPopupOptions = {
+      ...this.winPopupOptions,
+      ...newOptions,
+    };
+    
+    if (this.winPopup && typeof this.winPopup.updateOptions === 'function') {
+      this.winPopup.updateOptions(newOptions);
+    }
+  }
+
+  // Debug method to test win popup
+  testWinPopup(amount = 100.50) {
+    console.log("Testing win popup with amount:", amount);
+    this.showWinPopup({ amount });
   }
 
   #setupRootSizing() {
