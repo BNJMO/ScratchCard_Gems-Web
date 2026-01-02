@@ -59,6 +59,8 @@
       "showDuration": 2000,
       "animationDuration": 300,
       "showText": true,
+      "textOffsetX": 0,
+      "textOffsetY": 0,
       "textColor": "#FFFFFF",
       "amountColor": "#EAFF00",
       "fontSize": 22,
