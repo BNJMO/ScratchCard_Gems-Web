@@ -56,15 +56,15 @@
       "scale": 0.6,
       "offsetX": 0,
       "offsetY": 0,
-      "showDuration": 2000,
+      "showDuration": 10000,
       "animationDuration": 300,
       "showText": true,
       "textOffsetX": 0,
-      "textOffsetY": 0,
+      "textOffsetY": -80,
       "textColor": "#FFFFFF",
       "amountColor": "#EAFF00",
-      "fontSize": 22,
-      "amountFontSize": 18
+      "fontSize": 42,
+      "amountFontSize": 38
     }
   }
 }
