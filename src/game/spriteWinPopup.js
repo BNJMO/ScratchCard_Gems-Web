@@ -14,6 +14,8 @@ const DEFAULT_OPTIONS = {
   amountColor: "#EAFF00",
   fontSize: 22,
   amountFontSize: 18,
+  textOffsetX: 0,
+  textOffsetY: 0,
 };
 
 export class SpriteWinPopup {
@@ -32,7 +34,16 @@ export class SpriteWinPopup {
   }
 
   createContainer() {
-    const { animationDuration, easing, zIndex, showText, fontSize, amountFontSize } = this.options;
+    const {
+      animationDuration,
+      easing,
+      zIndex,
+      showText,
+      fontSize,
+      amountFontSize,
+      textOffsetX,
+      textOffsetY,
+    } = this.options;
     const container = document.createElement("div");
     container.className = "sprite-win-popup";
     container.style.cssText = "position:fixed;top:50%;left:50%;opacity:0;pointer-events:none;display:none;user-select:none;z-index:" + zIndex + ";transition:opacity " + animationDuration + "ms " + easing + ",transform " + animationDuration + "ms " + easing + ";transform:" + this.hiddenTransform();
@@ -58,7 +69,7 @@ export class SpriteWinPopup {
 
     if (showText) {
       const textOverlay = document.createElement("div");
-      textOverlay.style.cssText = "position:absolute;top:55%;left:15%;width:70%;height:35%;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;user-select:none;z-index:1;box-sizing:border-box";
+      textOverlay.style.cssText = "position:absolute;top:55%;left:15%;width:70%;height:35%;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;user-select:none;z-index:1;box-sizing:border-box;transform:translate(" + textOffsetX + "px," + textOffsetY + "px)";
 
       const titleText = document.createElement("div");
       titleText.textContent = "YOU WON";

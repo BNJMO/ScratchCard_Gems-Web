@@ -70,6 +70,8 @@ export class GameScene {
       amountColor: winPopupOptions?.amountColor ?? gameConfig?.gameplay?.winPopup?.amountColor ?? "#EAFF00",
       fontSize: winPopupOptions?.fontSize ?? gameConfig?.gameplay?.winPopup?.fontSize ?? 22,
       amountFontSize: winPopupOptions?.amountFontSize ?? gameConfig?.gameplay?.winPopup?.amountFontSize ?? 18,
+      textOffsetX: winPopupOptions?.textOffsetX ?? gameConfig?.gameplay?.winPopup?.textOffsetX ?? 0,
+      textOffsetY: winPopupOptions?.textOffsetY ?? gameConfig?.gameplay?.winPopup?.textOffsetY ?? 0,
     };
     this.onResize = onResize;
 
@@ -142,6 +144,8 @@ export class GameScene {
         amountColor: this.winPopupOptions.amountColor,
         fontSize: this.winPopupOptions.fontSize,
         amountFontSize: this.winPopupOptions.amountFontSize,
+        textOffsetX: this.winPopupOptions.textOffsetX,
+        textOffsetY: this.winPopupOptions.textOffsetY,
       });
     } else {
       this.winPopup = new WinPopup({
