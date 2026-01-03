@@ -141,7 +141,7 @@
                                                                    FontWeight="Bold"
                                                                    FontFamily="Consolas"/>
                                                         <TextBlock Text="{Binding Label}"
-                                                                   Foreground="#E6E8ED"
+                                                                   Foreground="{Binding LabelBrush}"
                                                                    FontSize="13"
                                                                    FontWeight="SemiBold"/>
                                                     </StackPanel>
@@ -242,7 +242,7 @@
                                                                    FontWeight="Bold"
                                                                    FontFamily="Consolas"/>
                                                         <TextBlock Text="{Binding Label}"
-                                                                   Foreground="#E6E8ED"
+                                                                   Foreground="{Binding LabelBrush}"
                                                                    FontSize="13"
                                                                    FontWeight="SemiBold"/>
                                                     </StackPanel>
