@@ -438,6 +438,11 @@ export async function createGame(mount, opts = {}) {
   const iconOffsetX = Number(gameConfig.gameplay.card.iconOffsetX ?? 0) || 0;
   const iconOffsetY = Number(gameConfig.gameplay.card.offsetYv ?? 0) || 0;
   const matchShakeEnabled = gameConfig.gameplay.card.matchShake ?? true;
+  const winFrameScale = (() => {
+    const value = Number(gameConfig.gameplay.card.winFrameScale ?? 1.0);
+    if (!Number.isFinite(value)) return 1.0;
+    return Math.max(0, value);
+  })();
   const cardSpritesheetAnimationSpeed = Number.isFinite(
     gameConfig.gameplay.card.spritesheetAnimationSpeed
   )
@@ -686,6 +691,7 @@ export async function createGame(mount, opts = {}) {
         sparkDuration: 1500,
       },
       frameTexture: isScratchMode ? null : winFrameTexture,
+      frameScale: winFrameScale,
       stateTextures: {
         default: tileDefaultTexture,
         hover: tileHoverTexture,

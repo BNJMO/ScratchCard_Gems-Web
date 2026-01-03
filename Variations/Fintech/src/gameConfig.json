@@ -30,7 +30,8 @@
       "iconOffsetX": 0,
       "offsetYv": -5,
       "spritesheetAnimationSpeed": 0.16,
-      "matchShake": false
+      "matchShake": false,
+      "winFrameScale": 1.0
     },
     "scratch": {
       "revealRadius": 40,
@@ -48,7 +49,7 @@
       "paddingRight": 0,
       "paddingBottom": 3,
       "resolutionFactor": 1.0
-},
+    },
     "winPopup": {
       "useSprite": true,
       "spriteName": "winPopup",
