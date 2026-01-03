@@ -38,14 +38,24 @@ public sealed partial class ConfigGroupEntry : ConfigDisplayItem
 {
     private readonly Action<ConfigGroupEntry>? onToggle;
 
-    public ConfigGroupEntry(string label, int depth, Action<ConfigGroupEntry>? onToggle = null)
+    public ConfigGroupEntry(
+        string label,
+        IReadOnlyList<ConfigPathSegment> segments,
+        int depth,
+        Action<ConfigGroupEntry>? onToggle = null)
         : base(depth)
     {
         Label = label;
+        Segments = segments;
         this.onToggle = onToggle;
     }
 
     public string Label { get; }
+
+    public IReadOnlyList<ConfigPathSegment> Segments { get; }
+
+    [ObservableProperty]
+    private IBrush labelBrush = Brushes.WhiteSmoke;
 
     [ObservableProperty]
     private bool isExpanded;

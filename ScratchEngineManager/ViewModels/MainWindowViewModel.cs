@@ -596,7 +596,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var isRoot = path.Count == 0;
             if (!isRoot)
             {
-                target.Add(new ConfigGroupEntry(GetCurrentLabel(path), depth, _ => visibilityUpdater()));
+                target.Add(new ConfigGroupEntry(GetCurrentLabel(path), path.ToArray(), depth, _ => visibilityUpdater()));
             }
 
             var childDepth = isRoot ? depth : depth + 1;
@@ -614,7 +614,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             if (path.Count > 0)
             {
-                target.Add(new ConfigGroupEntry(GetCurrentLabel(path), depth, _ => visibilityUpdater()));
+                target.Add(new ConfigGroupEntry(GetCurrentLabel(path), path.ToArray(), depth, _ => visibilityUpdater()));
             }
 
             for (var i = 0; i < array.Count; i++)
@@ -731,15 +731,20 @@ public partial class MainWindowViewModel : ViewModelBase
 
         foreach (var item in items)
         {
-            if (item is ConfigValueEntry entry)
+            switch (item)
             {
-                entry.DisplaySegments = BuildDisplaySegments(entry.Segments, groupColors, random);
-                entry.ItemMargin = BuildHierarchyMargin(entry.Segments, previousSegments);
-                previousSegments = entry.Segments;
-            }
-            else
-            {
-                previousSegments = null;
+                case ConfigValueEntry entry:
+                    entry.DisplaySegments = BuildDisplaySegments(entry.Segments, groupColors, random);
+                    entry.ItemMargin = BuildHierarchyMargin(entry.Segments, previousSegments);
+                    previousSegments = entry.Segments;
+                    break;
+                case ConfigGroupEntry group:
+                    group.LabelBrush = GetGroupLabelBrush(group.Segments, groupColors, random);
+                    previousSegments = null;
+                    break;
+                default:
+                    previousSegments = null;
+                    break;
             }
         }
     }
@@ -771,6 +776,19 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         return displaySegments;
+    }
+
+    private static IBrush GetGroupLabelBrush(
+        IReadOnlyList<ConfigPathSegment> segments,
+        IDictionary<string, IBrush> groupColors,
+        Random random)
+    {
+        if (segments.Count == 0)
+        {
+            return Brushes.WhiteSmoke;
+        }
+
+        return GetBrushForPrefix(segments, segments.Count - 1, groupColors, random);
     }
 
     private static Thickness BuildHierarchyMargin(
