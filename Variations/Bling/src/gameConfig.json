@@ -31,7 +31,7 @@
       "offsetYv": -5,
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true,
-      "winFrameScale": 0.99,
+      "winFrameScale": 1.1,
       "winFrameOffsetX": 0,
       "winFrameOffsetY": -5
     },
