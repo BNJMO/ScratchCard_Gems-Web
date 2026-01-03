@@ -17,6 +17,7 @@ export class Card {
     iconOptions,
     matchEffects,
     frameTexture,
+    frameScale,
     stateTextures,
     row,
     col,
@@ -40,6 +41,10 @@ export class Card {
       sparkDuration: Math.max(0, matchEffects?.sparkDuration ?? 1500),
     };
     this.frameTexture = frameTexture ?? null;
+    const parsedFrameScale = Number(frameScale);
+    this.frameScale = Number.isFinite(parsedFrameScale)
+      ? Math.max(0, parsedFrameScale)
+      : 1.0;
     this.stateTextures = {
       default: stateTextures?.default ?? null,
       hover: stateTextures?.hover ?? null,
@@ -1272,6 +1277,12 @@ export class Card {
       frameSprite.position.set(tileSize / 2, (tileSize - 8) / 2);
       frameSprite.width = tileSize;
       frameSprite.height = tileSize - 4;
+      if (frameSprite.scale?.set) {
+        frameSprite.scale.set(this.frameScale);
+      } else if (frameSprite.scale) {
+        frameSprite.scale.x = this.frameScale;
+        frameSprite.scale.y = this.frameScale;
+      }
       frameSprite.alpha = 0;
       frameSprite.visible = false;
     }

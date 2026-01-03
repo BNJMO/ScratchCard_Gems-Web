@@ -38,6 +38,7 @@ export class GameScene {
       winPopupHeight: cardOptions?.winPopupHeight,
       matchEffects: cardOptions?.matchEffects ?? {},
       frameTexture: cardOptions?.frameTexture ?? null,
+      frameScale: cardOptions?.frameScale ?? 1.0,
       stateTextures: cardOptions?.stateTextures ?? {},
     };
     this.layoutOptions = {
@@ -191,6 +192,7 @@ export class GameScene {
           iconOptions: this.cardOptions.icon,
           matchEffects: this.cardOptions.matchEffects,
           frameTexture: this.cardOptions.frameTexture,
+          frameScale: this.cardOptions.frameScale,
           stateTextures: this.cardOptions.stateTextures,
           row: r,
           col: c,

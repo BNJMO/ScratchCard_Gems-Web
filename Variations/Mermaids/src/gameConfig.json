@@ -30,7 +30,8 @@
       "iconOffsetX": 0,
       "offsetYv": -5,
       "spritesheetAnimationSpeed": 0.16,
-      "matchShake": false
+      "matchShake": false,
+      "winFrameScale": 1.15
     },
     "scratch": {
       "revealRadius": 40,

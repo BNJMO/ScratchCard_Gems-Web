@@ -30,7 +30,8 @@
       "iconOffsetX": 0,
       "offsetYv": -5,
       "spritesheetAnimationSpeed": 0.14,
-      "matchShake": true
+      "matchShake": true,
+      "winFrameScale": 1.15
     },
     "scratch": {
       "revealRadius": 40,
@@ -64,5 +65,6 @@
       "amountColor": "#EAFF00",
       "fontSize": 42,
       "amountFontSize": 38
+    }
   }
 }
