@@ -1251,7 +1251,35 @@ export class Card {
     }
   }
 
+  #applyFrameScale(frameSprite) {
+    if (!frameSprite) {
+      return;
+    }
+
+    const tileSize = Math.max(0, this._tileSize ?? 0);
+    const dimensions = this.#getTextureDimensions(frameSprite.texture);
+    const baseDimension = Math.max(
+      1,
+      dimensions?.width ?? 0,
+      dimensions?.height ?? 0
+    );
+    const baseScale = tileSize > 0 ? tileSize / baseDimension : 1;
+    const scale = baseScale * (this.frameScale ?? 1);
+
+    if (frameSprite.scale?.set) {
+      frameSprite.scale.set(scale);
+    } else if (frameSprite.scale) {
+      frameSprite.scale.x = scale;
+      frameSprite.scale.y = scale;
+    }
+
+    if (Number.isFinite(tileSize)) {
+      frameSprite.position.set(tileSize / 2, tileSize / 2);
+    }
+  }
+
   #createCard(tileSize) {
+    this._tileSize = tileSize;
     const tileTexture = this.stateTextures.default ?? Texture.WHITE;
     const tileSprite = new Sprite(tileTexture);
     tileSprite.anchor.set(0.5);
@@ -1274,14 +1302,15 @@ export class Card {
       : null;
     if (frameSprite) {
       frameSprite.anchor.set(0.5);
-      frameSprite.position.set(tileSize / 2, (tileSize - 8) / 2);
-      frameSprite.width = tileSize;
-      frameSprite.height = tileSize - 4;
-      if (frameSprite.scale?.set) {
-        frameSprite.scale.set(this.frameScale);
-      } else if (frameSprite.scale) {
-        frameSprite.scale.x = this.frameScale;
-        frameSprite.scale.y = this.frameScale;
+      this.#applyFrameScale(frameSprite);
+      const texture = frameSprite.texture;
+      if (texture?.valid === false && typeof texture.once === "function") {
+        texture.once("update", () => {
+          if (this.destroyed || frameSprite.destroyed) {
+            return;
+          }
+          this.#applyFrameScale(frameSprite);
+        });
       }
       frameSprite.alpha = 0;
       frameSprite.visible = false;
@@ -1316,7 +1345,6 @@ export class Card {
     this._icon = icon;
     this._frameSprite = frameSprite;
     this._matchEffectsLayer = matchEffectsLayer;
-    this._tileSize = tileSize;
     this._tileState = "default";
     this._isHovering = false;
 
