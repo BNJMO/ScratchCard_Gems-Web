@@ -1,7 +1,7 @@
 import { Assets } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
-import { loadCardTypeAnimations } from "./spritesheetProvider.js";
+import { loadCardTypeAnimations } from "./gridSpritesheetProvider.js";
 import { CoverScratch } from "./coverScratch.js";
 import {
   getFileExtension,

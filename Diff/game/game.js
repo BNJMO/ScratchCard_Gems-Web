@@ -1,7 +1,7 @@
 import { Assets } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
-import { loadCardTypeAnimations } from "./spritesheetProvider.js";
+import { loadCardTypeAnimations } from "./gridSpritesheetProvider.js";
 import tileTapDownSoundUrl from "../../assets/sounds/TileTapDown.wav";
 import tileFlipSoundUrl from "../../assets/sounds/TileFlip.wav";
 import tileHoverSoundUrl from "../../assets/sounds/TileHover.wav";
