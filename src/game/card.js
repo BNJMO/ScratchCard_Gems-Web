@@ -18,6 +18,8 @@ export class Card {
     matchEffects,
     frameTexture,
     frameScale,
+    frameOffsetX,
+    frameOffsetY,
     stateTextures,
     row,
     col,
@@ -45,6 +47,14 @@ export class Card {
     this.frameScale = Number.isFinite(parsedFrameScale)
       ? Math.max(0, parsedFrameScale)
       : 1.0;
+    const parsedFrameOffsetX = Number(frameOffsetX);
+    const parsedFrameOffsetY = Number(frameOffsetY);
+    this.frameOffsetX = Number.isFinite(parsedFrameOffsetX)
+      ? parsedFrameOffsetX
+      : 0;
+    this.frameOffsetY = Number.isFinite(parsedFrameOffsetY)
+      ? parsedFrameOffsetY
+      : 0;
     this.stateTextures = {
       default: stateTextures?.default ?? null,
       hover: stateTextures?.hover ?? null,
@@ -1274,7 +1284,9 @@ export class Card {
     }
 
     if (Number.isFinite(tileSize)) {
-      frameSprite.position.set(tileSize / 2, tileSize / 2);
+      const offsetX = Number(this.frameOffsetX ?? 0) || 0;
+      const offsetY = Number(this.frameOffsetY ?? 0) || 0;
+      frameSprite.position.set(tileSize / 2 + offsetX, tileSize / 2 + offsetY);
     }
   }
 
