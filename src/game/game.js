@@ -443,6 +443,10 @@ export async function createGame(mount, opts = {}) {
     if (!Number.isFinite(value)) return 1.0;
     return Math.max(0, value);
   })();
+  const winFrameOffsetX =
+    Number(gameConfig.gameplay.card.winFrameOffsetX ?? 0) || 0;
+  const winFrameOffsetY =
+    Number(gameConfig.gameplay.card.winFrameOffsetY ?? 0) || 0;
   const cardSpritesheetAnimationSpeed = Number.isFinite(
     gameConfig.gameplay.card.spritesheetAnimationSpeed
   )
@@ -692,6 +696,8 @@ export async function createGame(mount, opts = {}) {
       },
       frameTexture: isScratchMode ? null : winFrameTexture,
       frameScale: winFrameScale,
+      frameOffsetX: winFrameOffsetX,
+      frameOffsetY: winFrameOffsetY,
       stateTextures: {
         default: tileDefaultTexture,
         hover: tileHoverTexture,
