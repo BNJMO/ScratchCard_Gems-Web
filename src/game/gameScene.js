@@ -39,6 +39,8 @@ export class GameScene {
       matchEffects: cardOptions?.matchEffects ?? {},
       frameTexture: cardOptions?.frameTexture ?? null,
       frameScale: cardOptions?.frameScale ?? 1.0,
+      frameOffsetX: cardOptions?.frameOffsetX ?? 0,
+      frameOffsetY: cardOptions?.frameOffsetY ?? 0,
       stateTextures: cardOptions?.stateTextures ?? {},
     };
     this.layoutOptions = {
@@ -193,6 +195,8 @@ export class GameScene {
           matchEffects: this.cardOptions.matchEffects,
           frameTexture: this.cardOptions.frameTexture,
           frameScale: this.cardOptions.frameScale,
+          frameOffsetX: this.cardOptions.frameOffsetX,
+          frameOffsetY: this.cardOptions.frameOffsetY,
           stateTextures: this.cardOptions.stateTextures,
           row: r,
           col: c,
