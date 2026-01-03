@@ -48,6 +48,21 @@
       "paddingRight": 8,
       "paddingBottom": 0,
       "resolutionFactor": 0.75
-    }
+    },
+    "winPopup": {
+      "useSprite": true,
+      "spriteName": "winPopup",
+      "scale": 0.6,
+      "offsetX": 0,
+      "offsetY": 0,
+      "showDuration": 10000,
+      "animationDuration": 300,
+      "showText": true,
+      "textOffsetX": 0,
+      "textOffsetY": -80,
+      "textColor": "#FFFFFF",
+      "amountColor": "#EAFF00",
+      "fontSize": 42,
+      "amountFontSize": 38
   }
 }
