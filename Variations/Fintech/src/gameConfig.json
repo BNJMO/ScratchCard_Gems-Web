@@ -31,7 +31,7 @@
       "offsetYv": -5,
       "spritesheetAnimationSpeed": 0.16,
       "matchShake": false,
-      "winFrameScale": 1.0
+      "winFrameScale": 1.15
     },
     "scratch": {
       "revealRadius": 40,
