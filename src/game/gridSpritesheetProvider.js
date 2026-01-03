@@ -1,7 +1,8 @@
 import { Assets, Rectangle, Texture } from "pixi.js";
 import gameConfig from "../gameConfig.json";
 
-const spritesheetConfig = gameConfig?.gameplay?.spritesheetProvider ?? {};
+const spritesheetConfig =
+  gameConfig?.gameplay?.gridSpritesheetProvider ?? {};
 const SPRITESHEET_COLUMNS = Number.isFinite(spritesheetConfig.columns)
   ? spritesheetConfig.columns
   : 3;
