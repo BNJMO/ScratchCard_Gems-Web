@@ -71,8 +71,8 @@ export class GameScene {
       showText: winPopupOptions?.showText ?? gameConfig?.gameplay?.winPopup?.showText ?? true,
       textColor: winPopupOptions?.textColor ?? gameConfig?.gameplay?.winPopup?.textColor ?? "#FFFFFF",
       amountColor: winPopupOptions?.amountColor ?? gameConfig?.gameplay?.winPopup?.amountColor ?? "#EAFF00",
-      fontSize: winPopupOptions?.fontSize ?? gameConfig?.gameplay?.winPopup?.fontSize ?? 22,
-      amountFontSize: winPopupOptions?.amountFontSize ?? gameConfig?.gameplay?.winPopup?.amountFontSize ?? 18,
+      baseFontSize: winPopupOptions?.baseFontSize ?? winPopupOptions?.fontSize ?? gameConfig?.gameplay?.winPopup?.fontSize ?? 22,
+      baseAmountFontSize: winPopupOptions?.baseAmountFontSize ?? winPopupOptions?.amountFontSize ?? gameConfig?.gameplay?.winPopup?.amountFontSize ?? 18,
       textOffsetX: winPopupOptions?.textOffsetX ?? gameConfig?.gameplay?.winPopup?.textOffsetX ?? 0,
       textOffsetY: winPopupOptions?.textOffsetY ?? gameConfig?.gameplay?.winPopup?.textOffsetY ?? 0,
     };
@@ -145,8 +145,8 @@ export class GameScene {
         showText: this.winPopupOptions.showText,
         textColor: this.winPopupOptions.textColor,
         amountColor: this.winPopupOptions.amountColor,
-        fontSize: this.winPopupOptions.fontSize,
-        amountFontSize: this.winPopupOptions.amountFontSize,
+        baseFontSize: this.winPopupOptions.baseFontSize,
+        baseAmountFontSize: this.winPopupOptions.baseAmountFontSize,
         textOffsetX: this.winPopupOptions.textOffsetX,
         textOffsetY: this.winPopupOptions.textOffsetY,
       });
@@ -270,6 +270,9 @@ export class GameScene {
       const winPopupWidth = size * 0.40;
       const winPopupHeight = size * 0.15;
       this.winPopup?.setSize?.({ width: winPopupWidth, height: winPopupHeight });
+    } else {
+      // Update sprite win popup position on resize
+      this.winPopup?.updatePosition?.();
     }
 
     this.onResize?.(size);

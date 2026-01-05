@@ -66,8 +66,8 @@
       "textOffsetY": -80,
       "textColor": "#FFFFFF",
       "amountColor": "#EAFF00",
-      "fontSize": 42,
-      "amountFontSize": 38
+      "fontSize": 32,
+      "amountFontSize": 26
     }
   }
 }

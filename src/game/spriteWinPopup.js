@@ -12,10 +12,8 @@ const DEFAULT_OPTIONS = {
   showText: true,
   textColor: "#FFFFFF",
   amountColor: "#EAFF00",
-  fontSize: 22,
-  amountFontSize: 18,
-  textOffsetX: 0,
-  textOffsetY: 0,
+  baseFontSize: 32,
+  baseAmountFontSize: 26,
 };
 
 export class SpriteWinPopup {
@@ -25,25 +23,134 @@ export class SpriteWinPopup {
     this.visible = false;
     this._hideTimer = null;
     this._autoHideTimer = null;
+    this._resizeHandler = null;
     this.amountValue = 0;
     this.spriteUrl = "/ScratchCard_Gems-Web/assets/sprites/winPopup.png";
     this.container = this.createContainer();
     if (this.container) {
       document.body.appendChild(this.container);
     }
+    this.setupResizeHandler();
+  }
+
+  setupResizeHandler() {
+    this._resizeHandler = () => {
+      if (this.visible && this.container) {
+        this.updatePosition();
+        this.updateResponsiveText();
+        // Update the popup scale when window resizes
+        this.container.style.transform = this.visibleTransform();
+      }
+    };
+    window.addEventListener('resize', this._resizeHandler);
+  }
+
+  getResponsiveScale() {
+    // Calculate responsive scale for the entire popup based on viewport and container
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const minViewport = Math.min(viewportWidth, viewportHeight);
+    
+    // Get container size for better scaling
+    let containerScale = 1;
+    if (this.parent) {
+      const parentRect = this.parent.getBoundingClientRect();
+      const containerSize = Math.min(parentRect.width, parentRect.height);
+      // Scale popup based on container size
+      containerScale = Math.max(0.5, Math.min(1.5, containerSize / 400));
+    }
+    
+    // Viewport-based scaling
+    let viewportScale;
+    if (minViewport <= 480) {
+      // Mobile phones - smaller popup
+      viewportScale = Math.max(0.4, minViewport / 600);
+    } else if (minViewport <= 768) {
+      // Tablets - medium popup
+      viewportScale = Math.max(0.6, minViewport / 800);
+    } else {
+      // Desktop - larger popup
+      viewportScale = Math.max(0.8, Math.min(1.4, minViewport / 1000));
+    }
+    
+    // Combine container and viewport scaling
+    const responsiveScale = Math.max(0.3, Math.min(2.0, containerScale * viewportScale));
+    
+    return responsiveScale;
+  }
+
+  getResponsiveFontSizes() {
+    // Calculate responsive font sizes based on the responsive scale
+    const responsiveScale = this.getResponsiveScale();
+    const totalScale = this.options.scale * responsiveScale;
+    
+    // Font sizes scale with the popup
+    const fontSize = Math.max(16, Math.round(this.options.baseFontSize * responsiveScale));
+    const amountFontSize = Math.max(14, Math.round(this.options.baseAmountFontSize * responsiveScale));
+    
+    return { fontSize, amountFontSize, responsiveScale, totalScale };
+  }
+
+  updateResponsiveText() {
+    if (!this.titleTextNode || !this.amountTextNode) return;
+    
+    const { fontSize, amountFontSize, responsiveScale, totalScale } = this.getResponsiveFontSizes();
+    
+    // Update title text font size
+    this.titleTextNode.style.fontSize = fontSize + "px";
+    
+    // Update amount text font size
+    this.amountTextNode.style.fontSize = amountFontSize + "px";
+    
+    // Adjust text overlay positioning based on scale
+    if (this.textOverlayNode) {
+      const scaleAdjustment = Math.max(0.8, Math.min(1.2, totalScale));
+      const topPosition = 50; // Center vertically
+      const leftPosition = Math.max(8, 15 - (scaleAdjustment - 1) * 5);
+      const widthPercentage = Math.min(84, 70 + (scaleAdjustment - 1) * 10);
+      
+      this.textOverlayNode.style.top = topPosition + "%";
+      this.textOverlayNode.style.left = leftPosition + "%";
+      this.textOverlayNode.style.width = widthPercentage + "%";
+    }
+    
+    console.log("Updated responsive popup:", { 
+      fontSize, 
+      amountFontSize, 
+      responsiveScale: responsiveScale.toFixed(2), 
+      totalScale: totalScale.toFixed(2),
+      popupScale: (this.options.scale * responsiveScale).toFixed(2),
+      viewport: `${window.innerWidth}x${window.innerHeight}`
+    });
+  }
+
+  updatePosition() {
+    if (!this.container || !this.parent) return;
+    
+    // Get the parent element's position and size
+    const parentRect = this.parent.getBoundingClientRect();
+    const centerX = parentRect.left + parentRect.width / 2;
+    const centerY = parentRect.top + parentRect.height / 2;
+    
+    // Update container position to stay centered on the parent
+    this.container.style.left = centerX + "px";
+    this.container.style.top = centerY + "px";
+    
+    const responsiveScale = this.getResponsiveScale();
+    
+    console.log("Updated popup position and scale:", { 
+      centerX: Math.round(centerX), 
+      centerY: Math.round(centerY),
+      parentSize: `${Math.round(parentRect.width)}x${Math.round(parentRect.height)}`,
+      responsiveScale: responsiveScale.toFixed(2),
+      finalScale: (this.options.scale * responsiveScale).toFixed(2)
+    });
   }
 
   createContainer() {
-    const {
-      animationDuration,
-      easing,
-      zIndex,
-      showText,
-      fontSize,
-      amountFontSize,
-      textOffsetX,
-      textOffsetY,
-    } = this.options;
+    const { animationDuration, easing, zIndex, showText } = this.options;
+    const { fontSize, amountFontSize } = this.getResponsiveFontSizes();
+    
     const container = document.createElement("div");
     container.className = "sprite-win-popup";
     container.style.cssText = "position:fixed;top:50%;left:50%;opacity:0;pointer-events:none;display:none;user-select:none;z-index:" + zIndex + ";transition:opacity " + animationDuration + "ms " + easing + ",transform " + animationDuration + "ms " + easing + ";transform:" + this.hiddenTransform();
@@ -60,7 +167,7 @@ export class SpriteWinPopup {
       image.style.display = "none";
       const fallback = document.createElement("div");
       fallback.textContent = "YOU WON!";
-      fallback.style.cssText = "color:#EAFF00;font-size:32px;font-weight:bold;text-align:center;padding:20px 40px;background:rgba(11,30,41,0.95);border-radius:15px;border:3px solid #EAFF00;box-shadow:0 0 20px rgba(227,229,82,0.5);font-family:Arial,sans-serif;letter-spacing:2px";
+      fallback.style.cssText = "color:#EAFF00;font-size:" + Math.max(32, fontSize * 1.5) + "px;font-weight:bold;text-align:center;padding:30px 50px;background:linear-gradient(135deg,rgba(11,30,41,0.95) 0%,rgba(15,40,55,0.95) 100%);border-radius:20px;border:4px solid #EAFF00;box-shadow:0 0 30px rgba(227,229,82,0.8),inset 0 0 20px rgba(234,255,0,0.1);font-family:Arial,sans-serif;letter-spacing:3px;text-shadow:0 0 20px rgba(234,255,0,1),0 0 40px rgba(234,255,0,0.8);filter:drop-shadow(0 0 15px rgba(234,255,0,0.9))";
       wrapper.appendChild(fallback);
     };
 
@@ -69,18 +176,18 @@ export class SpriteWinPopup {
 
     if (showText) {
       const textOverlay = document.createElement("div");
-      textOverlay.style.cssText = "position:absolute;top:55%;left:15%;width:70%;height:35%;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;user-select:none;z-index:1;box-sizing:border-box;transform:translate(" + textOffsetX + "px," + textOffsetY + "px)";
+      textOverlay.style.cssText = "position:absolute;top:50%;left:10%;width:80%;height:40%;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;user-select:none;z-index:1;box-sizing:border-box;transform:translateY(-50%)";
 
       const titleText = document.createElement("div");
       titleText.textContent = "YOU WON";
-      titleText.style.cssText = "color:#FFFFFF;font-size:" + fontSize + "px;font-weight:900;font-family:Arial,sans-serif;text-shadow:0 0 10px rgba(234,255,0,0.8),0 0 20px rgba(234,255,0,0.6),2px 2px 4px rgba(0,0,0,0.9);letter-spacing:2px;margin-bottom:8px;text-align:center;line-height:1;width:100%;text-transform:uppercase";
+      titleText.style.cssText = "color:#FFFFFF;font-size:" + fontSize + "px;font-weight:900;font-family:Arial,sans-serif;text-shadow:0 0 15px rgba(234,255,0,1),0 0 30px rgba(234,255,0,0.8),0 0 45px rgba(234,255,0,0.6),3px 3px 6px rgba(0,0,0,1);letter-spacing:3px;margin-bottom:12px;text-align:center;line-height:1;width:100%;text-transform:uppercase;transition:font-size 0.3s ease;filter:drop-shadow(0 0 10px rgba(234,255,0,0.9));-webkit-text-stroke:1px rgba(234,255,0,0.3)";
 
       const amountContainer = document.createElement("div");
-      amountContainer.style.cssText = "background:linear-gradient(135deg,rgba(234,255,0,0.15) 0%,rgba(234,255,0,0.05) 100%);border:2px solid rgba(234,255,0,0.6);border-radius:8px;padding:6px 12px;box-shadow:0 0 15px rgba(234,255,0,0.3);display:flex;align-items:center;justify-content:center";
+      amountContainer.style.cssText = "background:linear-gradient(135deg,rgba(234,255,0,0.25) 0%,rgba(234,255,0,0.1) 100%);border:3px solid rgba(234,255,0,0.8);border-radius:12px;padding:8px 16px;box-shadow:0 0 20px rgba(234,255,0,0.5),inset 0 0 10px rgba(234,255,0,0.2);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)";
 
       const amountText = document.createElement("div");
       amountText.textContent = this.formatCurrency(this.amountValue);
-      amountText.style.cssText = "color:#EAFF00;font-size:" + amountFontSize + "px;font-weight:bold;font-family:Arial,sans-serif;text-shadow:0 0 8px rgba(234,255,0,0.9),0 0 16px rgba(234,255,0,0.6),1px 1px 2px rgba(0,0,0,0.8);text-align:center;line-height:1;letter-spacing:1px";
+      amountText.style.cssText = "color:#EAFF00;font-size:" + amountFontSize + "px;font-weight:bold;font-family:Arial,sans-serif;text-shadow:0 0 12px rgba(234,255,0,1),0 0 24px rgba(234,255,0,0.8),0 0 36px rgba(234,255,0,0.6),2px 2px 4px rgba(0,0,0,1);text-align:center;line-height:1;letter-spacing:2px;transition:font-size 0.3s ease;filter:drop-shadow(0 0 8px rgba(234,255,0,0.9));-webkit-text-stroke:0.5px rgba(234,255,0,0.3)";
 
       amountContainer.appendChild(amountText);
       textOverlay.appendChild(titleText);
@@ -89,6 +196,7 @@ export class SpriteWinPopup {
 
       this.titleTextNode = titleText;
       this.amountTextNode = amountText;
+      this.textOverlayNode = textOverlay;
     }
 
     container.appendChild(wrapper);
@@ -96,13 +204,17 @@ export class SpriteWinPopup {
   }
 
   hiddenTransform() {
-    const { scale, offsetX, offsetY, scaleHidden } = this.options;
-    return "translate(-50%,-50%) translate(" + offsetX + "px," + offsetY + "px) scale(" + (scale * scaleHidden) + ")";
+    const { offsetX, offsetY, scaleHidden } = this.options;
+    const responsiveScale = this.getResponsiveScale();
+    const finalScale = this.options.scale * responsiveScale * scaleHidden;
+    return "translate(-50%,-50%) translate(" + offsetX + "px," + offsetY + "px) scale(" + finalScale + ")";
   }
 
   visibleTransform() {
-    const { scale, offsetX, offsetY, scaleVisible } = this.options;
-    return "translate(-50%,-50%) translate(" + offsetX + "px," + offsetY + "px) scale(" + (scale * scaleVisible) + ")";
+    const { offsetX, offsetY, scaleVisible } = this.options;
+    const responsiveScale = this.getResponsiveScale();
+    const finalScale = this.options.scale * responsiveScale * scaleVisible;
+    return "translate(-50%,-50%) translate(" + offsetX + "px," + offsetY + "px) scale(" + finalScale + ")";
   }
 
   formatCurrency(value) {
@@ -119,7 +231,10 @@ export class SpriteWinPopup {
 
   updateOptions(newOptions) {
     this.options = { ...this.options, ...newOptions };
-    if (this.visible && this.container) this.container.style.transform = this.visibleTransform();
+    if (this.visible && this.container) {
+      this.container.style.transform = this.visibleTransform();
+      this.updateResponsiveText();
+    }
   }
 
   show({ amount, duration } = {}) {
@@ -129,17 +244,21 @@ export class SpriteWinPopup {
     clearTimeout(this._hideTimer);
     clearTimeout(this._autoHideTimer);
     this.container.style.display = "block";
-    if (this.parent) {
-      const rect = this.parent.getBoundingClientRect();
-      this.container.style.left = (rect.left + rect.width / 2) + "px";
-      this.container.style.top = (rect.top + rect.height / 2) + "px";
-    }
+    
+    // Update position and responsive text when showing
+    this.updatePosition();
+    this.updateResponsiveText();
+    
+    // Add a slight delay to ensure proper rendering
     requestAnimationFrame(() => {
-      if (this.container) {
-        this.container.style.opacity = "1";
-        this.container.style.transform = this.visibleTransform();
-      }
+      requestAnimationFrame(() => {
+        if (this.container) {
+          this.container.style.opacity = "1";
+          this.container.style.transform = this.visibleTransform();
+        }
+      });
     });
+    
     const dur = duration !== undefined ? duration : this.options.showDuration;
     if (dur > 0) this._autoHideTimer = setTimeout(() => this.hide(), dur);
   }
@@ -157,10 +276,18 @@ export class SpriteWinPopup {
   }
 
   destroy() {
+    // Remove resize event listener
+    if (this._resizeHandler) {
+      window.removeEventListener('resize', this._resizeHandler);
+      this._resizeHandler = null;
+    }
+    
     clearTimeout(this._hideTimer);
     clearTimeout(this._autoHideTimer);
     if (this.container && this.container.parentNode) this.container.parentNode.removeChild(this.container);
     this.container = null;
     this.imageNode = null;
+    this.titleTextNode = null;
+    this.amountTextNode = null;
   }
 }
