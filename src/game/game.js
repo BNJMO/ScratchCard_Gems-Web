@@ -1,7 +1,8 @@
 import { Assets } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
-import { loadCardTypeAnimations } from "./gridSpritesheetProvider.js";
+import { loadCardTypeAnimations as loadGridCardTypeAnimations } from "./gridSpritesheetProvider.js";
+import { loadCardTypeAnimations as loadSingleCardTypeAnimations } from "./singleSpritesheetProvider.js";
 import { CoverScratch } from "./coverScratch.js";
 import {
   getFileExtension,
@@ -547,19 +548,45 @@ export async function createGame(mount, opts = {}) {
   })();
 
   const cardType = gameConfig?.gameplay?.card?.iconType ?? "static";
-  console.log("Card types: " + cardType);
-  const cardTypeEntries =
-    cardType === "animated"
-      ? await loadCardTypeAnimations()
-      : await loadCardTypeTextures({
-          svgResolution: svgRasterizationResolution,
-        });
+  const spritesheetType = gameConfig?.gameplay?.card?.spritesheetType ?? "grid";
+  console.log("Card types:", cardType, "Spritesheet type:", spritesheetType);
+  
+  let cardTypeEntries = [];
+  
+  if (cardType === "animated") {
+    if (spritesheetType === "single") {
+      // Use single spritesheet provider
+      const singleConfig = gameConfig?.gameplay?.singleSpritesheetProvider ?? {};
+      cardTypeEntries = await loadSingleCardTypeAnimations({
+        ...singleConfig,
+        svgResolution: svgRasterizationResolution,
+      });
+    } else {
+      // Use grid spritesheet provider (default)
+      cardTypeEntries = await loadGridCardTypeAnimations();
+    }
+  } else {
+    // Static card types
+    cardTypeEntries = await loadCardTypeTextures({
+      svgResolution: svgRasterizationResolution,
+    });
+  }
+  
   if (!cardTypeEntries.length) {
-    throw new Error(
-      cardType === "static"
-        ? "No scratch card textures found under assets/sprites/cardTypes"
-        : "No scratch card textures found under assets/sprites/spritesheets"
-    );
+    const errorMessage = cardType === "static"
+      ? "No scratch card textures found under assets/sprites/cardTypes"
+      : spritesheetType === "single"
+      ? "No single spritesheet textures found under assets/sprites/cardTypes/animated"
+      : "No grid spritesheet textures found under assets/sprites/spritesheets";
+    
+    console.warn(errorMessage);
+    
+    // For single spritesheet mode, don't fall back to static cards
+    if (cardType === "animated" && spritesheetType === "single") {
+      throw new Error("Single spritesheet mode requires PNG files in assets/sprites/cardTypes/animated/. Please add cardType_0.png, cardType_1.png, etc. or switch back to grid mode.");
+    }
+    
+    throw new Error(errorMessage);
   }
 
   const defaultContentDefinitions = cardTypeEntries.reduce(

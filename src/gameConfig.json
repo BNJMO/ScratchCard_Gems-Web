@@ -30,6 +30,7 @@
       "iconScale": 1,
       "iconOffsetX": 0,
       "offsetYv": -5,
+      "spritesheetType": "single",
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true,
       "winFrameScale": 0.99,
@@ -39,6 +40,12 @@
     "scratch": {
       "revealRadius": 40,
       "coverFadeOutDuration": 200
+    },
+    "singleSpritesheetProvider": {
+      "totalFrames": 8,
+      "columns": 4,
+      "rows": 2,
+      "speed": 0.16
     },
     "gridSpritesheetProvider": {
       "columns": 3,
