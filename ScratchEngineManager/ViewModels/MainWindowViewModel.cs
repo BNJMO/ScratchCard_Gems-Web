@@ -95,13 +95,13 @@ public partial class MainWindowViewModel : ViewModelBase
         AppendBlankLine();
         if (string.IsNullOrWhiteSpace(repositoryRoot))
         {
-            AppendError("Could not locate repository root. Replace Assets aborted.");
+            AppendError("Could not locate repository root. Replace Loaded Assets aborted.");
             return;
         }
 
         if (!IsActualVariation(SelectedVariation))
         {
-            AppendError("No variation selected. Replace Assets aborted.");
+            AppendError("No variation selected. Replace Loaded Assets aborted.");
             return;
         }
 
