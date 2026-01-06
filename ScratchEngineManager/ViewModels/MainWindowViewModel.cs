@@ -95,13 +95,13 @@ public partial class MainWindowViewModel : ViewModelBase
         AppendBlankLine();
         if (string.IsNullOrWhiteSpace(repositoryRoot))
         {
-            AppendError("Could not locate repository root. Replace Assets aborted.");
+            AppendError("Could not locate repository root. Load Selected Variation To Game aborted.");
             return;
         }
 
         if (!IsActualVariation(SelectedVariation))
         {
-            AppendError("No variation selected. Replace Assets aborted.");
+            AppendError("No variation selected. Load Selected Variation To Game aborted.");
             return;
         }
 
@@ -189,7 +189,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 AppendError($"Variation gameConfig.json not found at {variationGameConfig}.");
             }
 
-            AppendSuccess("Asset replacement complete.");
+            AppendSuccess("Load Selected Variation To Game complete.");
             LoadConfigText();
         }
         catch (Exception ex)
@@ -204,13 +204,13 @@ public partial class MainWindowViewModel : ViewModelBase
         AppendBlankLine();
         if (string.IsNullOrWhiteSpace(repositoryRoot))
         {
-            AppendError("Could not locate repository root. Update Selected Variation Assets aborted.");
+            AppendError("Could not locate repository root. Replace Selected Variation From Game aborted.");
             return;
         }
 
         if (!IsActualVariation(SelectedVariation))
         {
-            AppendError("No variation selected. Update Selected Variation Assets aborted.");
+            AppendError("No variation selected. Replace Selected Variation From Game aborted.");
             return;
         }
 
@@ -269,11 +269,11 @@ public partial class MainWindowViewModel : ViewModelBase
                 AppendInfo($"Source gameConfig.json not found at {sourceGameConfig}.");
             }
 
-            AppendSuccess($"{variationName} variation assets updated successfully.");
+            AppendSuccess($"{variationName} variation replaced from game successfully.");
         }
         catch (Exception ex)
         {
-            AppendError($"Error updating variation assets: {ex.Message}");
+            AppendError($"Error replacing selected variation from game: {ex.Message}");
         }
     }
 
