@@ -37,8 +37,16 @@
                            Foreground="#E6E8ED"
                            FontSize="14"
                            FontWeight="SemiBold"/>
-                <Button Content="Replace Assets"
+                <Button Content="Replace Loaded Assets"
                         Command="{Binding ReplaceAssetsCommand}"
+                        IsEnabled="{Binding IsVariationSelected}"
+                        Background="#3E8EDE"
+                        Foreground="#F7F8FA"
+                        BorderBrush="#3E8EDE"
+                        CornerRadius="6"
+                        Padding="10,6"/>
+                <Button Content="Update Selected Variation Assets"
+                        Command="{Binding UpdateSelectedVariationAssetsCommand}"
                         IsEnabled="{Binding IsVariationSelected}"
                         Background="#3E8EDE"
                         Foreground="#F7F8FA"

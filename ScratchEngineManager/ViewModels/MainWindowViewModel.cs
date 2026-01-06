@@ -199,6 +199,85 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void UpdateSelectedVariationAssets()
+    {
+        AppendBlankLine();
+        if (string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            AppendError("Could not locate repository root. Update Selected Variation Assets aborted.");
+            return;
+        }
+
+        if (!IsActualVariation(SelectedVariation))
+        {
+            AppendError("No variation selected. Update Selected Variation Assets aborted.");
+            return;
+        }
+
+        var variationName = SelectedVariation!;
+        var variationRoot = Path.Combine(repositoryRoot, "Variations", variationName);
+        if (!Directory.Exists(variationRoot))
+        {
+            AppendError($"Variation folder not found: {variationRoot}");
+            return;
+        }
+
+        try
+        {
+            AppendInfo($"Updating {variationName} variation assets...");
+
+            var sourceAssets = Path.Combine(repositoryRoot, "assets");
+            var sourceBuildConfig = Path.Combine(repositoryRoot, "buildConfig.json");
+            var sourceGameConfig = Path.Combine(repositoryRoot, "src", "gameConfig.json");
+
+            var variationAssets = Path.Combine(variationRoot, "assets");
+            var variationBuildConfig = Path.Combine(variationRoot, "buildConfig.json");
+            var variationGameConfig = Path.Combine(variationRoot, "src", "gameConfig.json");
+
+            AppendInfo("Copying current assets to selected variation...");
+            
+            if (Directory.Exists(sourceAssets))
+            {
+                if (Directory.Exists(variationAssets))
+                {
+                    Directory.Delete(variationAssets, true);
+                }
+                CopyDirectory(sourceAssets, variationAssets, true);
+            }
+            else
+            {
+                AppendInfo($"Source assets folder not found at {sourceAssets}.");
+            }
+
+            if (File.Exists(sourceBuildConfig))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(variationBuildConfig)!);
+                File.Copy(sourceBuildConfig, variationBuildConfig, true);
+            }
+            else
+            {
+                AppendInfo($"Source buildConfig.json not found at {sourceBuildConfig}.");
+            }
+
+            if (File.Exists(sourceGameConfig))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(variationGameConfig)!);
+                File.Copy(sourceGameConfig, variationGameConfig, true);
+            }
+            else
+            {
+                AppendInfo($"Source gameConfig.json not found at {sourceGameConfig}.");
+            }
+
+            AppendSuccess($"{variationName} variation assets updated successfully.");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Error updating variation assets: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
     private void RefreshGameConfig()
     {
         if (string.IsNullOrWhiteSpace(gameConfigPath))
