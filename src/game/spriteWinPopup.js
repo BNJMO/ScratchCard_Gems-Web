@@ -46,47 +46,23 @@ export class SpriteWinPopup {
   }
 
   getResponsiveScale() {
-    // Calculate responsive scale for the entire popup based on viewport and container
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const minViewport = Math.min(viewportWidth, viewportHeight);
-    
-    // Get container size for better scaling
-    let containerScale = 1;
+    // Scale popup based on parent container size (grid-related)
     if (this.parent) {
       const parentRect = this.parent.getBoundingClientRect();
       const containerSize = Math.min(parentRect.width, parentRect.height);
-      // Scale popup based on container size
-      containerScale = Math.max(0.5, Math.min(1.5, containerSize / 400));
+      // Simple grid-based scaling - popup size relates to grid container
+      return Math.max(0.5, Math.min(1.2, containerSize / 400));
     }
     
-    // Viewport-based scaling
-    let viewportScale;
-    if (minViewport <= 480) {
-      // Mobile phones - smaller popup
-      viewportScale = Math.max(0.4, minViewport / 600);
-    } else if (minViewport <= 768) {
-      // Tablets - medium popup
-      viewportScale = Math.max(0.6, minViewport / 800);
-    } else {
-      // Desktop - larger popup
-      viewportScale = Math.max(0.8, Math.min(1.4, minViewport / 1000));
-    }
-    
-    // Combine container and viewport scaling
-    const responsiveScale = Math.max(0.3, Math.min(2.0, containerScale * viewportScale));
-    
-    return responsiveScale;
+    return 1.0;
   }
 
   getResponsiveFontSizes() {
-    // Calculate responsive font sizes based on the responsive scale
+    // Keep font sizes consistent - don't scale with popup
+    const fontSize = this.options.baseFontSize;
+    const amountFontSize = this.options.baseAmountFontSize;
     const responsiveScale = this.getResponsiveScale();
     const totalScale = this.options.scale * responsiveScale;
-    
-    // Font sizes scale with the popup
-    const fontSize = Math.max(16, Math.round(this.options.baseFontSize * responsiveScale));
-    const amountFontSize = Math.max(14, Math.round(this.options.baseAmountFontSize * responsiveScale));
     
     return { fontSize, amountFontSize, responsiveScale, totalScale };
   }
@@ -96,32 +72,16 @@ export class SpriteWinPopup {
     
     const { fontSize, amountFontSize, responsiveScale, totalScale } = this.getResponsiveFontSizes();
     
-    // Update title text font size
+    // Keep font sizes consistent
     this.titleTextNode.style.fontSize = fontSize + "px";
-    
-    // Update amount text font size
     this.amountTextNode.style.fontSize = amountFontSize + "px";
     
-    // Adjust text overlay positioning based on scale
+    // Keep text overlay positioning consistent
     if (this.textOverlayNode) {
-      const scaleAdjustment = Math.max(0.8, Math.min(1.2, totalScale));
-      const topPosition = 50; // Center vertically
-      const leftPosition = Math.max(8, 15 - (scaleAdjustment - 1) * 5);
-      const widthPercentage = Math.min(84, 70 + (scaleAdjustment - 1) * 10);
-      
-      this.textOverlayNode.style.top = topPosition + "%";
-      this.textOverlayNode.style.left = leftPosition + "%";
-      this.textOverlayNode.style.width = widthPercentage + "%";
+      this.textOverlayNode.style.top = "50%";
+      this.textOverlayNode.style.left = "10%";
+      this.textOverlayNode.style.width = "80%";
     }
-    
-    console.log("Updated responsive popup:", { 
-      fontSize, 
-      amountFontSize, 
-      responsiveScale: responsiveScale.toFixed(2), 
-      totalScale: totalScale.toFixed(2),
-      popupScale: (this.options.scale * responsiveScale).toFixed(2),
-      viewport: `${window.innerWidth}x${window.innerHeight}`
-    });
   }
 
   updatePosition() {
@@ -135,16 +95,6 @@ export class SpriteWinPopup {
     // Update container position to stay centered on the parent
     this.container.style.left = centerX + "px";
     this.container.style.top = centerY + "px";
-    
-    const responsiveScale = this.getResponsiveScale();
-    
-    console.log("Updated popup position and scale:", { 
-      centerX: Math.round(centerX), 
-      centerY: Math.round(centerY),
-      parentSize: `${Math.round(parentRect.width)}x${Math.round(parentRect.height)}`,
-      responsiveScale: responsiveScale.toFixed(2),
-      finalScale: (this.options.scale * responsiveScale).toFixed(2)
-    });
   }
 
   createContainer() {
@@ -162,7 +112,7 @@ export class SpriteWinPopup {
     image.src = this.spriteUrl;
     image.alt = "You Won!";
     image.style.cssText = "display:block;max-width:none;max-height:none;object-fit:contain;user-select:none;pointer-events:none";
-    image.onload = () => console.log("Win popup sprite loaded!");
+    image.onload = () => {};
     image.onerror = () => {
       image.style.display = "none";
       const fallback = document.createElement("div");
@@ -180,14 +130,14 @@ export class SpriteWinPopup {
 
       const titleText = document.createElement("div");
       titleText.textContent = "YOU WON";
-      titleText.style.cssText = "color:#FFFFFF;font-size:" + fontSize + "px;font-weight:900;font-family:Arial,sans-serif;text-shadow:0 0 15px rgba(234,255,0,1),0 0 30px rgba(234,255,0,0.8),0 0 45px rgba(234,255,0,0.6),3px 3px 6px rgba(0,0,0,1);letter-spacing:3px;margin-bottom:12px;text-align:center;line-height:1;width:100%;text-transform:uppercase;transition:font-size 0.3s ease;filter:drop-shadow(0 0 10px rgba(234,255,0,0.9));-webkit-text-stroke:1px rgba(234,255,0,0.3)";
+      titleText.style.cssText = "color:#FFFFFF;font-size:" + fontSize + "px;font-weight:900;font-family:Arial,sans-serif;text-shadow:0 0 15px rgba(234,255,0,1),0 0 30px rgba(234,255,0,0.8),0 0 45px rgba(234,255,0,0.6),3px 3px 6px rgba(0,0,0,1);letter-spacing:3px;margin-bottom:12px;text-align:center;line-height:1;width:100%;text-transform:uppercase;filter:drop-shadow(0 0 10px rgba(234,255,0,0.9));-webkit-text-stroke:1px rgba(234,255,0,0.3)";
 
       const amountContainer = document.createElement("div");
       amountContainer.style.cssText = "background:linear-gradient(135deg,rgba(234,255,0,0.25) 0%,rgba(234,255,0,0.1) 100%);border:3px solid rgba(234,255,0,0.8);border-radius:12px;padding:8px 16px;box-shadow:0 0 20px rgba(234,255,0,0.5),inset 0 0 10px rgba(234,255,0,0.2);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)";
 
       const amountText = document.createElement("div");
       amountText.textContent = this.formatCurrency(this.amountValue);
-      amountText.style.cssText = "color:#EAFF00;font-size:" + amountFontSize + "px;font-weight:bold;font-family:Arial,sans-serif;text-shadow:0 0 12px rgba(234,255,0,1),0 0 24px rgba(234,255,0,0.8),0 0 36px rgba(234,255,0,0.6),2px 2px 4px rgba(0,0,0,1);text-align:center;line-height:1;letter-spacing:2px;transition:font-size 0.3s ease;filter:drop-shadow(0 0 8px rgba(234,255,0,0.9));-webkit-text-stroke:0.5px rgba(234,255,0,0.3)";
+      amountText.style.cssText = "color:#EAFF00;font-size:" + amountFontSize + "px;font-weight:bold;font-family:Arial,sans-serif;text-shadow:0 0 12px rgba(234,255,0,1),0 0 24px rgba(234,255,0,0.8),0 0 36px rgba(234,255,0,0.6),2px 2px 4px rgba(0,0,0,1);text-align:center;line-height:1;letter-spacing:2px;filter:drop-shadow(0 0 8px rgba(234,255,0,0.9));-webkit-text-stroke:0.5px rgba(234,255,0,0.3)";
 
       amountContainer.appendChild(amountText);
       textOverlay.appendChild(titleText);
