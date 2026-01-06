@@ -33,6 +33,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private Process? localServerProcess;
     private JsonNode? gameConfigNode;
     private JsonNode? buildConfigNode;
+    private JsonNode? variationGameConfigNode;
+    private JsonNode? variationBuildConfigNode;
 
     public MainWindowViewModel()
     {
@@ -42,6 +44,7 @@ public partial class MainWindowViewModel : ViewModelBase
         VariationOptions = new ObservableCollection<string>(BuildVariationOptions(repositoryRoot));
         SelectedVariation = DefaultVariationOption;
         LoadConfigText();
+        LoadVariationConfigText();
     }
 
     public ObservableCollection<string> VariationOptions { get; }
@@ -55,6 +58,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<ConfigDisplayItem> BuildConfigEntries { get; } = new();
 
+    public ObservableCollection<ConfigDisplayItem> VariationGameConfigEntries { get; } = new();
+
+    public ObservableCollection<ConfigDisplayItem> VariationBuildConfigEntries { get; } = new();
+
     [ObservableProperty]
     private string? selectedVariation;
 
@@ -66,6 +73,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string buildConfigText = string.Empty;
+
+    [ObservableProperty]
+    private string variationGameConfigText = string.Empty;
+
+    [ObservableProperty]
+    private string variationBuildConfigText = string.Empty;
 
     [ObservableProperty]
     private bool isGameConfigDirty;
@@ -421,6 +434,7 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnSelectedVariationChanged(string? value)
     {
         IsVariationSelected = IsActualVariation(value);
+        LoadVariationConfigText();
     }
 
     private static bool IsActualVariation(string? variation) =>
@@ -439,6 +453,31 @@ public partial class MainWindowViewModel : ViewModelBase
         buildConfigSnapshot = BuildConfigText;
         IsGameConfigDirty = false;
         IsBuildConfigDirty = false;
+    }
+
+    private void LoadVariationConfigText()
+    {
+        if (!IsVariationSelected || string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            VariationGameConfigText = string.Empty;
+            VariationBuildConfigText = string.Empty;
+            variationGameConfigNode = null;
+            variationBuildConfigNode = null;
+            VariationGameConfigEntries.Clear();
+            VariationBuildConfigEntries.Clear();
+            return;
+        }
+
+        var variationRoot = Path.Combine(repositoryRoot, "Variations", SelectedVariation!);
+        var variationGameConfigPath = Path.Combine(variationRoot, "src", "gameConfig.json");
+        var variationBuildConfigPath = Path.Combine(variationRoot, "buildConfig.json");
+
+        VariationGameConfigText = LoadConfigFile(variationGameConfigPath);
+        VariationBuildConfigText = LoadConfigFile(variationBuildConfigPath);
+        variationGameConfigNode = TryParseJson(VariationGameConfigText);
+        variationBuildConfigNode = TryParseJson(VariationBuildConfigText);
+        PopulateConfigEntries(VariationGameConfigEntries, variationGameConfigNode, OnVariationGameConfigEntryChanged);
+        PopulateConfigEntries(VariationBuildConfigEntries, variationBuildConfigNode, OnVariationBuildConfigEntryChanged);
     }
 
     private string LoadConfigFile(string? configPath)
@@ -952,6 +991,32 @@ public partial class MainWindowViewModel : ViewModelBase
         if (TryUpdateJsonValue(buildConfigNode, entry))
         {
             BuildConfigText = buildConfigNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        }
+    }
+
+    private void OnVariationGameConfigEntryChanged(ConfigValueEntry entry)
+    {
+        if (variationGameConfigNode is null)
+        {
+            return;
+        }
+
+        if (TryUpdateJsonValue(variationGameConfigNode, entry))
+        {
+            VariationGameConfigText = variationGameConfigNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        }
+    }
+
+    private void OnVariationBuildConfigEntryChanged(ConfigValueEntry entry)
+    {
+        if (variationBuildConfigNode is null)
+        {
+            return;
+        }
+
+        if (TryUpdateJsonValue(variationBuildConfigNode, entry))
+        {
+            VariationBuildConfigText = variationBuildConfigNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
         }
     }
 
