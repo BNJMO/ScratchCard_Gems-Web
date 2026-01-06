@@ -29,6 +29,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private const int LocalServerPort = 3000;
     private string gameConfigSnapshot = string.Empty;
     private string buildConfigSnapshot = string.Empty;
+    private string variationGameConfigSnapshot = string.Empty;
+    private string variationBuildConfigSnapshot = string.Empty;
     private readonly object localServerLock = new();
     private Process? localServerProcess;
     private JsonNode? gameConfigNode;
@@ -87,11 +89,21 @@ public partial class MainWindowViewModel : ViewModelBase
     private bool isBuildConfigDirty;
 
     [ObservableProperty]
+    private bool isVariationGameConfigDirty;
+
+    [ObservableProperty]
+    private bool isVariationBuildConfigDirty;
+
+    [ObservableProperty]
     private bool isBuildRunning;
 
     public string GameConfigTabHeader => IsGameConfigDirty ? "Game Config *" : "Game Config";
 
     public string BuildConfigTabHeader => IsBuildConfigDirty ? "Build Config *" : "Build Config";
+
+    public string VariationGameConfigTabHeader => IsVariationGameConfigDirty ? "Variation Game Config *" : "Variation Game Config";
+
+    public string VariationBuildConfigTabHeader => IsVariationBuildConfigDirty ? "Variation Build Config *" : "Variation Build Config";
     
     [ObservableProperty]
     private bool isLocalServerRunning;
@@ -290,6 +302,98 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void SaveVariationGameConfig()
+    {
+        if (!IsVariationSelected || string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            AppendError("No variation selected.");
+            return;
+        }
+
+        var variationRoot = Path.Combine(repositoryRoot, "Variations", SelectedVariation!);
+        var variationGameConfigPath = Path.Combine(variationRoot, "src", "gameConfig.json");
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(variationGameConfigPath)!);
+            File.WriteAllText(variationGameConfigPath, VariationGameConfigText);
+            variationGameConfigSnapshot = VariationGameConfigText;
+            IsVariationGameConfigDirty = false;
+            AppendSuccess($"Saved variation gameConfig.json for {SelectedVariation}.");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Error saving variation gameConfig.json: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void SaveVariationBuildConfig()
+    {
+        if (!IsVariationSelected || string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            AppendError("No variation selected.");
+            return;
+        }
+
+        var variationRoot = Path.Combine(repositoryRoot, "Variations", SelectedVariation!);
+        var variationBuildConfigPath = Path.Combine(variationRoot, "buildConfig.json");
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(variationBuildConfigPath)!);
+            File.WriteAllText(variationBuildConfigPath, VariationBuildConfigText);
+            variationBuildConfigSnapshot = VariationBuildConfigText;
+            IsVariationBuildConfigDirty = false;
+            AppendSuccess($"Saved variation buildConfig.json for {SelectedVariation}.");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Error saving variation buildConfig.json: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void RefreshVariationGameConfig()
+    {
+        if (!IsVariationSelected || string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            AppendError("No variation selected.");
+            return;
+        }
+
+        var variationRoot = Path.Combine(repositoryRoot, "Variations", SelectedVariation!);
+        var variationGameConfigPath = Path.Combine(variationRoot, "src", "gameConfig.json");
+
+        VariationGameConfigText = LoadConfigFile(variationGameConfigPath);
+        variationGameConfigNode = TryParseJson(VariationGameConfigText);
+        PopulateConfigEntries(VariationGameConfigEntries, variationGameConfigNode, OnVariationGameConfigEntryChanged);
+        variationGameConfigSnapshot = VariationGameConfigText;
+        IsVariationGameConfigDirty = false;
+        AppendSuccess($"Reloaded variation gameConfig.json for {SelectedVariation}.");
+    }
+
+    [RelayCommand]
+    private void RefreshVariationBuildConfig()
+    {
+        if (!IsVariationSelected || string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            AppendError("No variation selected.");
+            return;
+        }
+
+        var variationRoot = Path.Combine(repositoryRoot, "Variations", SelectedVariation!);
+        var variationBuildConfigPath = Path.Combine(variationRoot, "buildConfig.json");
+
+        VariationBuildConfigText = LoadConfigFile(variationBuildConfigPath);
+        variationBuildConfigNode = TryParseJson(VariationBuildConfigText);
+        PopulateConfigEntries(VariationBuildConfigEntries, variationBuildConfigNode, OnVariationBuildConfigEntryChanged);
+        variationBuildConfigSnapshot = VariationBuildConfigText;
+        IsVariationBuildConfigDirty = false;
+        AppendSuccess($"Reloaded variation buildConfig.json for {SelectedVariation}.");
+    }
+
+    [RelayCommand]
     private void ToggleLocalServer()
     {
         if (IsLocalServerRunning)
@@ -478,6 +582,11 @@ public partial class MainWindowViewModel : ViewModelBase
         variationBuildConfigNode = TryParseJson(VariationBuildConfigText);
         PopulateConfigEntries(VariationGameConfigEntries, variationGameConfigNode, OnVariationGameConfigEntryChanged);
         PopulateConfigEntries(VariationBuildConfigEntries, variationBuildConfigNode, OnVariationBuildConfigEntryChanged);
+        
+        variationGameConfigSnapshot = VariationGameConfigText;
+        variationBuildConfigSnapshot = VariationBuildConfigText;
+        IsVariationGameConfigDirty = false;
+        IsVariationBuildConfigDirty = false;
     }
 
     private string LoadConfigFile(string? configPath)
@@ -978,6 +1087,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (TryUpdateJsonValue(gameConfigNode, entry))
         {
             GameConfigText = gameConfigNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            IsGameConfigDirty = !string.Equals(GameConfigText, gameConfigSnapshot, StringComparison.Ordinal);
         }
     }
 
@@ -991,6 +1101,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (TryUpdateJsonValue(buildConfigNode, entry))
         {
             BuildConfigText = buildConfigNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            IsBuildConfigDirty = !string.Equals(BuildConfigText, buildConfigSnapshot, StringComparison.Ordinal);
         }
     }
 
@@ -1004,6 +1115,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (TryUpdateJsonValue(variationGameConfigNode, entry))
         {
             VariationGameConfigText = variationGameConfigNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            IsVariationGameConfigDirty = !string.Equals(VariationGameConfigText, variationGameConfigSnapshot, StringComparison.Ordinal);
         }
     }
 
@@ -1017,6 +1129,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (TryUpdateJsonValue(variationBuildConfigNode, entry))
         {
             VariationBuildConfigText = variationBuildConfigNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            IsVariationBuildConfigDirty = !string.Equals(VariationBuildConfigText, variationBuildConfigSnapshot, StringComparison.Ordinal);
         }
     }
 
