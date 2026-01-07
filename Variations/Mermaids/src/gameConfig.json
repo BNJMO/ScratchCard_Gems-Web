@@ -29,6 +29,9 @@
       "iconScale": 1.25,
       "iconOffsetX": 0,
       "offsetYv": -5,
+      "offsetY": -5,
+      "tileWidth": 144,
+      "tileHeight": 148,
       "spritesheetAnimationSpeed": 0.16,
       "matchShake": false,
         "winFrameScale": 0.99,
@@ -38,6 +41,11 @@
     "scratch": {
       "revealRadius": 40,
       "coverFadeOutDuration": 200
+    },
+    "layout": {
+      "gapBetweenTiles": 8,
+      "paddingHorizontal": 0.02,
+      "paddingVertical": 0.06
     },
     "gridSpritesheetProvider": {
       "columns": 3,
@@ -62,7 +70,7 @@
       "animationDuration": 300,
       "showText": true,
       "textOffsetX": 0,
-      "textOffsetY": -80,
+      "textOffsetY": -20,
       "textColor": "#FFFFFF",
       "amountColor": "#EAFF00",
       "fontSize": 42,

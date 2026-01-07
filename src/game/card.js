@@ -23,7 +23,9 @@ export class Card {
     stateTextures,
     row,
     col,
-    tileSize,
+    tileWidth,
+    tileHeight,
+    tileSize, // Keep for backward compatibility
     strokeWidth,
     disableAnimations,
     interactionCallbacks = {},
@@ -62,6 +64,12 @@ export class Card {
     };
     this.row = row;
     this.col = col;
+    
+    // Handle tile dimensions - use tileWidth/tileHeight if provided, otherwise fall back to tileSize
+    this._tileWidth = tileWidth > 0 ? tileWidth : (tileSize || 100);
+    this._tileHeight = tileHeight > 0 ? tileHeight : (tileSize || 100);
+    this._offsetY = Number(iconOptions?.offsetY ?? 0) || 0; // Add configurable offsetY
+    
     this.strokeWidth = strokeWidth;
     this.disableAnimations = Boolean(disableAnimations);
     this.interactionCallbacks = interactionCallbacks;
@@ -101,7 +109,7 @@ export class Card {
     this._isHovering = false;
     this._tileVisible = true;
 
-    this.container = this.#createCard(tileSize);
+    this.container = this.#createCard();
     this.hideWinFrame();
   }
 
@@ -501,8 +509,9 @@ export class Card {
         this.iconOptions.revealedSizeFactor ??
         1
       : 1;
-    const maxDimension =
-      this._tileSize * baseSize * sizeFactor * iconScaleMultiplier;
+    // Use the larger tile dimension for icon sizing to maintain consistency
+    const maxTileDimension = Math.max(this._tileWidth, this._tileHeight);
+    const maxDimension = maxTileDimension * baseSize * sizeFactor * iconScaleMultiplier;
 
     if (contentConfig.texture) {
       icon.texture = contentConfig.texture;
@@ -577,7 +586,7 @@ export class Card {
     const shadowWrap = this._shadowWrap;
     const tileSprite = this._tileSprite;
     const icon = this._icon;
-    const tileSize = this._tileSize;
+    const maxTileDimension = Math.max(this._tileWidth, this._tileHeight); // Use max dimension for calculations
     const startScaleY = Math.max(1, wrap.scale.y);
     const startShadowScaleY = shadowWrap?.scale
       ? Math.max(1, shadowWrap.scale.y)
@@ -638,8 +647,9 @@ export class Card {
             contentConfig.iconSizePercentage ??
             this.iconOptions.sizePercentage;
           const iconScaleMultiplier = this.iconOptions.scaleMultiplier ?? 1;
+          const maxTileDimension = Math.max(this._tileWidth, this._tileHeight);
           const maxDimension =
-            tileSize * baseSize * iconSizeFactor * iconScaleMultiplier;
+            maxTileDimension * baseSize * iconSizeFactor * iconScaleMultiplier;
 
           if (contentConfig.texture) {
             icon.texture = contentConfig.texture;
@@ -803,8 +813,8 @@ export class Card {
   getGlobalCenter() {
     if (!this.container) return null;
     return this.container.toGlobal({
-      x: this._tileSize / 2,
-      y: this._tileSize / 2,
+      x: this._tileWidth / 2,
+      y: this._tileHeight / 2,
     });
   }
 
@@ -1123,7 +1133,8 @@ export class Card {
       texture?.baseTexture?.height ??
       1;
     const maxDimension = Math.max(1, textureWidth, textureHeight);
-    const baseScale = (this._tileSize * 1.2) / maxDimension;
+    const maxTileDimension = Math.max(this._tileWidth, this._tileHeight);
+    const baseScale = (maxTileDimension * 1.2) / maxDimension;
 
     const appearPortion = 0.25;
     const startScale = 0.45;
@@ -1255,9 +1266,10 @@ export class Card {
       sprite.texture = texture;
     }
 
-    if (this._tileSize > 0) {
-      sprite.width = this._tileSize;
-      sprite.height = this._tileSize;
+    // Use configurable tile dimensions
+    if (this._tileWidth > 0 && this._tileHeight > 0) {
+      sprite.width = this._tileWidth;
+      sprite.height = this._tileHeight;
     }
   }
 
@@ -1266,14 +1278,18 @@ export class Card {
       return;
     }
 
-    const tileSize = Math.max(0, this._tileSize ?? 0);
+    const tileWidth = Math.max(0, this._tileWidth ?? 0);
+    const tileHeight = Math.max(0, this._tileHeight ?? 0);
     const dimensions = this.#getTextureDimensions(frameSprite.texture);
     const baseDimension = Math.max(
       1,
       dimensions?.width ?? 0,
       dimensions?.height ?? 0
     );
-    const baseScale = tileSize > 0 ? tileSize / baseDimension : 1;
+    
+    // Use the larger tile dimension for scaling to maintain aspect ratio
+    const maxTileDimension = Math.max(tileWidth, tileHeight);
+    const baseScale = maxTileDimension > 0 ? maxTileDimension / baseDimension : 1;
     const scale = baseScale * (this.frameScale ?? 1);
 
     if (frameSprite.scale?.set) {
@@ -1283,26 +1299,31 @@ export class Card {
       frameSprite.scale.y = scale;
     }
 
-    if (Number.isFinite(tileSize)) {
+    if (Number.isFinite(tileWidth) && Number.isFinite(tileHeight)) {
       const offsetX = Number(this.frameOffsetX ?? 0) || 0;
       const offsetY = Number(this.frameOffsetY ?? 0) || 0;
-      frameSprite.position.set(tileSize / 2 + offsetX, tileSize / 2 + offsetY);
+      frameSprite.position.set(tileWidth / 2 + offsetX, tileHeight / 2 + offsetY);
     }
   }
 
-  #createCard(tileSize) {
-    this._tileSize = tileSize;
+  #createCard() {
+    const tileWidth = this._tileWidth;
+    const tileHeight = this._tileHeight;
+    
+    // For backward compatibility, use the larger dimension as tileSize for calculations that expect square tiles
+    this._tileSize = Math.max(tileWidth, tileHeight);
+    
     const tileTexture = this.stateTextures.default ?? Texture.WHITE;
     const tileSprite = new Sprite(tileTexture);
     tileSprite.anchor.set(0.5);
-    tileSprite.position.set(tileSize / 2, tileSize / 2);
-    tileSprite.width = tileSize;
-    tileSprite.height = tileSize;
+    tileSprite.position.set(tileWidth / 2, tileHeight / 2);
+    tileSprite.width = tileWidth;
+    tileSprite.height = tileHeight;
 
     const icon = new AnimatedSprite([Texture.EMPTY]);
     icon.anchor.set(0.5);
-    icon.x = tileSize / 2 + this.iconOptions.offsetX;
-    icon.y = tileSize / 2 + this.iconOptions.offsetY;
+    icon.x = tileWidth / 2 + this.iconOptions.offsetX;
+    icon.y = tileHeight / 2 + this.iconOptions.offsetY + this._offsetY; // Apply configurable offsetY
     icon.visible = false;
     icon.loop = true;
     icon.animationSpeed = 0.25;
@@ -1329,7 +1350,7 @@ export class Card {
     }
 
     const matchEffectsLayer = new Container();
-    matchEffectsLayer.position.set(tileSize / 2, tileSize / 2);
+    matchEffectsLayer.position.set(tileWidth / 2, tileHeight / 2);
 
     const flipWrap = new Container();
     flipWrap.addChild(
@@ -1339,8 +1360,8 @@ export class Card {
       icon
     );
 
-    flipWrap.position.set(tileSize / 2, tileSize / 2);
-    flipWrap.pivot.set(tileSize / 2, tileSize / 2);
+    flipWrap.position.set(tileWidth / 2, tileHeight / 2);
+    flipWrap.pivot.set(tileWidth / 2, tileHeight / 2);
 
     const tile = new Container();
     tile.addChild(flipWrap);

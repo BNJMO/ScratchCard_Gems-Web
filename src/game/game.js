@@ -436,7 +436,12 @@ export async function createGame(mount, opts = {}) {
     gameConfig.gameplay.card.iconScale ?? 1.0
   );
   const iconOffsetX = Number(gameConfig.gameplay.card.iconOffsetX ?? 0) || 0;
-  const iconOffsetY = Number(gameConfig.gameplay.card.offsetYv ?? 0) || 0;
+  const iconOffsetY = Number(gameConfig.gameplay.card.offsetYv ?? gameConfig.gameplay.card.offsetY ?? 0) || 0;
+  
+  // New configurable tile dimensions
+  const tileWidth = Number(gameConfig.gameplay.card.tileWidth ?? 0) || 0;
+  const tileHeight = Number(gameConfig.gameplay.card.tileHeight ?? 0) || 0;
+  
   const matchShakeEnabled = gameConfig.gameplay.card.matchShake ?? true;
   const winFrameScale = (() => {
     const value = Number(gameConfig.gameplay.card.winFrameScale ?? 1.0);
@@ -456,7 +461,12 @@ export async function createGame(mount, opts = {}) {
   const revealAllIntervalDelay = opts.revealAllIntervalDelay ?? 40;
   const autoResetDelayMs = Number(opts.autoResetDelayMs ?? 1500);
   const strokeWidth = opts.strokeWidth ?? 1;
-  const gapBetweenTiles = opts.gapBetweenTiles ?? 0.1;
+  
+  // Read layout configuration from gameConfig
+  const layoutConfig = gameConfig?.gameplay?.layout ?? {};
+  const gapBetweenTiles = opts.gapBetweenTiles ?? layoutConfig.gapBetweenTiles ?? 0;
+  const paddingHorizontal = layoutConfig.paddingHorizontal ?? 0.02;
+  const paddingVertical = layoutConfig.paddingVertical ?? 0.06;
   const flipDuration = opts.flipDuration ?? 300;
   const flipEaseFunction = opts.flipEaseFunction ?? "easeInOutSine";
 
@@ -690,6 +700,8 @@ export async function createGame(mount, opts = {}) {
         offsetX: iconOffsetX,
         offsetY: iconOffsetY,
       },
+      tileWidth,
+      tileHeight,
       matchEffects: {
         sparkTexture: matchSparkTexture,
         sparkDuration: 1500,
@@ -707,7 +719,11 @@ export async function createGame(mount, opts = {}) {
       winPopupHeight: winPopupOptions.winPopupHeight,
     },
     backgroundTexture: gameBackgroundTexture,
-    layoutOptions: { gapBetweenTiles },
+    layoutOptions: { 
+      gapBetweenTiles,
+      paddingHorizontal,
+      paddingVertical
+    },
     animationOptions: {
       ...hoverOptions,
       ...wiggleOptions,

@@ -12,8 +12,7 @@
       "tile_flipped": ".svg",
       "tile_hovered": ".svg",
       "tile_unflipped": ".svg",
-      "winFrame": ".svg",
-      "winPopup": ".png"
+      "winFrame": ".svg"
     }
   },
   "gameplay": {
@@ -30,6 +29,9 @@
       "iconScale": 1,
       "iconOffsetX": 0,
       "offsetYv": -5,
+      "offsetY": -5,
+      "tileWidth": 220,
+      "tileHeight": 222,
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true,
       "winFrameScale": 0.99,
@@ -40,6 +42,12 @@
       "revealRadius": 40,
       "coverFadeOutDuration": 200
     },
+   "layout": {
+  "gapBetweenTiles": 15,
+  "paddingHorizontal": 0.01,
+  "paddingVertical": 0.06
+}
+,
     "gridSpritesheetProvider": {
       "columns": 3,
       "rows": 4,

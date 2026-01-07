@@ -34,6 +34,8 @@ export class GameScene {
     this.strokeWidth = strokeWidth;
     this.cardOptions = {
       icon: cardOptions?.icon ?? {},
+      tileWidth: cardOptions?.tileWidth ?? 0,
+      tileHeight: cardOptions?.tileHeight ?? 0,
       winPopupWidth: cardOptions?.winPopupWidth,
       winPopupHeight: cardOptions?.winPopupHeight,
       matchEffects: cardOptions?.matchEffects ?? {},
@@ -44,7 +46,9 @@ export class GameScene {
       stateTextures: cardOptions?.stateTextures ?? {},
     };
     this.layoutOptions = {
-      gapBetweenTiles: layoutOptions?.gapBetweenTiles ?? 0.012,
+      gapBetweenTiles: layoutOptions?.gapBetweenTiles ?? 0,
+      paddingHorizontal: layoutOptions?.paddingHorizontal ?? 0.02,
+      paddingVertical: layoutOptions?.paddingVertical ?? 0.06,
     };
     this.animationOptions = {
       hoverEnabled: animationOptions?.hoverEnabled ?? true,
@@ -184,6 +188,10 @@ export class GameScene {
   buildGrid({ interactionFactory }) {
     this.clearGrid();
     const layout = this.#layoutSizes();
+    
+    // Use configurable tile dimensions if available, otherwise fall back to calculated size
+    const tileWidth = this.cardOptions.tileWidth > 0 ? this.cardOptions.tileWidth : layout.tileSize;
+    const tileHeight = this.cardOptions.tileHeight > 0 ? this.cardOptions.tileHeight : layout.tileSize;
 
     for (let r = 0; r < this.gridRows; r += 1) {
       for (let c = 0; c < this.gridColumns; c += 1) {
@@ -200,7 +208,8 @@ export class GameScene {
           stateTextures: this.cardOptions.stateTextures,
           row: r,
           col: c,
-          tileSize: layout.tileSize,
+          tileWidth,
+          tileHeight,
           strokeWidth: this.strokeWidth,
           disableAnimations: this.disableAnimations,
           interactionCallbacks: interactionFactory?.(r, c),
@@ -227,14 +236,34 @@ export class GameScene {
       contentHeight,
       boardCenterX,
       boardCenterY,
+      configuredTileWidth,
+      configuredTileHeight,
     } = layout;
+    
+    // Calculate actual tile dimensions and scale
+    let actualTileWidth, actualTileHeight, actualGap, scale;
+    
+    if (configuredTileWidth > 0 && configuredTileHeight > 0) {
+      // When using configured dimensions, calculate scale based on tileSize
+      const maxConfiguredDimension = Math.max(configuredTileWidth, configuredTileHeight);
+      scale = tileSize / maxConfiguredDimension;
+      actualTileWidth = configuredTileWidth * scale;
+      actualTileHeight = configuredTileHeight * scale;
+      actualGap = gap * scale; // Allow negative gaps
+    } else {
+      // Fallback to calculated layout
+      actualTileWidth = tileSize;
+      actualTileHeight = tileSize;
+      actualGap = gap;
+      scale = 1;
+    }
+    
     const startX = -contentWidth / 2;
     const startY = -contentHeight / 2;
 
     for (const card of this.cards) {
-      const scale = tileSize / card._tileSize;
-      const x = startX + card.col * (tileSize + gap);
-      const y = startY + card.row * (tileSize + gap);
+      const x = startX + card.col * (actualTileWidth + actualGap);
+      const y = startY + card.row * (actualTileHeight + actualGap);
       card.setLayout({ x, y, scale });
     }
 
@@ -429,23 +458,76 @@ export class GameScene {
 
     const topSpace = 30;
     const boardSpace = Math.max(40, size - topSpace - 5);
-    const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0.012;
-    const gap = Math.max(1, Math.floor(boardSpace * gapValue));
-    const totalHorizontalGaps = gap * Math.max(0, this.gridColumns - 1);
-    const totalVerticalGaps = gap * Math.max(0, this.gridRows - 1);
-    const tileAreaWidth = Math.max(1, boardSpace - totalHorizontalGaps);
-    const tileAreaHeight = Math.max(1, boardSpace - totalVerticalGaps);
-    const tileSize = Math.max(
-      1,
-      Math.floor(
-        Math.min(
-          tileAreaWidth / this.gridColumns,
-          tileAreaHeight / this.gridRows
+    const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0;
+    
+    // Use configured tile dimensions if available
+    const configuredTileWidth = this.cardOptions.tileWidth > 0 ? this.cardOptions.tileWidth : 0;
+    const configuredTileHeight = this.cardOptions.tileHeight > 0 ? this.cardOptions.tileHeight : 0;
+    
+    let tileSize, gap, contentWidth, contentHeight;
+    
+    if (configuredTileWidth > 0 && configuredTileHeight > 0) {
+      // Use configured dimensions - but ensure they fit within available space
+      const maxTileDimension = Math.max(configuredTileWidth, configuredTileHeight);
+      
+      // If gapValue is >= 1, treat it as absolute pixels, otherwise as a fraction
+      if (Math.abs(gapValue) >= 1) {
+        gap = Math.floor(gapValue); // Allow negative values
+      } else {
+        gap = Math.floor(maxTileDimension * gapValue); // Allow negative fractions
+      }
+      
+      const totalHorizontalGaps = gap * Math.max(0, this.gridColumns - 1);
+      const totalVerticalGaps = gap * Math.max(0, this.gridRows - 1);
+      
+      const requiredWidth = configuredTileWidth * this.gridColumns + totalHorizontalGaps;
+      const requiredHeight = configuredTileHeight * this.gridRows + totalVerticalGaps;
+      
+      // Check if configured dimensions fit within available space
+      if (requiredWidth <= availableWidth && requiredHeight <= availableHeight) {
+        // Use configured dimensions as-is
+        contentWidth = requiredWidth;
+        contentHeight = requiredHeight;
+        tileSize = maxTileDimension;
+      } else {
+        // Scale down to fit available space while maintaining aspect ratio
+        const scaleX = availableWidth / requiredWidth;
+        const scaleY = availableHeight / requiredHeight;
+        const scale = Math.min(scaleX, scaleY);
+        
+        const scaledTileWidth = configuredTileWidth * scale;
+        const scaledTileHeight = configuredTileHeight * scale;
+        const scaledGap = gap * scale; // Allow negative gaps when scaled
+        
+        contentWidth = scaledTileWidth * this.gridColumns + scaledGap * Math.max(0, this.gridColumns - 1);
+        contentHeight = scaledTileHeight * this.gridRows + scaledGap * Math.max(0, this.gridRows - 1);
+        tileSize = Math.max(scaledTileWidth, scaledTileHeight);
+        gap = scaledGap;
+      }
+    } else {
+      // Fallback to original calculated layout
+      if (Math.abs(gapValue) >= 1) {
+        gap = Math.floor(gapValue); // Allow negative values
+      } else {
+        gap = Math.floor(boardSpace * gapValue); // Allow negative fractions
+      }
+      const totalHorizontalGaps = gap * Math.max(0, this.gridColumns - 1);
+      const totalVerticalGaps = gap * Math.max(0, this.gridRows - 1);
+      const tileAreaWidth = Math.max(1, boardSpace - totalHorizontalGaps);
+      const tileAreaHeight = Math.max(1, boardSpace - totalVerticalGaps);
+      tileSize = Math.max(
+        1,
+        Math.floor(
+          Math.min(
+            tileAreaWidth / this.gridColumns,
+            tileAreaHeight / this.gridRows
+          )
         )
-      )
-    );
-    const contentWidth = tileSize * this.gridColumns + totalHorizontalGaps;
-    const contentHeight = tileSize * this.gridRows + totalVerticalGaps;
+      );
+      contentWidth = tileSize * this.gridColumns + totalHorizontalGaps;
+      contentHeight = tileSize * this.gridRows + totalVerticalGaps;
+    }
+    
     const contentSize = Math.max(contentWidth, contentHeight);
     const boardCenterX = horizontal + availableWidth / 2;
     const boardCenterY = vertical + availableHeight / 2;
@@ -458,6 +540,8 @@ export class GameScene {
       contentSize,
       boardCenterX,
       boardCenterY,
+      configuredTileWidth,
+      configuredTileHeight,
     };
   }
 
@@ -502,25 +586,22 @@ export class GameScene {
       return { horizontal: 0, vertical: 0 };
     }
 
-    if (this.#isPortraitViewport()) {
-      return { horizontal: 0, vertical: 0 };
-    }
-
     const rendererWidth = this.app.renderer.width;
     const rendererHeight = this.app.renderer.height;
 
-    const horizontalPadding = rendererWidth > 0 ? rendererWidth * 0.02 : 0;
+    // Use configurable padding values - always apply them regardless of orientation
+    const horizontalPadding = rendererWidth > 0 ? rendererWidth * (this.layoutOptions?.paddingHorizontal ?? 0.02) : 0;
 
     let verticalPadding = 0;
     if (typeof window !== "undefined") {
       const viewportHeight = Number(window.innerHeight);
       if (Number.isFinite(viewportHeight) && viewportHeight > 0) {
-        verticalPadding = viewportHeight * 0.06;
+        verticalPadding = viewportHeight * (this.layoutOptions?.paddingVertical ?? 0.06);
       }
     }
 
     if (!(verticalPadding > 0) && rendererHeight > 0) {
-      verticalPadding = rendererHeight * 0.06;
+      verticalPadding = rendererHeight * (this.layoutOptions?.paddingVertical ?? 0.06);
     }
 
     const maxHorizontal = Math.max(0, rendererWidth / 2 - 1);
