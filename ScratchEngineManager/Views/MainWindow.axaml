@@ -99,37 +99,39 @@
                             BorderBrush="#3B414F"
                             CornerRadius="6"
                             Padding="12">
-                        <Grid RowDefinitions="Auto,*">
-                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
-                                <Button Content="Save"
-                                        Command="{Binding SaveGameConfigCommand}"
-                                        IsEnabled="{Binding IsGameConfigDirty}"
-                                        Background="#3E8EDE"
-                                        Foreground="#F7F8FA"
-                                        BorderBrush="#3E8EDE"
-                                        CornerRadius="6"
-                                        Padding="10,4"/>
-                                <Button Content="Refresh"
-                                        Command="{Binding RefreshGameConfigCommand}"
-                                        Background="#3B414F"
-                                        Foreground="#E6E8ED"
-                                        BorderBrush="#3B414F"
-                                        CornerRadius="6"
-                                        Padding="10,4"/>
-                            </StackPanel>
-                            <Grid Grid.Row="1" ColumnDefinitions="1*,1*" ColumnSpacing="12" Margin="0,12,0,0">
+                        <Grid RowDefinitions="*">
+                            <Grid Grid.Row="0" ColumnDefinitions="1*,1*" ColumnSpacing="12">
                                 <!-- Loaded Game Config -->
                                 <Border Background="#1A1E25"
                                         BorderBrush="#3B414F"
                                         CornerRadius="6"
                                         Padding="8">
-                                    <Grid RowDefinitions="Auto,*">
+                                    <Grid RowDefinitions="Auto,Auto,*">
                                         <TextBlock Text="Loaded Game"
                                                    Foreground="#E6E8ED"
                                                    FontSize="14"
                                                    FontWeight="SemiBold"
                                                    Margin="0,0,0,8"/>
-                                        <ScrollViewer Grid.Row="1">
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left" Margin="0,0,0,8">
+                                            <Button Content="Save"
+                                                    Command="{Binding SaveGameConfigCommand}"
+                                                    IsEnabled="{Binding IsGameConfigDirty}"
+                                                    Background="#3E8EDE"
+                                                    Foreground="#F7F8FA"
+                                                    BorderBrush="#3E8EDE"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                            <Button Content="Refresh"
+                                                    Command="{Binding RefreshGameConfigCommand}"
+                                                    Background="#3B414F"
+                                                    Foreground="#E6E8ED"
+                                                    BorderBrush="#3B414F"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="2">
                                             <ItemsControl ItemsSource="{Binding GameConfigEntries}">
                                                 <ItemsControl.DataTemplates>
                                                     <DataTemplate DataType="vm:ConfigGroupEntry">
@@ -324,37 +326,39 @@
                             BorderBrush="#3B414F"
                             CornerRadius="6"
                             Padding="12">
-                        <Grid RowDefinitions="Auto,*">
-                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
-                                <Button Content="Save"
-                                        Command="{Binding SaveBuildConfigCommand}"
-                                        IsEnabled="{Binding IsBuildConfigDirty}"
-                                        Background="#3E8EDE"
-                                        Foreground="#F7F8FA"
-                                        BorderBrush="#3E8EDE"
-                                        CornerRadius="6"
-                                        Padding="10,4"/>
-                                <Button Content="Refresh"
-                                        Command="{Binding RefreshBuildConfigCommand}"
-                                        Background="#3B414F"
-                                        Foreground="#E6E8ED"
-                                        BorderBrush="#3B414F"
-                                        CornerRadius="6"
-                                        Padding="10,4"/>
-                            </StackPanel>
-                            <Grid Grid.Row="1" ColumnDefinitions="1*,1*" ColumnSpacing="12" Margin="0,12,0,0">
+                        <Grid RowDefinitions="*">
+                            <Grid Grid.Row="0" ColumnDefinitions="1*,1*" ColumnSpacing="12">
                                 <!-- Loaded Build Config -->
                                 <Border Background="#1A1E25"
                                         BorderBrush="#3B414F"
                                         CornerRadius="6"
                                         Padding="8">
-                                    <Grid RowDefinitions="Auto,*">
+                                    <Grid RowDefinitions="Auto,Auto,*">
                                         <TextBlock Text="Loaded Game"
                                                    Foreground="#E6E8ED"
                                                    FontSize="14"
                                                    FontWeight="SemiBold"
                                                    Margin="0,0,0,8"/>
-                                        <ScrollViewer Grid.Row="1">
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left" Margin="0,0,0,8">
+                                            <Button Content="Save"
+                                                    Command="{Binding SaveBuildConfigCommand}"
+                                                    IsEnabled="{Binding IsBuildConfigDirty}"
+                                                    Background="#3E8EDE"
+                                                    Foreground="#F7F8FA"
+                                                    BorderBrush="#3E8EDE"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                            <Button Content="Refresh"
+                                                    Command="{Binding RefreshBuildConfigCommand}"
+                                                    Background="#3B414F"
+                                                    Foreground="#E6E8ED"
+                                                    BorderBrush="#3B414F"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="2">
                                             <ItemsControl ItemsSource="{Binding BuildConfigEntries}">
                                                 <ItemsControl.DataTemplates>
                                                     <DataTemplate DataType="vm:ConfigGroupEntry">
