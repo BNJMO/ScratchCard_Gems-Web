@@ -95,13 +95,13 @@ public partial class MainWindowViewModel : ViewModelBase
         AppendBlankLine();
         if (string.IsNullOrWhiteSpace(repositoryRoot))
         {
-            AppendError("Could not locate repository root. Replace Assets aborted.");
+            AppendError("Could not locate repository root. Load Selected Variation To Game aborted.");
             return;
         }
 
         if (!IsActualVariation(SelectedVariation))
         {
-            AppendError("No variation selected. Replace Assets aborted.");
+            AppendError("No variation selected. Load Selected Variation To Game aborted.");
             return;
         }
 
@@ -189,12 +189,91 @@ public partial class MainWindowViewModel : ViewModelBase
                 AppendError($"Variation gameConfig.json not found at {variationGameConfig}.");
             }
 
-            AppendSuccess("Asset replacement complete.");
+            AppendSuccess("Load Selected Variation To Game complete.");
             LoadConfigText();
         }
         catch (Exception ex)
         {
             AppendError($"Error during replacement: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void UpdateSelectedVariationAssets()
+    {
+        AppendBlankLine();
+        if (string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            AppendError("Could not locate repository root. Replace Selected Variation From Game aborted.");
+            return;
+        }
+
+        if (!IsActualVariation(SelectedVariation))
+        {
+            AppendError("No variation selected. Replace Selected Variation From Game aborted.");
+            return;
+        }
+
+        var variationName = SelectedVariation!;
+        var variationRoot = Path.Combine(repositoryRoot, "Variations", variationName);
+        if (!Directory.Exists(variationRoot))
+        {
+            AppendError($"Variation folder not found: {variationRoot}");
+            return;
+        }
+
+        try
+        {
+            AppendInfo($"Updating {variationName} variation assets...");
+
+            var sourceAssets = Path.Combine(repositoryRoot, "assets");
+            var sourceBuildConfig = Path.Combine(repositoryRoot, "buildConfig.json");
+            var sourceGameConfig = Path.Combine(repositoryRoot, "src", "gameConfig.json");
+
+            var variationAssets = Path.Combine(variationRoot, "assets");
+            var variationBuildConfig = Path.Combine(variationRoot, "buildConfig.json");
+            var variationGameConfig = Path.Combine(variationRoot, "src", "gameConfig.json");
+
+            AppendInfo("Copying current assets to selected variation...");
+            
+            if (Directory.Exists(sourceAssets))
+            {
+                if (Directory.Exists(variationAssets))
+                {
+                    Directory.Delete(variationAssets, true);
+                }
+                CopyDirectory(sourceAssets, variationAssets, true);
+            }
+            else
+            {
+                AppendInfo($"Source assets folder not found at {sourceAssets}.");
+            }
+
+            if (File.Exists(sourceBuildConfig))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(variationBuildConfig)!);
+                File.Copy(sourceBuildConfig, variationBuildConfig, true);
+            }
+            else
+            {
+                AppendInfo($"Source buildConfig.json not found at {sourceBuildConfig}.");
+            }
+
+            if (File.Exists(sourceGameConfig))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(variationGameConfig)!);
+                File.Copy(sourceGameConfig, variationGameConfig, true);
+            }
+            else
+            {
+                AppendInfo($"Source gameConfig.json not found at {sourceGameConfig}.");
+            }
+
+            AppendSuccess($"{variationName} variation replaced from game successfully.");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Error replacing selected variation from game: {ex.Message}");
         }
     }
 
