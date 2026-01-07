@@ -547,7 +547,6 @@ export async function createGame(mount, opts = {}) {
   })();
 
   const cardType = gameConfig?.gameplay?.card?.iconType ?? "static";
-  console.log("Card types: " + cardType);
   const cardTypeEntries =
     cardType === "animated"
       ? await loadCardTypeAnimations()
@@ -715,20 +714,20 @@ export async function createGame(mount, opts = {}) {
       disableAnimations,
     },
     winPopupOptions: {
-      useSprite: gameConfig?.gameplay?.winPopup?.useSprite ?? true,
-      spriteName: gameConfig?.gameplay?.winPopup?.spriteName ?? "winPopup",
-      scale: gameConfig?.gameplay?.winPopup?.scale ?? 0.6,
-      offsetX: gameConfig?.gameplay?.winPopup?.offsetX ?? 0,
-      offsetY: gameConfig?.gameplay?.winPopup?.offsetY ?? 0,
-      showDuration: gameConfig?.gameplay?.winPopup?.showDuration ?? 2000,
-      animationDuration: gameConfig?.gameplay?.winPopup?.animationDuration ?? 300,
-      showText: gameConfig?.gameplay?.winPopup?.showText ?? true,
-      textColor: gameConfig?.gameplay?.winPopup?.textColor ?? "#FFFFFF",
-      amountColor: gameConfig?.gameplay?.winPopup?.amountColor ?? "#EAFF00",
-      fontSize: gameConfig?.gameplay?.winPopup?.fontSize ?? 22,
-      amountFontSize: gameConfig?.gameplay?.winPopup?.amountFontSize ?? 18,
-      textOffsetX: gameConfig?.gameplay?.winPopup?.textOffsetX ?? 0,
-      textOffsetY: gameConfig?.gameplay?.winPopup?.textOffsetY ?? 0,
+      useSprite: true,
+      spriteName: "winPopup",
+      scale: 0.6,
+      offsetX: 0,
+      offsetY: 0,
+      showDuration: 10000,
+      animationDuration: 300,
+      showText: true,
+      textColor: "#FFFFFF",
+      amountColor: "#EAFF00",
+      baseFontSize: 34,
+      baseAmountFontSize: 24,
+      textOffsetX: 0,
+      textOffsetY: 0,
     },
     onResize: () => {
       coverScratch?.syncWithLayout();

@@ -3,7 +3,7 @@ const DEFAULT_OPTIONS = {
   scale: 0.6,
   offsetX: 0,
   offsetY: 0,
-  showDuration: 2000,
+  showDuration: 10000,
   animationDuration: 300,
   easing: "cubic-bezier(0.445, 0.05, 0.55, 0.95)",
   scaleHidden: 0.8,
@@ -12,8 +12,17 @@ const DEFAULT_OPTIONS = {
   showText: true,
   textColor: "#FFFFFF",
   amountColor: "#EAFF00",
-  baseFontSize: 32,
-  baseAmountFontSize: 26,
+  baseFontSize: 2,  
+  baseAmountFontSize: 4, 
+  minScale: 0.15,
+  minScaleMobile: 0.2,
+  minScaleSmallMobile: 0.25,
+  mobileBreakpoint: 768,
+  tabletBreakpoint: 600,
+  smallMobileBreakpoint: 480,
+  mobileMaxWidthPercent: 0.6,
+  tabletMaxWidthPercent: 0.7,
+  smallMobileMaxWidthPercent: 0.8,
 };
 
 export class SpriteWinPopup {
@@ -31,6 +40,9 @@ export class SpriteWinPopup {
       document.body.appendChild(this.container);
     }
     this.setupResizeHandler();
+    
+    // Apply responsive styling
+    this.forceUpdateToLatestDefaults();
   }
 
   setupResizeHandler() {
@@ -46,41 +58,112 @@ export class SpriteWinPopup {
   }
 
   getResponsiveScale() {
+    const { 
+      minScale, 
+      minScaleMobile, 
+      minScaleSmallMobile, 
+      mobileBreakpoint,
+      tabletBreakpoint, 
+      smallMobileBreakpoint,
+      mobileMaxWidthPercent,
+      tabletMaxWidthPercent,
+      smallMobileMaxWidthPercent 
+    } = this.options;
+    
+    // Check screen size categories - adjusted breakpoints
+    const isMobile = window.innerWidth <= mobileBreakpoint; // ≤768px
+    const isTablet = window.innerWidth <= tabletBreakpoint && window.innerWidth > smallMobileBreakpoint; // 481-600px
+    const isSmallMobile = window.innerWidth <= smallMobileBreakpoint; // ≤480px
+    
     // Scale popup based on parent container size (grid-related)
     if (this.parent) {
       const parentRect = this.parent.getBoundingClientRect();
       const containerSize = Math.min(parentRect.width, parentRect.height);
-      // Simple grid-based scaling - popup size relates to grid container
-      return Math.max(0.5, Math.min(1.2, containerSize / 400));
+      let scale = Math.max(minScale, Math.min(1.2, containerSize / 500));
+      
+      // Apply device-specific scaling - 997px will now be treated as desktop
+      if (isSmallMobile) {
+        // Very small screens (≤480px) - controlled size
+        const maxScale = (window.innerWidth * smallMobileMaxWidthPercent) / 400;
+        scale = Math.min(scale, Math.max(minScaleSmallMobile, maxScale));
+        scale = Math.min(0.7, scale);
+      } else if (isTablet) {
+        // Tablet screens (481-600px) - moderate size
+        const maxScale = (window.innerWidth * tabletMaxWidthPercent) / 400;
+        scale = Math.min(scale, Math.max(minScaleMobile, maxScale));
+        scale = Math.min(0.8, scale);
+      } else if (isMobile) {
+        // Mobile screens (601-768px) - reasonable size
+        const maxScale = (window.innerWidth * mobileMaxWidthPercent) / 400;
+        scale = Math.min(scale, Math.max(minScaleMobile, maxScale));
+        scale = Math.min(0.9, scale);
+      }
+      // 997px will fall through to desktop scaling (no restrictions)
+      
+      return scale;
+    }
+    
+    // Fallback scaling when no parent
+    if (isSmallMobile) {
+      return Math.max(minScaleSmallMobile, Math.min(0.6, (window.innerWidth * smallMobileMaxWidthPercent) / 400));
+    } else if (isTablet) {
+      return Math.max(minScaleMobile, Math.min(0.7, (window.innerWidth * tabletMaxWidthPercent) / 400));
+    } else if (isMobile) {
+      return Math.max(minScaleMobile, Math.min(0.8, (window.innerWidth * mobileMaxWidthPercent) / 400));
     }
     
     return 1.0;
   }
 
   getResponsiveFontSizes() {
-    // Keep font sizes consistent - don't scale with popup
+    // Get base font sizes and responsive scale
     const fontSize = this.options.baseFontSize;
     const amountFontSize = this.options.baseAmountFontSize;
     const responsiveScale = this.getResponsiveScale();
-    const totalScale = this.options.scale * responsiveScale;
     
-    return { fontSize, amountFontSize, responsiveScale, totalScale };
+    // Apply device-specific font adjustments but don't scale down too much
+    const isSmallMobile = window.innerWidth <= this.options.smallMobileBreakpoint;
+    const isTablet = window.innerWidth <= this.options.tabletBreakpoint && window.innerWidth > this.options.smallMobileBreakpoint;
+    const isMobile = window.innerWidth <= this.options.mobileBreakpoint;
+    
+    let fontMultiplier = 1.0;
+    
+    // Base multiplier for device type - keep text readable
+    if (isSmallMobile) {
+      fontMultiplier = 1.1; // Slightly larger for readability
+    } else if (isTablet) {
+      fontMultiplier = 1.05;
+    } else if (isMobile) {
+      fontMultiplier = 1.0;
+    }
+    
+    // Don't scale fonts down too much - maintain minimum readability
+    const scaleMultiplier = Math.max(0.8, Math.min(1.2, responsiveScale));
+    const finalMultiplier = fontMultiplier * scaleMultiplier;
+    
+    return { 
+      fontSize: Math.round(fontSize * finalMultiplier), 
+      amountFontSize: Math.round(amountFontSize * finalMultiplier), 
+      responsiveScale, 
+      totalScale: this.options.scale * responsiveScale 
+    };
   }
 
   updateResponsiveText() {
     if (!this.titleTextNode || !this.amountTextNode) return;
     
-    const { fontSize, amountFontSize, responsiveScale, totalScale } = this.getResponsiveFontSizes();
+    const { fontSize, amountFontSize } = this.getResponsiveFontSizes();
     
-    // Keep font sizes consistent
-    this.titleTextNode.style.fontSize = fontSize + "px";
-    this.amountTextNode.style.fontSize = amountFontSize + "px";
+    // Update font sizes with even smaller multipliers
+    this.titleTextNode.style.fontSize = Math.round(fontSize * 1.5) + "px";  // Reduced from 2.0 to 1.5
+    this.amountTextNode.style.fontSize = Math.round(amountFontSize * 1.3) + "px";  // Reduced from 1.8 to 1.3
     
     // Keep text overlay positioning consistent
     if (this.textOverlayNode) {
-      this.textOverlayNode.style.top = "50%";
-      this.textOverlayNode.style.left = "10%";
-      this.textOverlayNode.style.width = "80%";
+      this.textOverlayNode.style.top = "0";
+      this.textOverlayNode.style.left = "0";
+      this.textOverlayNode.style.right = "0";
+      this.textOverlayNode.style.bottom = "0";
     }
   }
 
@@ -116,8 +199,7 @@ export class SpriteWinPopup {
     image.onerror = () => {
       image.style.display = "none";
       const fallback = document.createElement("div");
-      fallback.textContent = "YOU WON!";
-      fallback.style.cssText = "color:#EAFF00;font-size:" + Math.max(32, fontSize * 1.5) + "px;font-weight:bold;text-align:center;padding:30px 50px;background:linear-gradient(135deg,rgba(11,30,41,0.95) 0%,rgba(15,40,55,0.95) 100%);border-radius:20px;border:4px solid #EAFF00;box-shadow:0 0 30px rgba(227,229,82,0.8),inset 0 0 20px rgba(234,255,0,0.1);font-family:Arial,sans-serif;letter-spacing:3px;text-shadow:0 0 20px rgba(234,255,0,1),0 0 40px rgba(234,255,0,0.8);filter:drop-shadow(0 0 15px rgba(234,255,0,0.9))";
+      fallback.style.cssText = "background:linear-gradient(135deg,rgba(11,30,41,0.95) 0%,rgba(15,40,55,0.95) 100%);border-radius:20px;border:4px solid #EAFF00;box-shadow:0 0 30px rgba(234,255,0,0.8),0 0 60px rgba(234,255,0,0.4),inset 0 0 20px rgba(234,255,0,0.1);padding:40px 60px;min-width:300px;position:relative";
       wrapper.appendChild(fallback);
     };
 
@@ -126,20 +208,25 @@ export class SpriteWinPopup {
 
     if (showText) {
       const textOverlay = document.createElement("div");
-      textOverlay.style.cssText = "position:absolute;top:50%;left:10%;width:80%;height:40%;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;user-select:none;z-index:1;box-sizing:border-box;transform:translateY(-50%)";
+      textOverlay.style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;user-select:none;z-index:1;text-align:center";
 
       const titleText = document.createElement("div");
       titleText.textContent = "YOU WON";
-      titleText.style.cssText = "color:#FFFFFF;font-size:" + fontSize + "px;font-weight:900;font-family:Arial,sans-serif;text-shadow:0 0 15px rgba(234,255,0,1),0 0 30px rgba(234,255,0,0.8),0 0 45px rgba(234,255,0,0.6),3px 3px 6px rgba(0,0,0,1);letter-spacing:3px;margin-bottom:12px;text-align:center;line-height:1;width:100%;text-transform:uppercase;filter:drop-shadow(0 0 10px rgba(234,255,0,0.9));-webkit-text-stroke:1px rgba(234,255,0,0.3)";
+      titleText.style.cssText = "color:#FFFFFF;font-size:" + Math.round(fontSize * 1.5) + "px;font-weight:700;font-family:Arial,sans-serif;text-shadow:0 0 8px rgba(255,255,255,0.6);letter-spacing:" + Math.round(fontSize * 0.15) + "px;margin-bottom:" + Math.round(fontSize * 0.2) + "px;text-transform:uppercase;line-height:0.9;text-align:center";
 
       const amountContainer = document.createElement("div");
-      amountContainer.style.cssText = "background:linear-gradient(135deg,rgba(234,255,0,0.25) 0%,rgba(234,255,0,0.1) 100%);border:3px solid rgba(234,255,0,0.8);border-radius:12px;padding:8px 16px;box-shadow:0 0 20px rgba(234,255,0,0.5),inset 0 0 10px rgba(234,255,0,0.2);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)";
+      amountContainer.style.cssText = "display:flex;align-items:center;justify-content:center;gap:" + Math.round(amountFontSize * 0.25) + "px;";
 
-      const amountText = document.createElement("div");
-      amountText.textContent = this.formatCurrency(this.amountValue);
-      amountText.style.cssText = "color:#EAFF00;font-size:" + amountFontSize + "px;font-weight:bold;font-family:Arial,sans-serif;text-shadow:0 0 12px rgba(234,255,0,1),0 0 24px rgba(234,255,0,0.8),0 0 36px rgba(234,255,0,0.6),2px 2px 4px rgba(0,0,0,1);text-align:center;line-height:1;letter-spacing:2px;filter:drop-shadow(0 0 8px rgba(234,255,0,0.9));-webkit-text-stroke:0.5px rgba(234,255,0,0.3)";
+      const amountText = document.createElement("span");
+      amountText.textContent = this.formatAmount(this.amountValue);
+      amountText.style.cssText = "color:#EAFF00;font-size:" + Math.round(amountFontSize * 1.3) + "px;font-weight:700;font-family:Arial,sans-serif;text-shadow:0 0 8px rgba(234,255,0,0.8);line-height:1;letter-spacing:" + Math.round(amountFontSize * 0.03) + "px";
+
+      const dollarIcon = document.createElement("div");
+      dollarIcon.textContent = "$";
+      dollarIcon.style.cssText = "color:#000000;font-size:" + Math.round(amountFontSize * 0.8) + "px;font-weight:700;font-family:Arial,sans-serif;background:#EAFF00;border-radius:50%;width:" + Math.round(amountFontSize * 1.1) + "px;height:" + Math.round(amountFontSize * 1.1) + "px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 6px rgba(234,255,0,0.6);flex-shrink:0";
 
       amountContainer.appendChild(amountText);
+      amountContainer.appendChild(dollarIcon);
       textOverlay.appendChild(titleText);
       textOverlay.appendChild(amountContainer);
       wrapper.appendChild(textOverlay);
@@ -167,6 +254,11 @@ export class SpriteWinPopup {
     return "translate(-50%,-50%) translate(" + offsetX + "px," + offsetY + "px) scale(" + finalScale + ")";
   }
 
+  formatAmount(value) {
+    const num = Number(value);
+    return (Number.isFinite(num) ? num : 0).toFixed(2);
+  }
+
   formatCurrency(value) {
     const num = Number(value);
     return "$" + (Number.isFinite(num) ? num : 0).toFixed(2);
@@ -174,16 +266,62 @@ export class SpriteWinPopup {
 
   setAmount(value) {
     this.amountValue = value;
-    if (this.amountTextNode) this.amountTextNode.textContent = this.formatCurrency(value);
+    if (this.amountTextNode) this.amountTextNode.textContent = this.formatAmount(value);
   }
 
   setSize() {}
 
   updateOptions(newOptions) {
     this.options = { ...this.options, ...newOptions };
+    
+    // If the popup is visible, update the transform immediately
     if (this.visible && this.container) {
       this.container.style.transform = this.visibleTransform();
       this.updateResponsiveText();
+    }
+  }
+
+  forceUpdateToLatestDefaults() {
+    // Update options with latest DEFAULT_OPTIONS
+    this.options = { ...DEFAULT_OPTIONS, ...this.options };
+    
+    // Update text elements with responsive styling
+    if (this.titleTextNode && this.amountTextNode && this.textOverlayNode) {
+      const { fontSize, amountFontSize } = this.getResponsiveFontSizes();
+      
+      // Update title text styling with smaller multiplier
+      this.titleTextNode.style.fontSize = Math.round(fontSize * 1.5) + "px";
+      this.titleTextNode.style.fontWeight = "700";
+      this.titleTextNode.style.letterSpacing = Math.round(fontSize * 0.15) + "px";
+      this.titleTextNode.style.marginBottom = Math.round(fontSize * 0.2) + "px";
+      this.titleTextNode.style.lineHeight = "0.9";
+      
+      // Update amount text styling with smaller multiplier
+      this.amountTextNode.style.fontSize = Math.round(amountFontSize * 1.3) + "px";
+      this.amountTextNode.style.fontWeight = "700";
+      this.amountTextNode.style.letterSpacing = Math.round(amountFontSize * 0.03) + "px";
+      
+      // Update dollar icon styling
+      const dollarIcon = this.textOverlayNode.querySelector('div[style*="border-radius: 50%"]');
+      if (dollarIcon) {
+        const iconSize = Math.round(amountFontSize * 1.1);
+        const iconFontSize = Math.round(amountFontSize * 0.8);
+        dollarIcon.style.width = iconSize + "px";
+        dollarIcon.style.height = iconSize + "px";
+        dollarIcon.style.fontSize = iconFontSize + "px";
+        dollarIcon.style.fontWeight = "700";
+      }
+      
+      // Update container gap
+      const amountContainer = this.amountTextNode.parentElement;
+      if (amountContainer) {
+        amountContainer.style.gap = Math.round(amountFontSize * 0.25) + "px";
+      }
+    }
+    
+    // Update transform if visible
+    if (this.visible && this.container) {
+      this.container.style.transform = this.visibleTransform();
     }
   }
 
