@@ -108,7 +108,7 @@
                             CornerRadius="6"
                             Padding="12">
                         <Grid RowDefinitions="*">
-                            <Grid Grid.Row="0" ColumnDefinitions="1*,1*" ColumnSpacing="12">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto,*">
                                 <!-- Loaded Game Config -->
                                 <Border Background="#1A1E25"
                                         BorderBrush="#3B414F"
@@ -216,8 +216,14 @@
                                         </ScrollViewer>
                                     </Grid>
                                 </Border>
+                                <GridSplitter Grid.Column="1"
+                                              Width="10"
+                                              Background="#2A2F38"
+                                              ResizeDirection="Columns"
+                                              HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Stretch"/>
                                 <!-- Selected Variation Config -->
-                                <Border Grid.Column="1"
+                                <Border Grid.Column="2"
                                         Background="#1A1E25"
                                         BorderBrush="#3B414F"
                                         CornerRadius="6"
@@ -335,7 +341,7 @@
                             CornerRadius="6"
                             Padding="12">
                         <Grid RowDefinitions="*">
-                            <Grid Grid.Row="0" ColumnDefinitions="1*,1*" ColumnSpacing="12">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto,*">
                                 <!-- Loaded Build Config -->
                                 <Border Background="#1A1E25"
                                         BorderBrush="#3B414F"
@@ -443,8 +449,14 @@
                                         </ScrollViewer>
                                     </Grid>
                                 </Border>
+                                <GridSplitter Grid.Column="1"
+                                              Width="10"
+                                              Background="#2A2F38"
+                                              ResizeDirection="Columns"
+                                              HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Stretch"/>
                                 <!-- Selected Variation Build Config -->
-                                <Border Grid.Column="1"
+                                <Border Grid.Column="2"
                                         Background="#1A1E25"
                                         BorderBrush="#3B414F"
                                         CornerRadius="6"

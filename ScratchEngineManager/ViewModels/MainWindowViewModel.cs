@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Avalonia;
@@ -991,6 +992,10 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             var segment = segments[i];
             var text = segment.PropertyName ?? $"[{segment.Index}]";
+            if (i < segments.Count - 1 && segment.PropertyName is not null)
+            {
+                text = AbbreviatePathSegment(segment.PropertyName);
+            }
             if (i < segments.Count - 1 && ShouldAppendDot(segment, segments[i + 1]))
             {
                 text += ".";
@@ -1003,6 +1008,41 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         return displaySegments;
+    }
+
+    private static string AbbreviatePathSegment(string propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(propertyName))
+        {
+            return string.Empty;
+        }
+
+        var abbreviation = new StringBuilder(propertyName.Length);
+        var previousWasSeparator = true;
+
+        for (var i = 0; i < propertyName.Length; i++)
+        {
+            var current = propertyName[i];
+            if (!char.IsLetterOrDigit(current))
+            {
+                previousWasSeparator = true;
+                continue;
+            }
+
+            var previous = i > 0 ? propertyName[i - 1] : '\0';
+            var isBoundary = previousWasSeparator
+                || (char.IsUpper(current) && i > 0 && char.IsLower(previous))
+                || (char.IsDigit(current) && i > 0 && !char.IsDigit(previous));
+
+            if (isBoundary)
+            {
+                abbreviation.Append(current);
+            }
+
+            previousWasSeparator = false;
+        }
+
+        return abbreviation.Length == 0 ? propertyName : abbreviation.ToString();
     }
 
     private static IBrush GetGroupLabelBrush(
