@@ -1,3 +1,5 @@
+import bitCoinIconUrl from "../../assets/sprites/controlPanel/BitCoin.svg";
+
 const DEFAULT_OPTIONS = {
   spriteName: "winPopup",
   scale: 0.6,
@@ -221,18 +223,20 @@ export class SpriteWinPopup {
       amountText.textContent = this.formatAmount(this.amountValue);
       amountText.style.cssText = "color:#EAFF00;font-size:" + Math.round(amountFontSize * 1.3) + "px;font-weight:700;font-family:Arial,sans-serif;text-shadow:0 0 8px rgba(234,255,0,0.8);line-height:1;letter-spacing:" + Math.round(amountFontSize * 0.03) + "px";
 
-      const dollarIcon = document.createElement("div");
-      dollarIcon.textContent = "$";
-      dollarIcon.style.cssText = "color:#000000;font-size:" + Math.round(amountFontSize * 0.8) + "px;font-weight:700;font-family:Arial,sans-serif;background:#EAFF00;border-radius:50%;width:" + Math.round(amountFontSize * 1.1) + "px;height:" + Math.round(amountFontSize * 1.1) + "px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 6px rgba(234,255,0,0.6);flex-shrink:0";
+      const amountIcon = document.createElement("img");
+      amountIcon.src = bitCoinIconUrl;
+      amountIcon.alt = "Bitcoin";
+      amountIcon.style.cssText = "width:" + Math.round(amountFontSize * 1.1) + "px;height:" + Math.round(amountFontSize * 1.1) + "px;display:block;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(234,255,0,0.6))";
 
       amountContainer.appendChild(amountText);
-      amountContainer.appendChild(dollarIcon);
+      amountContainer.appendChild(amountIcon);
       textOverlay.appendChild(titleText);
       textOverlay.appendChild(amountContainer);
       wrapper.appendChild(textOverlay);
 
       this.titleTextNode = titleText;
       this.amountTextNode = amountText;
+      this.amountIconNode = amountIcon;
       this.textOverlayNode = textOverlay;
     }
 
@@ -301,15 +305,11 @@ export class SpriteWinPopup {
       this.amountTextNode.style.fontWeight = "700";
       this.amountTextNode.style.letterSpacing = Math.round(amountFontSize * 0.03) + "px";
       
-      // Update dollar icon styling
-      const dollarIcon = this.textOverlayNode.querySelector('div[style*="border-radius: 50%"]');
-      if (dollarIcon) {
+      // Update icon sizing
+      if (this.amountIconNode) {
         const iconSize = Math.round(amountFontSize * 1.1);
-        const iconFontSize = Math.round(amountFontSize * 0.8);
-        dollarIcon.style.width = iconSize + "px";
-        dollarIcon.style.height = iconSize + "px";
-        dollarIcon.style.fontSize = iconFontSize + "px";
-        dollarIcon.style.fontWeight = "700";
+        this.amountIconNode.style.width = iconSize + "px";
+        this.amountIconNode.style.height = iconSize + "px";
       }
       
       // Update container gap
@@ -377,5 +377,6 @@ export class SpriteWinPopup {
     this.imageNode = null;
     this.titleTextNode = null;
     this.amountTextNode = null;
+    this.amountIconNode = null;
   }
 }
