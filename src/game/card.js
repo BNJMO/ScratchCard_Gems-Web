@@ -1281,22 +1281,18 @@ export class Card {
     const tileWidth = Math.max(0, this._tileWidth ?? 0);
     const tileHeight = Math.max(0, this._tileHeight ?? 0);
     const dimensions = this.#getTextureDimensions(frameSprite.texture);
-    const baseDimension = Math.max(
-      1,
-      dimensions?.width ?? 0,
-      dimensions?.height ?? 0
-    );
+    const textureWidth = Math.max(1, dimensions?.width ?? 1);
+    const textureHeight = Math.max(1, dimensions?.height ?? 1);
     
-    // Use the larger tile dimension for scaling to maintain aspect ratio
-    const maxTileDimension = Math.max(tileWidth, tileHeight);
-    const baseScale = maxTileDimension > 0 ? maxTileDimension / baseDimension : 1;
-    const scale = baseScale * (this.frameScale ?? 1);
+    // Scale independently for width and height to match tile dimensions
+    const scaleX = tileWidth > 0 ? (tileWidth / textureWidth) * (this.frameScale ?? 1) : 1;
+    const scaleY = tileHeight > 0 ? (tileHeight / textureHeight) * (this.frameScale ?? 1) : 1;
 
     if (frameSprite.scale?.set) {
-      frameSprite.scale.set(scale);
+      frameSprite.scale.set(scaleX, scaleY);
     } else if (frameSprite.scale) {
-      frameSprite.scale.x = scale;
-      frameSprite.scale.y = scale;
+      frameSprite.scale.x = scaleX;
+      frameSprite.scale.y = scaleY;
     }
 
     if (Number.isFinite(tileWidth) && Number.isFinite(tileHeight)) {
