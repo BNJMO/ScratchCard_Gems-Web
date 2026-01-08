@@ -30,8 +30,8 @@
       "iconOffsetX": 0,
       "offsetYv": -5,
       "offsetY": -5,
-      "tileWidth": 400,
-      "tileHeight": 220,
+      "tileWidth": 220,
+      "tileHeight": 222,
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true,
       "winFrameScale": 0.99,
@@ -42,12 +42,11 @@
       "revealRadius": 40,
       "coverFadeOutDuration": 200
     },
-   "layout": {
-  "gapBetweenTiles": 15,
-  "paddingHorizontal": 0.01,
-  "paddingVertical": 0.06
-}
-,
+    "layout": {
+      "gapBetweenTiles": 15,
+      "paddingHorizontal": 0.01,
+      "paddingVertical": 0.06
+    },
     "gridSpritesheetProvider": {
       "columns": 3,
       "rows": 4,
