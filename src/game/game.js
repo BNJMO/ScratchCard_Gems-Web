@@ -559,14 +559,10 @@ export async function createGame(mount, opts = {}) {
     if (spritesheetType === "single") {
       // Use single spritesheet provider
       const singleConfig = gameConfig?.gameplay?.singleSpritesheetProvider ?? {};
-      const finalAnimationSpeed = singleConfig.speed ?? cardSpritesheetAnimationSpeed;
-      console.log(`Single spritesheet config: speed=${singleConfig.speed}, cardSpritesheetAnimationSpeed=${cardSpritesheetAnimationSpeed}, final=${finalAnimationSpeed}`);
-      
       cardTypeEntries = await loadSingleCardTypeAnimations({
         ...singleConfig,
         svgResolution: svgRasterizationResolution,
-        // Only use cardSpritesheetAnimationSpeed if no speed is specified in singleConfig
-        animationSpeed: finalAnimationSpeed,
+        animationSpeed: singleConfig.speed ?? cardSpritesheetAnimationSpeed,
       });
     } else {
       // Use grid spritesheet provider (default)
@@ -606,8 +602,6 @@ export async function createGame(mount, opts = {}) {
       const entryAnimationSpeed = Number.isFinite(entry?.speed) 
         ? entry.speed 
         : cardSpritesheetAnimationSpeed;
-      
-      console.log(`Entry ${key}: entry.speed=${entry?.speed}, cardSpritesheetAnimationSpeed=${cardSpritesheetAnimationSpeed}, final=${entryAnimationSpeed}`);
       
       const configureIcon = createAnimatedIconConfigurator(sanitizedFrames, {
         animationSpeed: entryAnimationSpeed,

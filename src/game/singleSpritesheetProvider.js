@@ -23,7 +23,6 @@ export async function loadCardTypeAnimations(config = {}) {
   } = config;
 
   console.log("Loading single spritesheets with config:", { totalFrames, columns, rows, speed: animationSpeed });
-  console.log("Raw config received:", config);
 
   // Check if we have any modules loaded
   if (!SINGLE_SPRITESHEET_MODULES || Object.keys(SINGLE_SPRITESHEET_MODULES).length === 0) {
@@ -110,7 +109,6 @@ export async function loadCardTypeAnimations(config = {}) {
       });
 
       console.log(`Loaded single spritesheet: ${key} with ${frames.length} frames, speed: ${animationSpeed}`);
-      console.log(`First frame dimensions: ${frames[0].width}x${frames[0].height}`);
     } catch (error) {
       console.error(`Error loading single spritesheet ${entry.texturePath}:`, error);
     }
