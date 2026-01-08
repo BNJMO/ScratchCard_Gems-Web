@@ -107,99 +107,225 @@
                             BorderBrush="#3B414F"
                             CornerRadius="6"
                             Padding="12">
-                        <Grid RowDefinitions="Auto,*">
-                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
-                                <Button Content="Save"
-                                        Command="{Binding SaveGameConfigCommand}"
-                                        IsEnabled="{Binding IsGameConfigDirty}"
-                                        Background="#3E8EDE"
-                                        Foreground="#F7F8FA"
-                                        BorderBrush="#3E8EDE"
-                                        CornerRadius="6"
-                                        Padding="10,4"/>
-                                <Button Content="Refresh"
-                                        Command="{Binding RefreshGameConfigCommand}"
-                                        Background="#3B414F"
-                                        Foreground="#E6E8ED"
+                        <Grid RowDefinitions="*">
+                            <Grid Grid.Row="0" ColumnDefinitions="1*,1*" ColumnSpacing="12">
+                                <!-- Loaded Game Config -->
+                                <Border Background="#1A1E25"
                                         BorderBrush="#3B414F"
                                         CornerRadius="6"
-                                        Padding="10,4"/>
-                            </StackPanel>
-                            <ScrollViewer Grid.Row="1">
-                                <ItemsControl ItemsSource="{Binding GameConfigEntries}">
-                                    <ItemsControl.DataTemplates>
-                                        <DataTemplate DataType="vm:ConfigGroupEntry">
-                                            <Border Background="#243447"
+                                        Padding="8">
+                                    <Grid RowDefinitions="Auto,Auto,*">
+                                        <TextBlock Text="Loaded Game"
+                                                   Foreground="#E6E8ED"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,8"/>
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left" Margin="0,0,0,8">
+                                            <Button Content="Save"
+                                                    Command="{Binding SaveGameConfigCommand}"
+                                                    IsEnabled="{Binding IsGameConfigDirty}"
+                                                    Background="#3E8EDE"
+                                                    Foreground="#F7F8FA"
+                                                    BorderBrush="#3E8EDE"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                            <Button Content="Refresh"
+                                                    Command="{Binding RefreshGameConfigCommand}"
+                                                    Background="#3B414F"
+                                                    Foreground="#E6E8ED"
                                                     BorderBrush="#3B414F"
                                                     CornerRadius="6"
-                                                    Padding="4"
-                                                    Margin="0,0,0,10"
-                                                    IsVisible="{Binding IsVisible}">
-                                                <ToggleButton IsChecked="{Binding IsExpanded}"
-                                                              Background="Transparent"
-                                                              BorderBrush="Transparent"
-                                                              Padding="6,4"
-                                                              HorizontalAlignment="Stretch"
-                                                              Margin="{Binding Indent}">
-                                                    <StackPanel Orientation="Horizontal"
-                                                                Spacing="8"
-                                                                VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding ExpansionGlyph}"
-                                                                   Foreground="#E6E8ED"
-                                                                   FontWeight="Bold"
-                                                                   FontFamily="Consolas"/>
-                                                        <TextBlock Text="{Binding Label}"
-                                                                   Foreground="{Binding LabelBrush}"
-                                                                   FontSize="13"
-                                                                   FontWeight="SemiBold"/>
-                                                    </StackPanel>
-                                                </ToggleButton>
-                                            </Border>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="vm:ConfigValueEntry">
-                                            <Border Background="#243447"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="2">
+                                            <ItemsControl ItemsSource="{Binding GameConfigEntries}">
+                                                <ItemsControl.DataTemplates>
+                                                    <DataTemplate DataType="vm:ConfigGroupEntry">
+                                                        <Border Background="#243447"
+                                                                BorderBrush="#3B414F"
+                                                                CornerRadius="6"
+                                                                Padding="4"
+                                                                Margin="0,0,0,10"
+                                                                IsVisible="{Binding IsVisible}">
+                                                            <ToggleButton IsChecked="{Binding IsExpanded}"
+                                                                          Background="Transparent"
+                                                                          BorderBrush="Transparent"
+                                                                          Padding="6,4"
+                                                                          HorizontalAlignment="Stretch"
+                                                                          Margin="{Binding Indent}">
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            Spacing="8"
+                                                                            VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding ExpansionGlyph}"
+                                                                               Foreground="#E6E8ED"
+                                                                               FontWeight="Bold"
+                                                                               FontFamily="Consolas"/>
+                                                                    <TextBlock Text="{Binding Label}"
+                                                                               Foreground="{Binding LabelBrush}"
+                                                                               FontSize="13"
+                                                                               FontWeight="SemiBold"/>
+                                                                </StackPanel>
+                                                            </ToggleButton>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                    <DataTemplate DataType="vm:ConfigValueEntry">
+                                                        <Border Background="#243447"
+                                                                BorderBrush="#3B414F"
+                                                                CornerRadius="6"
+                                                                Padding="10"
+                                                                Margin="{Binding ItemMargin}"
+                                                                IsVisible="{Binding IsVisible}">
+                                                            <Grid ColumnDefinitions="2*,3*"
+                                                                  ColumnSpacing="12"
+                                                                  Margin="{Binding Indent}">
+                                                                <ItemsControl ItemsSource="{Binding DisplaySegments}"
+                                                                              VerticalAlignment="Center">
+                                                                    <ItemsControl.ItemsPanel>
+                                                                        <ItemsPanelTemplate>
+                                                                            <StackPanel Orientation="Horizontal"/>
+                                                                        </ItemsPanelTemplate>
+                                                                    </ItemsControl.ItemsPanel>
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <TextBlock Text="{Binding Text}"
+                                                                                       Foreground="{Binding Foreground}"
+                                                                                       FontFamily="Consolas"/>
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                                <TextBox Grid.Column="1"
+                                                                         Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                         Background="#1B2B3D"
+                                                                         Foreground="#E6E8ED"
+                                                                         BorderBrush="#4B5A70"
+                                                                         CornerRadius="4"
+                                                                         Padding="6"
+                                                                         FontFamily="Consolas"/>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.DataTemplates>
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+                                <!-- Selected Variation Config -->
+                                <Border Grid.Column="1"
+                                        Background="#1A1E25"
+                                        BorderBrush="#3B414F"
+                                        CornerRadius="6"
+                                        Padding="8">
+                                    <Grid RowDefinitions="Auto,Auto,*">
+                                        <TextBlock Text="Selected Variation"
+                                                   Foreground="#E6E8ED"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,8"/>
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left" Margin="0,0,0,8">
+                                            <Button Content="Save"
+                                                    Command="{Binding SaveVariationGameConfigCommand}"
+                                                    IsEnabled="{Binding IsVariationGameConfigDirty}"
+                                                    Background="#3E8EDE"
+                                                    Foreground="#F7F8FA"
+                                                    BorderBrush="#3E8EDE"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                            <Button Content="Refresh"
+                                                    Command="{Binding RefreshVariationGameConfigCommand}"
+                                                    IsEnabled="{Binding IsVariationSelected}"
+                                                    Background="#3B414F"
+                                                    Foreground="#E6E8ED"
                                                     BorderBrush="#3B414F"
                                                     CornerRadius="6"
-                                                    Padding="10"
-                                                    Margin="{Binding ItemMargin}"
-                                                    IsVisible="{Binding IsVisible}">
-                                                <Grid ColumnDefinitions="2*,3*"
-                                                      ColumnSpacing="12"
-                                                      Margin="{Binding Indent}">
-                                                    <ItemsControl ItemsSource="{Binding DisplaySegments}"
-                                                                  VerticalAlignment="Center">
-                                                        <ItemsControl.ItemsPanel>
-                                                            <ItemsPanelTemplate>
-                                                                <StackPanel Orientation="Horizontal"/>
-                                                            </ItemsPanelTemplate>
-                                                        </ItemsControl.ItemsPanel>
-                                                        <ItemsControl.ItemTemplate>
-                                                            <DataTemplate>
-                                                                <TextBlock Text="{Binding Text}"
-                                                                           Foreground="{Binding Foreground}"
-                                                                           FontFamily="Consolas"/>
-                                                            </DataTemplate>
-                                                        </ItemsControl.ItemTemplate>
-                                                    </ItemsControl>
-                                                    <TextBox Grid.Column="1"
-                                                             Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                             Background="#1B2B3D"
-                                                             Foreground="#E6E8ED"
-                                                             BorderBrush="#4B5A70"
-                                                             CornerRadius="4"
-                                                             Padding="6"
-                                                             FontFamily="Consolas"/>
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.DataTemplates>
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                </ItemsControl>
-                            </ScrollViewer>
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="2">
+                                            <ItemsControl ItemsSource="{Binding VariationGameConfigEntries}">
+                                                <ItemsControl.DataTemplates>
+                                                    <DataTemplate DataType="vm:ConfigGroupEntry">
+                                                        <Border Background="#243447"
+                                                                BorderBrush="#3B414F"
+                                                                CornerRadius="6"
+                                                                Padding="4"
+                                                                Margin="0,0,0,10"
+                                                                IsVisible="{Binding IsVisible}">
+                                                            <ToggleButton IsChecked="{Binding IsExpanded}"
+                                                                          Background="Transparent"
+                                                                          BorderBrush="Transparent"
+                                                                          Padding="6,4"
+                                                                          HorizontalAlignment="Stretch"
+                                                                          Margin="{Binding Indent}">
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            Spacing="8"
+                                                                            VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding ExpansionGlyph}"
+                                                                               Foreground="#E6E8ED"
+                                                                               FontWeight="Bold"
+                                                                               FontFamily="Consolas"/>
+                                                                    <TextBlock Text="{Binding Label}"
+                                                                               Foreground="{Binding LabelBrush}"
+                                                                               FontSize="13"
+                                                                               FontWeight="SemiBold"/>
+                                                                </StackPanel>
+                                                            </ToggleButton>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                    <DataTemplate DataType="vm:ConfigValueEntry">
+                                                        <Border Background="#243447"
+                                                                BorderBrush="#3B414F"
+                                                                CornerRadius="6"
+                                                                Padding="10"
+                                                                Margin="{Binding ItemMargin}"
+                                                                IsVisible="{Binding IsVisible}">
+                                                            <Grid ColumnDefinitions="2*,3*"
+                                                                  ColumnSpacing="12"
+                                                                  Margin="{Binding Indent}">
+                                                                <ItemsControl ItemsSource="{Binding DisplaySegments}"
+                                                                              VerticalAlignment="Center">
+                                                                    <ItemsControl.ItemsPanel>
+                                                                        <ItemsPanelTemplate>
+                                                                            <StackPanel Orientation="Horizontal"/>
+                                                                        </ItemsPanelTemplate>
+                                                                    </ItemsControl.ItemsPanel>
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <TextBlock Text="{Binding Text}"
+                                                                                       Foreground="{Binding Foreground}"
+                                                                                       FontFamily="Consolas"/>
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                                <TextBox Grid.Column="1"
+                                                                         Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                         Background="#1B2B3D"
+                                                                         Foreground="#E6E8ED"
+                                                                         BorderBrush="#4B5A70"
+                                                                         CornerRadius="4"
+                                                                         Padding="6"
+                                                                         FontFamily="Consolas"/>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.DataTemplates>
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+                            </Grid>
                         </Grid>
                     </Border>
                 </TabItem>
@@ -208,99 +334,225 @@
                             BorderBrush="#3B414F"
                             CornerRadius="6"
                             Padding="12">
-                        <Grid RowDefinitions="Auto,*">
-                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
-                                <Button Content="Save"
-                                        Command="{Binding SaveBuildConfigCommand}"
-                                        IsEnabled="{Binding IsBuildConfigDirty}"
-                                        Background="#3E8EDE"
-                                        Foreground="#F7F8FA"
-                                        BorderBrush="#3E8EDE"
-                                        CornerRadius="6"
-                                        Padding="10,4"/>
-                                <Button Content="Refresh"
-                                        Command="{Binding RefreshBuildConfigCommand}"
-                                        Background="#3B414F"
-                                        Foreground="#E6E8ED"
+                        <Grid RowDefinitions="*">
+                            <Grid Grid.Row="0" ColumnDefinitions="1*,1*" ColumnSpacing="12">
+                                <!-- Loaded Build Config -->
+                                <Border Background="#1A1E25"
                                         BorderBrush="#3B414F"
                                         CornerRadius="6"
-                                        Padding="10,4"/>
-                            </StackPanel>
-                            <ScrollViewer Grid.Row="1">
-                                <ItemsControl ItemsSource="{Binding BuildConfigEntries}">
-                                    <ItemsControl.DataTemplates>
-                                        <DataTemplate DataType="vm:ConfigGroupEntry">
-                                            <Border Background="#243447"
+                                        Padding="8">
+                                    <Grid RowDefinitions="Auto,Auto,*">
+                                        <TextBlock Text="Loaded Game"
+                                                   Foreground="#E6E8ED"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,8"/>
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left" Margin="0,0,0,8">
+                                            <Button Content="Save"
+                                                    Command="{Binding SaveBuildConfigCommand}"
+                                                    IsEnabled="{Binding IsBuildConfigDirty}"
+                                                    Background="#3E8EDE"
+                                                    Foreground="#F7F8FA"
+                                                    BorderBrush="#3E8EDE"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                            <Button Content="Refresh"
+                                                    Command="{Binding RefreshBuildConfigCommand}"
+                                                    Background="#3B414F"
+                                                    Foreground="#E6E8ED"
                                                     BorderBrush="#3B414F"
                                                     CornerRadius="6"
-                                                    Padding="4"
-                                                    Margin="0,0,0,10"
-                                                    IsVisible="{Binding IsVisible}">
-                                                <ToggleButton IsChecked="{Binding IsExpanded}"
-                                                              Background="Transparent"
-                                                              BorderBrush="Transparent"
-                                                              Padding="6,4"
-                                                              HorizontalAlignment="Stretch"
-                                                              Margin="{Binding Indent}">
-                                                    <StackPanel Orientation="Horizontal"
-                                                                Spacing="8"
-                                                                VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding ExpansionGlyph}"
-                                                                   Foreground="#E6E8ED"
-                                                                   FontWeight="Bold"
-                                                                   FontFamily="Consolas"/>
-                                                        <TextBlock Text="{Binding Label}"
-                                                                   Foreground="{Binding LabelBrush}"
-                                                                   FontSize="13"
-                                                                   FontWeight="SemiBold"/>
-                                                    </StackPanel>
-                                                </ToggleButton>
-                                            </Border>
-                                        </DataTemplate>
-                                        <DataTemplate DataType="vm:ConfigValueEntry">
-                                            <Border Background="#243447"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="2">
+                                            <ItemsControl ItemsSource="{Binding BuildConfigEntries}">
+                                                <ItemsControl.DataTemplates>
+                                                    <DataTemplate DataType="vm:ConfigGroupEntry">
+                                                        <Border Background="#243447"
+                                                                BorderBrush="#3B414F"
+                                                                CornerRadius="6"
+                                                                Padding="4"
+                                                                Margin="0,0,0,10"
+                                                                IsVisible="{Binding IsVisible}">
+                                                            <ToggleButton IsChecked="{Binding IsExpanded}"
+                                                                          Background="Transparent"
+                                                                          BorderBrush="Transparent"
+                                                                          Padding="6,4"
+                                                                          HorizontalAlignment="Stretch"
+                                                                          Margin="{Binding Indent}">
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            Spacing="8"
+                                                                            VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding ExpansionGlyph}"
+                                                                               Foreground="#E6E8ED"
+                                                                               FontWeight="Bold"
+                                                                               FontFamily="Consolas"/>
+                                                                    <TextBlock Text="{Binding Label}"
+                                                                               Foreground="{Binding LabelBrush}"
+                                                                               FontSize="13"
+                                                                               FontWeight="SemiBold"/>
+                                                                </StackPanel>
+                                                            </ToggleButton>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                    <DataTemplate DataType="vm:ConfigValueEntry">
+                                                        <Border Background="#243447"
+                                                                BorderBrush="#3B414F"
+                                                                CornerRadius="6"
+                                                                Padding="10"
+                                                                Margin="{Binding ItemMargin}"
+                                                                IsVisible="{Binding IsVisible}">
+                                                            <Grid ColumnDefinitions="2*,3*"
+                                                                  ColumnSpacing="12"
+                                                                  Margin="{Binding Indent}">
+                                                                <ItemsControl ItemsSource="{Binding DisplaySegments}"
+                                                                              VerticalAlignment="Center">
+                                                                    <ItemsControl.ItemsPanel>
+                                                                        <ItemsPanelTemplate>
+                                                                            <StackPanel Orientation="Horizontal"/>
+                                                                        </ItemsPanelTemplate>
+                                                                    </ItemsControl.ItemsPanel>
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <TextBlock Text="{Binding Text}"
+                                                                                       Foreground="{Binding Foreground}"
+                                                                                       FontFamily="Consolas"/>
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                                <TextBox Grid.Column="1"
+                                                                         Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                         Background="#1B2B3D"
+                                                                         Foreground="#E6E8ED"
+                                                                         BorderBrush="#4B5A70"
+                                                                         CornerRadius="4"
+                                                                         Padding="6"
+                                                                         FontFamily="Consolas"/>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.DataTemplates>
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+                                <!-- Selected Variation Build Config -->
+                                <Border Grid.Column="1"
+                                        Background="#1A1E25"
+                                        BorderBrush="#3B414F"
+                                        CornerRadius="6"
+                                        Padding="8">
+                                    <Grid RowDefinitions="Auto,Auto,*">
+                                        <TextBlock Text="Selected Variation"
+                                                   Foreground="#E6E8ED"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,8"/>
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left" Margin="0,0,0,8">
+                                            <Button Content="Save"
+                                                    Command="{Binding SaveVariationBuildConfigCommand}"
+                                                    IsEnabled="{Binding IsVariationBuildConfigDirty}"
+                                                    Background="#3E8EDE"
+                                                    Foreground="#F7F8FA"
+                                                    BorderBrush="#3E8EDE"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                            <Button Content="Refresh"
+                                                    Command="{Binding RefreshVariationBuildConfigCommand}"
+                                                    IsEnabled="{Binding IsVariationSelected}"
+                                                    Background="#3B414F"
+                                                    Foreground="#E6E8ED"
                                                     BorderBrush="#3B414F"
                                                     CornerRadius="6"
-                                                    Padding="10"
-                                                    Margin="{Binding ItemMargin}"
-                                                    IsVisible="{Binding IsVisible}">
-                                                <Grid ColumnDefinitions="2*,3*"
-                                                      ColumnSpacing="12"
-                                                      Margin="{Binding Indent}">
-                                                    <ItemsControl ItemsSource="{Binding DisplaySegments}"
-                                                                  VerticalAlignment="Center">
-                                                        <ItemsControl.ItemsPanel>
-                                                            <ItemsPanelTemplate>
-                                                                <StackPanel Orientation="Horizontal"/>
-                                                            </ItemsPanelTemplate>
-                                                        </ItemsControl.ItemsPanel>
-                                                        <ItemsControl.ItemTemplate>
-                                                            <DataTemplate>
-                                                                <TextBlock Text="{Binding Text}"
-                                                                           Foreground="{Binding Foreground}"
-                                                                           FontFamily="Consolas"/>
-                                                            </DataTemplate>
-                                                        </ItemsControl.ItemTemplate>
-                                                    </ItemsControl>
-                                                    <TextBox Grid.Column="1"
-                                                             Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                             Background="#1B2B3D"
-                                                             Foreground="#E6E8ED"
-                                                             BorderBrush="#4B5A70"
-                                                             CornerRadius="4"
-                                                             Padding="6"
-                                                             FontFamily="Consolas"/>
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.DataTemplates>
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                </ItemsControl>
-                            </ScrollViewer>
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="2">
+                                            <ItemsControl ItemsSource="{Binding VariationBuildConfigEntries}">
+                                                <ItemsControl.DataTemplates>
+                                                    <DataTemplate DataType="vm:ConfigGroupEntry">
+                                                        <Border Background="#243447"
+                                                                BorderBrush="#3B414F"
+                                                                CornerRadius="6"
+                                                                Padding="4"
+                                                                Margin="0,0,0,10"
+                                                                IsVisible="{Binding IsVisible}">
+                                                            <ToggleButton IsChecked="{Binding IsExpanded}"
+                                                                          Background="Transparent"
+                                                                          BorderBrush="Transparent"
+                                                                          Padding="6,4"
+                                                                          HorizontalAlignment="Stretch"
+                                                                          Margin="{Binding Indent}">
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            Spacing="8"
+                                                                            VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding ExpansionGlyph}"
+                                                                               Foreground="#E6E8ED"
+                                                                               FontWeight="Bold"
+                                                                               FontFamily="Consolas"/>
+                                                                    <TextBlock Text="{Binding Label}"
+                                                                               Foreground="{Binding LabelBrush}"
+                                                                               FontSize="13"
+                                                                               FontWeight="SemiBold"/>
+                                                                </StackPanel>
+                                                            </ToggleButton>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                    <DataTemplate DataType="vm:ConfigValueEntry">
+                                                        <Border Background="#243447"
+                                                                BorderBrush="#3B414F"
+                                                                CornerRadius="6"
+                                                                Padding="10"
+                                                                Margin="{Binding ItemMargin}"
+                                                                IsVisible="{Binding IsVisible}">
+                                                            <Grid ColumnDefinitions="2*,3*"
+                                                                  ColumnSpacing="12"
+                                                                  Margin="{Binding Indent}">
+                                                                <ItemsControl ItemsSource="{Binding DisplaySegments}"
+                                                                              VerticalAlignment="Center">
+                                                                    <ItemsControl.ItemsPanel>
+                                                                        <ItemsPanelTemplate>
+                                                                            <StackPanel Orientation="Horizontal"/>
+                                                                        </ItemsPanelTemplate>
+                                                                    </ItemsControl.ItemsPanel>
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <TextBlock Text="{Binding Text}"
+                                                                                       Foreground="{Binding Foreground}"
+                                                                                       FontFamily="Consolas"/>
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                                <TextBox Grid.Column="1"
+                                                                         Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                         Background="#1B2B3D"
+                                                                         Foreground="#E6E8ED"
+                                                                         BorderBrush="#4B5A70"
+                                                                         CornerRadius="4"
+                                                                         Padding="6"
+                                                                         FontFamily="Consolas"/>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.DataTemplates>
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+                            </Grid>
                         </Grid>
                     </Border>
                 </TabItem>
