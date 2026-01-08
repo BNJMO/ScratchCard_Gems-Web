@@ -71,8 +71,8 @@ export class GameScene {
       showText: winPopupOptions?.showText ?? gameConfig?.gameplay?.winPopup?.showText ?? true,
       textColor: winPopupOptions?.textColor ?? gameConfig?.gameplay?.winPopup?.textColor ?? "#FFFFFF",
       amountColor: winPopupOptions?.amountColor ?? gameConfig?.gameplay?.winPopup?.amountColor ?? "#EAFF00",
-      fontSize: winPopupOptions?.fontSize ?? gameConfig?.gameplay?.winPopup?.fontSize ?? 22,
-      amountFontSize: winPopupOptions?.amountFontSize ?? gameConfig?.gameplay?.winPopup?.amountFontSize ?? 18,
+      baseFontSize: winPopupOptions?.baseFontSize ?? winPopupOptions?.fontSize ?? gameConfig?.gameplay?.winPopup?.fontSize ?? 22,
+      baseAmountFontSize: winPopupOptions?.baseAmountFontSize ?? winPopupOptions?.amountFontSize ?? gameConfig?.gameplay?.winPopup?.amountFontSize ?? 18,
       textOffsetX: winPopupOptions?.textOffsetX ?? gameConfig?.gameplay?.winPopup?.textOffsetX ?? 0,
       textOffsetY: winPopupOptions?.textOffsetY ?? gameConfig?.gameplay?.winPopup?.textOffsetY ?? 0,
     };
@@ -145,8 +145,8 @@ export class GameScene {
         showText: this.winPopupOptions.showText,
         textColor: this.winPopupOptions.textColor,
         amountColor: this.winPopupOptions.amountColor,
-        fontSize: this.winPopupOptions.fontSize,
-        amountFontSize: this.winPopupOptions.amountFontSize,
+        baseFontSize: this.winPopupOptions.baseFontSize,
+        baseAmountFontSize: this.winPopupOptions.baseAmountFontSize,
         textOffsetX: this.winPopupOptions.textOffsetX,
         textOffsetY: this.winPopupOptions.textOffsetY,
       });
@@ -270,6 +270,9 @@ export class GameScene {
       const winPopupWidth = size * 0.40;
       const winPopupHeight = size * 0.15;
       this.winPopup?.setSize?.({ width: winPopupWidth, height: winPopupHeight });
+    } else {
+      // Update sprite win popup position on resize
+      this.winPopup?.updatePosition?.();
     }
 
     this.onResize?.(size);
@@ -356,6 +359,78 @@ export class GameScene {
   testWinPopup(amount = 100.50) {
     console.log("Testing win popup with amount:", amount);
     this.showWinPopup({ amount });
+  }
+
+  // Method to force recreate popup with new settings
+  recreatePopup() {
+    if (this.winPopup) {
+      this.winPopup.destroy();
+      this.winPopup = null;
+    }
+    
+    // Recreate with current options
+    const accentColor = this.#colorToHex(
+      this.palette?.winPopupBorder,
+      "#EAFF00"
+    );
+    const backgroundColor = this.#colorToHex(
+      this.palette?.winPopupBackground,
+      "#0B1E29"
+    );
+
+    if (this.winPopupOptions.useSprite) {
+      this.winPopup = new SpriteWinPopup({
+        parent: this.root,
+        spriteName: this.winPopupOptions.spriteName,
+        scale: this.winPopupOptions.scale,
+        offsetX: this.winPopupOptions.offsetX,
+        offsetY: this.winPopupOptions.offsetY,
+        showDuration: this.winPopupOptions.showDuration,
+        animationDuration: this.winPopupOptions.animationDuration,
+        showText: this.winPopupOptions.showText,
+        textColor: this.winPopupOptions.textColor,
+        amountColor: this.winPopupOptions.amountColor,
+        baseFontSize: this.winPopupOptions.baseFontSize,
+        baseAmountFontSize: this.winPopupOptions.baseAmountFontSize,
+        textOffsetX: this.winPopupOptions.textOffsetX,
+        textOffsetY: this.winPopupOptions.textOffsetY,
+      });
+    } else {
+      this.winPopup = new WinPopup({
+        parent: this.root,
+        fontFamily: this.fontFamily,
+        accentColor,
+        backgroundColor,
+      });
+    }
+    
+    console.log("Popup recreated with new settings");
+  }
+
+  // Method to update popup settings and recreate
+  updatePopupSettings(newSettings = {}) {
+    const defaultSettings = {
+      scale: 0.5,
+      baseFontSize: 90,
+      baseAmountFontSize: 22,
+      ...newSettings
+    };
+    
+    // Update the options
+    this.winPopupOptions = {
+      ...this.winPopupOptions,
+      ...defaultSettings
+    };
+    
+    // Recreate the popup
+    this.recreatePopup();
+    
+    console.log("Updated popup settings:", defaultSettings);
+    
+    // Test the popup with new settings
+    setTimeout(() => {
+      this.testWinPopup(123.45);
+    }, 100);
   }
 
   #setupRootSizing() {
