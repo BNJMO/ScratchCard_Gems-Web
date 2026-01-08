@@ -1,0 +1,21 @@
+{
+  "appId": "com.scratch.engine.manager",
+  "productName": "ScratchEngineManager",
+  "files": [
+    "scratch-engine-manager/**/*",
+    "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "Variations",
+      "to": "Variations"
+    }
+  ],
+  "mac": {
+    "category": "public.app-category.developer-tools",
+    "target": "dmg"
+  },
+  "win": {
+    "target": "nsis"
+  }
+}
