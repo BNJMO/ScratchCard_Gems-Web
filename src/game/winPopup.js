@@ -1,4 +1,4 @@
-import dollarIconUrl from "../../assets/sprites/dollarWinPopup.svg";
+import bitCoinIconUrl from "../../assets/sprites/controlPanel/BitCoin.svg";
 
 const DEFAULT_OPTIONS = {
   width: 310,
@@ -166,10 +166,10 @@ export class WinPopup {
     amountValue.style.color = amountColor;
 
     const icon = document.createElement("img");
-    icon.src = dollarIconUrl;
-    icon.alt = "Dollar";
-    icon.style.width = `${this.options.iconSize}px`;
-    icon.style.height = `${this.options.iconSize}px`;
+    icon.src = bitCoinIconUrl;
+    icon.alt = "Bitcoin";
+    icon.style.width = `${amountFontSize}px`;
+    icon.style.height = `${amountFontSize}px`;
     icon.style.objectFit = "contain";
 
     amountRow.append(amountValue, icon);
