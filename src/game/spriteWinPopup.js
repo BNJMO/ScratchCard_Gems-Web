@@ -220,13 +220,14 @@ export class SpriteWinPopup {
       amountContainer.style.cssText = "display:flex;align-items:center;justify-content:center;gap:" + Math.round(amountFontSize * 0.25) + "px;";
 
       const amountText = document.createElement("span");
+      const amountTextSize = Math.round(amountFontSize * 1.3);
       amountText.textContent = this.formatAmount(this.amountValue);
-      amountText.style.cssText = "color:#EAFF00;font-size:" + Math.round(amountFontSize * 1.3) + "px;font-weight:700;font-family:Arial,sans-serif;text-shadow:0 0 8px rgba(234,255,0,0.8);line-height:1;letter-spacing:" + Math.round(amountFontSize * 0.03) + "px";
+      amountText.style.cssText = "color:#EAFF00;font-size:" + amountTextSize + "px;font-weight:700;font-family:Arial,sans-serif;text-shadow:0 0 8px rgba(234,255,0,0.8);line-height:1;letter-spacing:" + Math.round(amountFontSize * 0.03) + "px";
 
       const amountIcon = document.createElement("img");
       amountIcon.src = bitCoinIconUrl;
       amountIcon.alt = "Bitcoin";
-      amountIcon.style.cssText = "width:" + Math.round(amountFontSize * 1.1) + "px;height:" + Math.round(amountFontSize * 1.1) + "px;display:block;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(234,255,0,0.6))";
+      amountIcon.style.cssText = "width:" + amountTextSize + "px;height:" + amountTextSize + "px;display:block;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(234,255,0,0.6))";
 
       amountContainer.appendChild(amountText);
       amountContainer.appendChild(amountIcon);
@@ -301,15 +302,15 @@ export class SpriteWinPopup {
       this.titleTextNode.style.lineHeight = "0.9";
       
       // Update amount text styling with smaller multiplier
-      this.amountTextNode.style.fontSize = Math.round(amountFontSize * 1.3) + "px";
+      const amountTextSize = Math.round(amountFontSize * 1.3);
+      this.amountTextNode.style.fontSize = amountTextSize + "px";
       this.amountTextNode.style.fontWeight = "700";
       this.amountTextNode.style.letterSpacing = Math.round(amountFontSize * 0.03) + "px";
       
       // Update icon sizing
       if (this.amountIconNode) {
-        const iconSize = Math.round(amountFontSize * 1.1);
-        this.amountIconNode.style.width = iconSize + "px";
-        this.amountIconNode.style.height = iconSize + "px";
+        this.amountIconNode.style.width = amountTextSize + "px";
+        this.amountIconNode.style.height = amountTextSize + "px";
       }
       
       // Update container gap

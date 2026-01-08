@@ -168,8 +168,8 @@ export class WinPopup {
     const icon = document.createElement("img");
     icon.src = bitCoinIconUrl;
     icon.alt = "Bitcoin";
-    icon.style.width = `${this.options.iconSize}px`;
-    icon.style.height = `${this.options.iconSize}px`;
+    icon.style.width = `${amountFontSize}px`;
+    icon.style.height = `${amountFontSize}px`;
     icon.style.objectFit = "contain";
 
     amountRow.append(amountValue, icon);
