@@ -26,11 +26,13 @@
       "exitDuration": 200
     },
     "card": {
-      "iconType": "static",
+      "iconType": {
+        "type": "animated",
+        "spritesheetType": "single"
+      },
       "iconScale": 1,
       "iconOffsetX": 0,
       "offsetYv": -5,
-      "spritesheetType": "single",
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true,
       "winFrameScale": 0.99,
@@ -42,10 +44,10 @@
       "coverFadeOutDuration": 200
     },
     "singleSpritesheetProvider": {
-      "totalFrames": 8,
-      "columns": 4,
-      "rows": 2,
-      "speed": 0.16
+      "totalFrames": 169,
+      "columns": 13,
+      "rows": 13,
+      "speed": 1
     },
     "gridSpritesheetProvider": {
       "columns": 3,

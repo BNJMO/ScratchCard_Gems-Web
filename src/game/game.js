@@ -547,8 +547,10 @@ export async function createGame(mount, opts = {}) {
     return 50;
   })();
 
-  const cardType = gameConfig?.gameplay?.card?.iconType ?? "static";
-  const spritesheetType = gameConfig?.gameplay?.card?.spritesheetType ?? "grid";
+  const cardType = gameConfig?.gameplay?.card?.iconType?.type ?? 
+                   gameConfig?.gameplay?.card?.iconType ?? "static";
+  const spritesheetType = gameConfig?.gameplay?.card?.iconType?.spritesheetType ?? 
+                          gameConfig?.gameplay?.card?.spritesheetType ?? "grid";
   console.log("Card types:", cardType, "Spritesheet type:", spritesheetType);
   
   let cardTypeEntries = [];
@@ -557,9 +559,14 @@ export async function createGame(mount, opts = {}) {
     if (spritesheetType === "single") {
       // Use single spritesheet provider
       const singleConfig = gameConfig?.gameplay?.singleSpritesheetProvider ?? {};
+      const finalAnimationSpeed = singleConfig.speed ?? cardSpritesheetAnimationSpeed;
+      console.log(`Single spritesheet config: speed=${singleConfig.speed}, cardSpritesheetAnimationSpeed=${cardSpritesheetAnimationSpeed}, final=${finalAnimationSpeed}`);
+      
       cardTypeEntries = await loadSingleCardTypeAnimations({
         ...singleConfig,
         svgResolution: svgRasterizationResolution,
+        // Only use cardSpritesheetAnimationSpeed if no speed is specified in singleConfig
+        animationSpeed: finalAnimationSpeed,
       });
     } else {
       // Use grid spritesheet provider (default)
@@ -594,8 +601,16 @@ export async function createGame(mount, opts = {}) {
       const key = entry?.key ?? `cardType_${index}`;
       const sanitizedFrames = sanitizeAnimationFrames(entry?.frames);
       const primaryTexture = entry?.texture ?? sanitizedFrames[0] ?? null;
+      
+      // Use the speed from the entry if available, otherwise use the global speed
+      const entryAnimationSpeed = Number.isFinite(entry?.speed) 
+        ? entry.speed 
+        : cardSpritesheetAnimationSpeed;
+      
+      console.log(`Entry ${key}: entry.speed=${entry?.speed}, cardSpritesheetAnimationSpeed=${cardSpritesheetAnimationSpeed}, final=${entryAnimationSpeed}`);
+      
       const configureIcon = createAnimatedIconConfigurator(sanitizedFrames, {
-        animationSpeed: cardSpritesheetAnimationSpeed,
+        animationSpeed: entryAnimationSpeed,
       });
 
       const definition = {

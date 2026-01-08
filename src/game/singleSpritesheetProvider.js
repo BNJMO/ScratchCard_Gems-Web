@@ -18,10 +18,12 @@ export async function loadCardTypeAnimations(config = {}) {
     columns = 4,
     rows = 2,
     speed = 0.14,
+    animationSpeed = speed, // Use animationSpeed if provided, fallback to speed
     svgResolution = 2
   } = config;
 
-  console.log("Loading single spritesheets with config:", { totalFrames, columns, rows, speed });
+  console.log("Loading single spritesheets with config:", { totalFrames, columns, rows, speed: animationSpeed });
+  console.log("Raw config received:", config);
 
   // Check if we have any modules loaded
   if (!SINGLE_SPRITESHEET_MODULES || Object.keys(SINGLE_SPRITESHEET_MODULES).length === 0) {
@@ -82,6 +84,9 @@ export async function loadCardTypeAnimations(config = {}) {
         continue;
       }
 
+      console.log(`Loading spritesheet: ${entry.texturePath}`);
+      console.log(`Base texture dimensions: ${baseTexture.width}x${baseTexture.height}`);
+
       // Extract individual frames from the spritesheet
       const frames = extractFramesFromSpritesheet(baseTexture, {
         totalFrames,
@@ -100,11 +105,12 @@ export async function loadCardTypeAnimations(config = {}) {
         key,
         frames,
         texture: frames[0], // First frame as default texture
-        speed,
+        speed: animationSpeed, // Use the resolved animation speed
         totalFrames: frames.length
       });
 
-      console.log(`Loaded single spritesheet: ${key} with ${frames.length} frames`);
+      console.log(`Loaded single spritesheet: ${key} with ${frames.length} frames, speed: ${animationSpeed}`);
+      console.log(`First frame dimensions: ${frames[0].width}x${frames[0].height}`);
     } catch (error) {
       console.error(`Error loading single spritesheet ${entry.texturePath}:`, error);
     }
@@ -125,8 +131,18 @@ function extractFramesFromSpritesheet(baseTexture, { totalFrames, columns, rows 
     return frames;
   }
 
-  const textureWidth = baseTexture.source.width || baseTexture.width;
-  const textureHeight = baseTexture.source.height || baseTexture.height;
+  // Get texture dimensions - try multiple ways to ensure we get the right values
+  const textureWidth = baseTexture.source?.width || baseTexture.width || 0;
+  const textureHeight = baseTexture.source?.height || baseTexture.height || 0;
+  
+  console.log("Base texture info:", {
+    width: baseTexture.width,
+    height: baseTexture.height,
+    sourceWidth: baseTexture.source?.width,
+    sourceHeight: baseTexture.source?.height,
+    finalWidth: textureWidth,
+    finalHeight: textureHeight
+  });
   
   if (!textureWidth || !textureHeight) {
     console.warn("Texture has invalid dimensions:", { textureWidth, textureHeight });
@@ -141,15 +157,19 @@ function extractFramesFromSpritesheet(baseTexture, { totalFrames, columns, rows 
     return frames;
   }
 
-  const actualFrameCount = Math.min(totalFrames, columns * rows);
+  // Ensure we don't try to extract more frames than the grid can hold
+  const maxPossibleFrames = columns * rows;
+  const actualFrameCount = Math.min(totalFrames, maxPossibleFrames);
 
-  console.log("Extracting frames:", { 
+  console.log("Frame extraction parameters:", { 
     textureWidth, 
     textureHeight, 
     frameWidth, 
     frameHeight, 
     columns, 
     rows, 
+    requestedFrames: totalFrames,
+    maxPossibleFrames,
     actualFrameCount 
   });
 
@@ -159,6 +179,12 @@ function extractFramesFromSpritesheet(baseTexture, { totalFrames, columns, rows 
     
     const x = col * frameWidth;
     const y = row * frameHeight;
+
+    // Ensure we don't go outside texture bounds
+    if (x + frameWidth > textureWidth || y + frameHeight > textureHeight) {
+      console.warn(`Frame ${i} would exceed texture bounds, skipping`);
+      break;
+    }
 
     try {
       const frameRect = new Rectangle(x, y, frameWidth, frameHeight);
