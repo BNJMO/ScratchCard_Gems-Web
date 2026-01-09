@@ -195,6 +195,14 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnVariationDropDownOpened(object? sender, EventArgs e)
+    {
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.RefreshVariationOptions();
+        }
+    }
+
     private void OnAssetPreviewDrop(object? sender, DragEventArgs e)
     {
         if (sender is not Control { DataContext: AssetFileEntry entry })
