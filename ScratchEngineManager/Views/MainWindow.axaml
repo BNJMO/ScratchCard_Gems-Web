@@ -129,7 +129,7 @@
                                 </StackPanel>
                             </StackPanel>
                     </DataTemplate>
-                    <DataTemplate DataType="vm:AssetFileEntry">
+                        <DataTemplate DataType="vm:AssetFileEntry">
                             <StackPanel Margin="{Binding Indent}"
                                         Spacing="6"
                                         Width="160">
@@ -166,15 +166,55 @@
                                                     BorderBrush="#3B414F"
                                                     CornerRadius="6"
                                                     Padding="8,3"
-                                                    FontSize="12"/>
+                                                FontSize="12"/>
                                         </StackPanel>
                                     </Grid>
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Rename"
+                                                      Command="{Binding BeginRenameCommand}"/>
+                                            <MenuItem Header="Delete"
+                                                      Command="{Binding DeleteFileCommand}"/>
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
                                 </Border>
                                 <TextBlock Text="{Binding FileName}"
                                            Foreground="#E6E8ED"
                                            FontSize="12"
                                            TextWrapping="Wrap"
-                                           Width="140"/>
+                                           Width="140"
+                                           Margin="0,0,0,6"
+                                           IsVisible="{Binding IsNotRenaming}"
+                                           DoubleTapped="OnAssetNameDoubleTapped">
+                                    <TextBlock.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Rename"
+                                                      Command="{Binding BeginRenameCommand}"/>
+                                            <MenuItem Header="Delete"
+                                                      Command="{Binding DeleteFileCommand}"/>
+                                        </ContextMenu>
+                                    </TextBlock.ContextMenu>
+                                </TextBlock>
+                                <TextBox Text="{Binding EditableFileName, Mode=TwoWay}"
+                                         Foreground="#E6E8ED"
+                                         Background="#1C1F26"
+                                         BorderBrush="#3B414F"
+                                         CornerRadius="6"
+                                         Padding="4"
+                                         Width="140"
+                                         IsVisible="{Binding IsRenaming}"
+                                         KeyDown="OnAssetNameEditorKeyDown"
+                                         LostFocus="OnAssetNameEditorLostFocus"
+                                         Margin="0,0,0,6">
+                                    <TextBox.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Rename"
+                                                      Command="{Binding BeginRenameCommand}"/>
+                                            <MenuItem Header="Delete"
+                                                      Command="{Binding DeleteFileCommand}"/>
+                                        </ContextMenu>
+                                    </TextBox.ContextMenu>
+                                </TextBox>
                             </StackPanel>
                     </DataTemplate>
                 </TabControl.DataTemplates>

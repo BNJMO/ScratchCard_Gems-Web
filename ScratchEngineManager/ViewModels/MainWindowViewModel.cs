@@ -719,7 +719,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         foreach (var file in Directory.GetFiles(assetsRoot).OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
         {
-            target.Add(new AssetFileEntry(file, 0));
+            target.Add(CreateFileEntry(target, file, 0));
         }
     }
 
@@ -734,10 +734,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
         foreach (var file in Directory.GetFiles(folderPath).OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
         {
-            entry.Children.Add(new AssetFileEntry(file, depth + 1));
+            entry.Children.Add(CreateFileEntry(entry.Children, file, depth + 1));
         }
 
         return entry;
+    }
+
+    private static AssetFileEntry CreateFileEntry(ObservableCollection<AssetEntryBase> owner, string filePath, int depth)
+    {
+        return new AssetFileEntry(filePath, depth, entry => owner.Remove(entry));
     }
 
     [RelayCommand]

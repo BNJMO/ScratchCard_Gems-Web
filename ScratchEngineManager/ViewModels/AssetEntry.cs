@@ -80,7 +80,7 @@ public sealed partial class AssetFolderEntry : AssetEntryBase
                 using var _ = File.Create(newFilePath);
             }
 
-            Children.Add(new AssetFileEntry(newFilePath, Depth + 1));
+            Children.Add(new AssetFileEntry(newFilePath, Depth + 1, entry => Children.Remove(entry)));
             NewFileName = "newFile.ext";
         }
         catch
@@ -104,18 +104,23 @@ public sealed partial class AssetFileEntry : AssetEntryBase
     };
     private SoundPlayer? soundPlayer;
 
-    public AssetFileEntry(string filePath, int depth)
+    public AssetFileEntry(string filePath, int depth, Action<AssetFileEntry>? removeAction = null)
         : base(Path.GetFileName(filePath), depth)
     {
         FullPath = filePath;
         FileName = Path.GetFileName(filePath);
         Extension = Path.GetExtension(filePath);
+        removeFromParent = removeAction;
         RefreshPreview();
     }
 
-    public string FileName { get; }
+    private readonly Action<AssetFileEntry>? removeFromParent;
 
-    public string Extension { get; }
+    [ObservableProperty]
+    private string fileName;
+
+    [ObservableProperty]
+    private string extension;
 
     public string FullPath { get; private set; }
 
@@ -129,6 +134,14 @@ public sealed partial class AssetFileEntry : AssetEntryBase
 
     [ObservableProperty]
     private bool isEmpty;
+
+    [ObservableProperty]
+    private bool isRenaming;
+
+    [ObservableProperty]
+    private string editableFileName = string.Empty;
+
+    public bool IsNotRenaming => !IsRenaming;
 
     public bool HasPreviewSquare => IsImage || IsAudio || IsEmpty;
 
@@ -180,6 +193,92 @@ public sealed partial class AssetFileEntry : AssetEntryBase
     partial void OnIsEmptyChanged(bool value)
     {
         OnPropertyChanged(nameof(HasPreviewSquare));
+    }
+
+    partial void OnIsRenamingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsNotRenaming));
+    }
+
+    [RelayCommand]
+    private void BeginRename()
+    {
+        EditableFileName = FileName;
+        IsRenaming = true;
+    }
+
+    [RelayCommand]
+    private void CancelRename()
+    {
+        EditableFileName = FileName;
+        IsRenaming = false;
+    }
+
+    [RelayCommand]
+    private void CommitRename()
+    {
+        if (!IsRenaming)
+        {
+            return;
+        }
+
+        var trimmedName = Path.GetFileName(EditableFileName?.Trim() ?? string.Empty);
+        if (string.IsNullOrWhiteSpace(trimmedName) || string.Equals(trimmedName, FileName, StringComparison.Ordinal))
+        {
+            IsRenaming = false;
+            return;
+        }
+
+        var directory = Path.GetDirectoryName(FullPath);
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            IsRenaming = false;
+            return;
+        }
+
+        var newPath = Path.Combine(directory, trimmedName);
+        try
+        {
+            if (File.Exists(FullPath))
+            {
+                File.Move(FullPath, newPath, overwrite: false);
+            }
+            else
+            {
+                using var _ = File.Create(newPath);
+            }
+
+            FullPath = newPath;
+            FileName = trimmedName;
+            Extension = Path.GetExtension(trimmedName);
+            RefreshPreview();
+        }
+        catch
+        {
+            EditableFileName = FileName;
+        }
+        finally
+        {
+            IsRenaming = false;
+        }
+    }
+
+    [RelayCommand]
+    private void DeleteFile()
+    {
+        try
+        {
+            if (File.Exists(FullPath))
+            {
+                File.Delete(FullPath);
+            }
+        }
+        catch
+        {
+            return;
+        }
+
+        removeFromParent?.Invoke(this);
     }
 
     [SupportedOSPlatform("windows")]
