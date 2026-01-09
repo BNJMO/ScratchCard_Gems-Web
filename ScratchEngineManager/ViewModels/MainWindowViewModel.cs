@@ -104,6 +104,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public bool CanUpdateEngine => !IsUpdatingEngine;
 
+    public Func<Task<GitCredentialPromptResult?>>? RequestGitCredentialsAsync { get; set; }
+
     partial void OnIsUpdatingEngineChanged(bool value)
     {
         OnPropertyChanged(nameof(CanUpdateEngine));
@@ -655,6 +657,15 @@ public partial class MainWindowViewModel : ViewModelBase
         var result = await RunProcessWithResultAsync("git", arguments, repositoryRoot!);
         if (result.ExitCode != 0)
         {
+            if (arguments == "pull" && IsGitAuthFailure(result.StandardError))
+            {
+                var retrySucceeded = await TryPullWithCredentialsAsync();
+                if (retrySucceeded)
+                {
+                    return true;
+                }
+            }
+
             AppendError(failureMessage);
             if (arguments == "pull")
             {
@@ -1515,7 +1526,11 @@ public partial class MainWindowViewModel : ViewModelBase
         return process.ExitCode;
     }
 
-    private async Task<ProcessResult> RunProcessWithResultAsync(string fileName, string arguments, string workingDirectory)
+    private async Task<ProcessResult> RunProcessWithResultAsync(
+        string fileName,
+        string arguments,
+        string workingDirectory,
+        IReadOnlyDictionary<string, string>? environmentVariables = null)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -1527,6 +1542,14 @@ public partial class MainWindowViewModel : ViewModelBase
             UseShellExecute = false,
             CreateNoWindow = true
         };
+
+        if (environmentVariables is not null)
+        {
+            foreach (var (key, value) in environmentVariables)
+            {
+                startInfo.Environment[key] = value;
+            }
+        }
 
         using var process = new Process { StartInfo = startInfo };
         process.Start();
@@ -1679,5 +1702,108 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    private static bool IsGitAuthFailure(string errorOutput)
+    {
+        if (string.IsNullOrWhiteSpace(errorOutput))
+        {
+            return false;
+        }
+
+        var normalized = errorOutput.ToLowerInvariant();
+        return normalized.Contains("permission denied (publickey)") ||
+               normalized.Contains("could not read from remote repository") ||
+               normalized.Contains("authentication failed") ||
+               normalized.Contains("fatal: authentication failed");
+    }
+
+    private async Task<bool> TryPullWithCredentialsAsync()
+    {
+        if (RequestGitCredentialsAsync is null)
+        {
+            return false;
+        }
+
+        var credentials = await RequestGitCredentialsAsync();
+        if (credentials is null)
+        {
+            AppendInfo("Update Engine canceled. No credentials provided.");
+            return false;
+        }
+
+        var originUrlResult = await RunProcessWithResultAsync("git", "config --get remote.origin.url", repositoryRoot!);
+        if (originUrlResult.ExitCode != 0 || string.IsNullOrWhiteSpace(originUrlResult.StandardOutput))
+        {
+            AppendError("Unable to determine the remote origin URL for credential-based pull.");
+            return false;
+        }
+
+        var originUrl = originUrlResult.StandardOutput.Trim();
+        var httpsUrl = NormalizeToHttpsRemote(originUrl);
+        if (string.IsNullOrWhiteSpace(httpsUrl))
+        {
+            AppendError("Remote origin URL is not compatible with credential-based pull. Configure an HTTPS remote and retry.");
+            return false;
+        }
+
+        var authHeader = BuildBasicAuthHeader(credentials.UserName, credentials.Token);
+        var pullArguments = $"-c http.extraheader=\"AUTHORIZATION: basic {authHeader}\" pull \"{httpsUrl}\"";
+        var env = new Dictionary<string, string> { ["GIT_TERMINAL_PROMPT"] = "0" };
+        var pullResult = await RunProcessWithResultAsync("git", pullArguments, repositoryRoot!, env);
+        if (pullResult.ExitCode != 0)
+        {
+            AppendError("Git pull with the provided credentials failed.");
+            AppendGitAuthGuidanceIfNeeded(pullResult.StandardError);
+            return false;
+        }
+
+        return true;
+    }
+
+    private static string? NormalizeToHttpsRemote(string originUrl)
+    {
+        if (originUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return originUrl;
+        }
+
+        if (originUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            return "https://" + originUrl.Substring("http://".Length);
+        }
+
+        if (originUrl.StartsWith("git@", StringComparison.OrdinalIgnoreCase))
+        {
+            var separatorIndex = originUrl.IndexOf(':');
+            if (separatorIndex <= 0)
+            {
+                return null;
+            }
+
+            var host = originUrl.Substring(4, separatorIndex - 4);
+            var path = originUrl[(separatorIndex + 1)..];
+            return $"https://{host}/{path}";
+        }
+
+        if (originUrl.StartsWith("ssh://", StringComparison.OrdinalIgnoreCase))
+        {
+            if (Uri.TryCreate(originUrl, UriKind.Absolute, out var uri))
+            {
+                var host = uri.Host;
+                var path = uri.AbsolutePath.TrimStart('/');
+                return $"https://{host}/{path}";
+            }
+        }
+
+        return null;
+    }
+
+    private static string BuildBasicAuthHeader(string userName, string token)
+    {
+        var payload = $"{userName}:{token}";
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
+    }
+
     private sealed record ProcessResult(int ExitCode, string StandardOutput, string StandardError);
+
+    public sealed record GitCredentialPromptResult(string UserName, string Token);
 }

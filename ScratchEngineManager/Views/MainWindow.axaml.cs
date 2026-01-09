@@ -49,6 +49,7 @@ public partial class MainWindow : Window
         {
             _logEntries = viewModel.LogEntries;
             _logEntries.CollectionChanged += OnLogEntriesChanged;
+            viewModel.RequestGitCredentialsAsync = ShowGitCredentialsDialogAsync;
         }
         else
         {
@@ -148,5 +149,11 @@ public partial class MainWindow : Window
         }
 
         await viewModel.UpdateEngineAsync();
+    }
+
+    private async Task<MainWindowViewModel.GitCredentialPromptResult?> ShowGitCredentialsDialogAsync()
+    {
+        var dialog = new GitCredentialsDialog();
+        return await dialog.ShowDialog<MainWindowViewModel.GitCredentialPromptResult?>(this);
     }
 }
