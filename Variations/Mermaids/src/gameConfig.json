@@ -1,6 +1,5 @@
 {
   "app": {
-    "vitePath": "/_Games/mine_crash/clients/mermaids/",
     "gameName": "Flipping Cards - Mermaids",
     "fileExtensions": {
       "sounds": ".wav",
