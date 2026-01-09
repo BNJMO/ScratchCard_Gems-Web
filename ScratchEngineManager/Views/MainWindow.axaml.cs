@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Specialized;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -49,6 +50,7 @@ public partial class MainWindow : Window
         {
             _logEntries = viewModel.LogEntries;
             _logEntries.CollectionChanged += OnLogEntriesChanged;
+            viewModel.RequestGitCredentialsAsync = ShowGitCredentialsDialogAsync;
         }
         else
         {
@@ -131,5 +133,28 @@ public partial class MainWindow : Window
         {
             viewModel.StopLocalServer();
         }
+    }
+
+    private async void OnUpdateEngineClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        var dialog = new ConfirmUpdateEngineDialog();
+        var confirmed = await dialog.ShowDialog<bool>(this);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await viewModel.UpdateEngineAsync();
+    }
+
+    private async Task<MainWindowViewModel.GitCredentialPromptResult?> ShowGitCredentialsDialogAsync()
+    {
+        var dialog = new GitCredentialsDialog();
+        return await dialog.ShowDialog<MainWindowViewModel.GitCredentialPromptResult?>(this);
     }
 }
