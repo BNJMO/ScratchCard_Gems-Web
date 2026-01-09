@@ -107,6 +107,26 @@
                                 <ItemsControl ItemsSource="{Binding Children}"
                                               IsVisible="{Binding IsExpanded}"
                                               Margin="0,4,0,10"/>
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="8"
+                                            Margin="{Binding ChildIndent}"
+                                            IsVisible="{Binding IsExpanded}">
+                                    <TextBox Text="{Binding NewFileName, Mode=TwoWay}"
+                                             Background="#1C1F26"
+                                             Foreground="#E6E8ED"
+                                             BorderBrush="#3B414F"
+                                             CornerRadius="6"
+                                             Padding="6"
+                                             Width="160"/>
+                                    <Button Content="Create"
+                                            Command="{Binding CreateFileCommand}"
+                                            Background="#3E8EDE"
+                                            Foreground="#F7F8FA"
+                                            BorderBrush="#3E8EDE"
+                                            CornerRadius="6"
+                                            Padding="8,3"
+                                            FontSize="12"/>
+                                </StackPanel>
                             </StackPanel>
                     </DataTemplate>
                     <DataTemplate DataType="vm:AssetFileEntry">
@@ -656,13 +676,23 @@
                                         BorderBrush="#3B414F"
                                         CornerRadius="6"
                                         Padding="8">
-                                    <Grid RowDefinitions="Auto,*">
+                                    <Grid RowDefinitions="Auto,Auto,*">
                                         <TextBlock Text="Loaded Game"
                                                    Foreground="#E6E8ED"
                                                    FontSize="14"
                                                    FontWeight="SemiBold"
                                                    Margin="0,0,0,8"/>
-                                        <ScrollViewer Grid.Row="1">
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                                            <Button Content="Refresh"
+                                                    Command="{Binding RefreshGameAssetsCommand}"
+                                                    Background="#3B414F"
+                                                    Foreground="#E6E8ED"
+                                                    BorderBrush="#3B414F"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="2">
                                             <ItemsControl ItemsSource="{Binding GameAssetEntries}">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>
@@ -684,13 +714,24 @@
                                         BorderBrush="#3B414F"
                                         CornerRadius="6"
                                         Padding="8">
-                                    <Grid RowDefinitions="Auto,*">
+                                    <Grid RowDefinitions="Auto,Auto,*">
                                         <TextBlock Text="Selected Variation"
                                                    Foreground="#E6E8ED"
                                                    FontSize="14"
                                                    FontWeight="SemiBold"
                                                    Margin="0,0,0,8"/>
-                                        <ScrollViewer Grid.Row="1">
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                                            <Button Content="Refresh"
+                                                    Command="{Binding RefreshVariationAssetsCommand}"
+                                                    IsEnabled="{Binding IsVariationSelected}"
+                                                    Background="#3B414F"
+                                                    Foreground="#E6E8ED"
+                                                    BorderBrush="#3B414F"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="2">
                                             <ItemsControl ItemsSource="{Binding VariationAssetEntries}">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>

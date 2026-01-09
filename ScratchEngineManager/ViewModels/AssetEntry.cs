@@ -32,21 +32,61 @@ public abstract partial class AssetEntryBase : ObservableObject
 
 public sealed partial class AssetFolderEntry : AssetEntryBase
 {
-    public AssetFolderEntry(string name, int depth)
+    public AssetFolderEntry(string name, string folderPath, int depth)
         : base(name, depth)
     {
+        FolderPath = folderPath;
     }
+
+    public string FolderPath { get; }
 
     public ObservableCollection<AssetEntryBase> Children { get; } = new();
 
     [ObservableProperty]
-    private bool isExpanded = true;
+    private bool isExpanded;
+
+    public Thickness ChildIndent => new((Depth + 1) * 16, 0, 0, 0);
 
     public string ExpansionGlyph => IsExpanded ? "▼" : "▶";
+
+    [ObservableProperty]
+    private string newFileName = "newFile.ext";
 
     partial void OnIsExpandedChanged(bool value)
     {
         OnPropertyChanged(nameof(ExpansionGlyph));
+    }
+
+    [RelayCommand]
+    private void CreateFile()
+    {
+        if (string.IsNullOrWhiteSpace(NewFileName))
+        {
+            return;
+        }
+
+        var trimmedName = Path.GetFileName(NewFileName.Trim());
+        if (string.IsNullOrWhiteSpace(trimmedName))
+        {
+            return;
+        }
+
+        var newFilePath = Path.Combine(FolderPath, trimmedName);
+        try
+        {
+            Directory.CreateDirectory(FolderPath);
+            if (!File.Exists(newFilePath))
+            {
+                using var _ = File.Create(newFilePath);
+            }
+
+            Children.Add(new AssetFileEntry(newFilePath, Depth + 1));
+            NewFileName = "newFile.ext";
+        }
+        catch
+        {
+            // ignore - creation failures will be reflected by missing file
+        }
     }
 }
 
@@ -87,13 +127,17 @@ public sealed partial class AssetFileEntry : AssetEntryBase
     [ObservableProperty]
     private IImage? previewImage;
 
-    public bool HasPreviewSquare => IsImage || IsAudio;
+    [ObservableProperty]
+    private bool isEmpty;
+
+    public bool HasPreviewSquare => IsImage || IsAudio || IsEmpty;
 
     public void RefreshPreview()
     {
         PreviewImage = LoadPreviewImage();
         IsAudio = string.Equals(Extension, ".wav", StringComparison.OrdinalIgnoreCase)
             && OperatingSystem.IsWindows();
+        IsEmpty = IsEmptyFile();
         if (OperatingSystem.IsWindows())
         {
             ResetAudioPlayer();
@@ -130,6 +174,11 @@ public sealed partial class AssetFileEntry : AssetEntryBase
     {
         PlayAudioCommand.NotifyCanExecuteChanged();
         StopAudioCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(HasPreviewSquare));
+    }
+
+    partial void OnIsEmptyChanged(bool value)
+    {
         OnPropertyChanged(nameof(HasPreviewSquare));
     }
 
@@ -223,6 +272,23 @@ public sealed partial class AssetFileEntry : AssetEntryBase
         catch
         {
             return null;
+        }
+    }
+
+    private bool IsEmptyFile()
+    {
+        if (!File.Exists(FullPath))
+        {
+            return false;
+        }
+
+        try
+        {
+            return new FileInfo(FullPath).Length == 0;
+        }
+        catch
+        {
+            return false;
         }
     }
 }

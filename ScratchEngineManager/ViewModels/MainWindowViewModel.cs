@@ -725,7 +725,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private static AssetFolderEntry BuildFolderEntry(string folderPath, int depth)
     {
-        var entry = new AssetFolderEntry(Path.GetFileName(folderPath), depth);
+        var entry = new AssetFolderEntry(Path.GetFileName(folderPath), folderPath, depth);
 
         foreach (var directory in Directory.GetDirectories(folderPath).OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
         {
@@ -738,6 +738,18 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         return entry;
+    }
+
+    [RelayCommand]
+    private void RefreshGameAssets()
+    {
+        LoadAssetEntries();
+    }
+
+    [RelayCommand]
+    private void RefreshVariationAssets()
+    {
+        LoadVariationAssetEntries();
     }
 
     public void ReplaceAssetFile(AssetFileEntry entry, string sourcePath)
