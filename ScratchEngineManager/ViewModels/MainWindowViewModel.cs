@@ -112,6 +112,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public Func<Task<GitCredentialPromptResult?>>? RequestGitCredentialsAsync { get; set; }
 
+    public Func<Task<string?>>? RequestCreateVariationAsync { get; set; }
+
     partial void OnIsUpdatingEngineChanged(bool value)
     {
         OnPropertyChanged(nameof(CanUpdateEngine));
@@ -240,6 +242,64 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             AppendError($"Error during replacement: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task CreateVariationAsync()
+    {
+        AppendBlankLine();
+        if (string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            AppendError("Could not locate repository root. Create new variation aborted.");
+            return;
+        }
+
+        if (RequestCreateVariationAsync is null)
+        {
+            AppendError("Create variation dialog is unavailable. Create new variation aborted.");
+            return;
+        }
+
+        var variationName = await RequestCreateVariationAsync();
+        if (string.IsNullOrWhiteSpace(variationName))
+        {
+            AppendInfo("Create variation canceled.");
+            return;
+        }
+
+        variationName = variationName.Trim();
+        if (!IsValidVariationName(variationName))
+        {
+            AppendError("Variation name is invalid. It cannot be empty or contain invalid folder characters.");
+            return;
+        }
+
+        var variationsPath = Path.Combine(repositoryRoot, "Variations");
+        var templatePath = Path.Combine(variationsPath, "Template");
+        if (!Directory.Exists(templatePath))
+        {
+            AppendError($"Template variation folder not found at {templatePath}.");
+            return;
+        }
+
+        var targetPath = Path.Combine(variationsPath, variationName);
+        if (Directory.Exists(targetPath))
+        {
+            AppendError($"Variation folder already exists at {targetPath}.");
+            return;
+        }
+
+        try
+        {
+            AppendInfo($"Creating new variation {variationName}...");
+            CopyDirectory(templatePath, targetPath, false);
+            AppendSuccess($"Created variation {variationName}.");
+            RefreshVariationOptions(variationName);
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Create variation failed: {ex.Message}");
         }
     }
 
@@ -734,6 +794,39 @@ public partial class MainWindowViewModel : ViewModelBase
     private static bool IsActualVariation(string? variation) =>
         !string.IsNullOrWhiteSpace(variation) &&
         !string.Equals(variation, DefaultVariationOption, StringComparison.Ordinal);
+
+    private void RefreshVariationOptions(string? variationToSelect = null)
+    {
+        VariationOptions.Clear();
+        foreach (var option in BuildVariationOptions(repositoryRoot))
+        {
+            VariationOptions.Add(option);
+        }
+
+        if (!string.IsNullOrWhiteSpace(variationToSelect) && VariationOptions.Contains(variationToSelect))
+        {
+            SelectedVariation = variationToSelect;
+            return;
+        }
+
+        if (IsActualVariation(SelectedVariation) && VariationOptions.Contains(SelectedVariation!))
+        {
+            return;
+        }
+
+        SelectedVariation = DefaultVariationOption;
+    }
+
+    private static bool IsValidVariationName(string variationName)
+    {
+        if (string.IsNullOrWhiteSpace(variationName))
+        {
+            return false;
+        }
+
+        var invalidChars = Path.GetInvalidFileNameChars();
+        return !variationName.Any(character => invalidChars.Contains(character));
+    }
 
     private void LoadConfigText()
     {

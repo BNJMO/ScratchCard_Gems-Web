@@ -1,0 +1,53 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ScratchEngineManager.Views.CreateVariationDialog"
+        Title="Create Variation"
+        Width="480"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="#1C1F26">
+    <Border Padding="20">
+        <StackPanel Spacing="12">
+            <TextBlock Text="Enter a new variation name."
+                       Foreground="#E6E8ED"
+                       TextWrapping="Wrap"
+                       FontSize="14"/>
+            <StackPanel Spacing="6">
+                <TextBlock Text="Variation Name"
+                           Foreground="#E6E8ED"/>
+                <TextBox Name="VariationNameTextBox"
+                         Text="Variation Name"
+                         Background="#1C1F26"
+                         Foreground="#E6E8ED"
+                         BorderBrush="#3B414F"
+                         CornerRadius="6"
+                         Padding="8"/>
+            </StackPanel>
+            <TextBlock Name="ValidationText"
+                       Text="Variation name is required and must not include invalid folder characters."
+                       Foreground="#E56A2C"
+                       IsVisible="False"
+                       TextWrapping="Wrap"
+                       FontSize="12"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                <Button Content="Cancel"
+                        Width="100"
+                        Click="OnCancelClick"
+                        Background="#3B414F"
+                        Foreground="#F7F8FA"
+                        BorderBrush="#3B414F"
+                        CornerRadius="6"
+                        Padding="8,6"/>
+                <Button Content="Confirm"
+                        Width="100"
+                        Click="OnConfirmClick"
+                        Background="#E56A2C"
+                        Foreground="#F7F8FA"
+                        BorderBrush="#E56A2C"
+                        CornerRadius="6"
+                        Padding="8,6"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

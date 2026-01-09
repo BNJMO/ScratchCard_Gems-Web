@@ -30,6 +30,13 @@
                           BorderBrush="#3B414F"
                           CornerRadius="6"
                           Padding="8"/>
+                <Button Content="Create New Variation"
+                        Command="{Binding CreateVariationCommand}"
+                        Background="#3E8EDE"
+                        Foreground="#F7F8FA"
+                        BorderBrush="#3E8EDE"
+                        CornerRadius="6"
+                        Padding="10,6"/>
 
                 <Border Height="18"/>
 
