@@ -132,4 +132,21 @@ public partial class MainWindow : Window
             viewModel.StopLocalServer();
         }
     }
+
+    private async void OnUpdateEngineClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        var dialog = new ConfirmUpdateEngineDialog();
+        var confirmed = await dialog.ShowDialog<bool>(this);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await viewModel.UpdateEngineAsync();
+    }
 }

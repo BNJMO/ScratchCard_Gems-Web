@@ -1,0 +1,36 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ScratchEngineManager.Views.ConfirmUpdateEngineDialog"
+        Title="Confirm Update Engine"
+        Width="520"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="#1C1F26">
+    <Border Padding="20">
+        <StackPanel Spacing="16">
+            <TextBlock Text="This action will delete all modified files in the game and variations. Please make sure to save your work in a different location before proceeding."
+                       Foreground="#E6E8ED"
+                       TextWrapping="Wrap"
+                       FontSize="14"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                <Button Content="Cancel"
+                        Width="100"
+                        Click="OnCancelClick"
+                        Background="#3B414F"
+                        Foreground="#F7F8FA"
+                        BorderBrush="#3B414F"
+                        CornerRadius="6"
+                        Padding="8,6"/>
+                <Button Content="Confirm"
+                        Width="100"
+                        Click="OnConfirmClick"
+                        Background="#E56A2C"
+                        Foreground="#F7F8FA"
+                        BorderBrush="#E56A2C"
+                        CornerRadius="6"
+                        Padding="8,6"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

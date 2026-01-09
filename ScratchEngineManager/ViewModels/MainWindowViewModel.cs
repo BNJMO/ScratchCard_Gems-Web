@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -97,6 +98,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool isBuildRunning;
+
+    [ObservableProperty]
+    private bool isUpdatingEngine;
 
     public string GameConfigTabHeader => IsGameConfigDirty ? "Game Config *" : "Game Config";
 
@@ -571,6 +575,84 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsBuildRunning = false;
         }
+    }
+
+    public async Task UpdateEngineAsync()
+    {
+        AppendBlankLine();
+        if (IsUpdatingEngine)
+        {
+            AppendInfo("Update Engine already in progress.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            AppendError("Could not locate repository root. Update Engine aborted.");
+            return;
+        }
+
+        IsUpdatingEngine = true;
+
+        try
+        {
+            AppendInfo("Validating git availability...");
+            var gitVersionExitCode = await RunProcessAsync("git", "--version", repositoryRoot);
+            if (gitVersionExitCode != 0)
+            {
+                AppendError("Git is not available. Please install Git and ensure it is on your PATH.");
+                return;
+            }
+
+            AppendInfo("Updating engine from git...");
+            if (!await RunGitCommandAsync("reset --hard", "Git reset failed."))
+            {
+                return;
+            }
+
+            if (!await RunGitCommandAsync("clean -df", "Git clean failed."))
+            {
+                return;
+            }
+
+            if (!await RunGitCommandAsync("checkout main", "Git checkout failed."))
+            {
+                return;
+            }
+
+            if (!await RunGitCommandAsync("pull", "Git pull failed. Please verify your credentials and remote access."))
+            {
+                return;
+            }
+
+            AppendSuccess("Update Engine complete.");
+            LoadConfigText();
+            LoadVariationConfigText();
+        }
+        catch (Win32Exception)
+        {
+            AppendError("Git is not installed or not available on PATH. Please install Git and restart the app.");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Update Engine failed: {ex.Message}");
+        }
+        finally
+        {
+            IsUpdatingEngine = false;
+        }
+    }
+
+    private async Task<bool> RunGitCommandAsync(string arguments, string failureMessage)
+    {
+        var exitCode = await RunProcessAsync("git", arguments, repositoryRoot!);
+        if (exitCode != 0)
+        {
+            AppendError(failureMessage);
+            return false;
+        }
+
+        return true;
     }
 
     private static string? FindRepositoryRoot()

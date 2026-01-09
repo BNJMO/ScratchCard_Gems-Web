@@ -37,6 +37,13 @@
                            Foreground="#E6E8ED"
                            FontSize="14"
                            FontWeight="SemiBold"/>
+                <Button Content="Update Engine"
+                        Click="OnUpdateEngineClick"
+                        Background="#E56A2C"
+                        Foreground="#F7F8FA"
+                        BorderBrush="#E56A2C"
+                        CornerRadius="6"
+                        Padding="10,6"/>
                 <Button Content="Load Selected Variation To Game"
                         Command="{Binding ReplaceAssetsCommand}"
                         IsEnabled="{Binding IsVariationSelected}"
