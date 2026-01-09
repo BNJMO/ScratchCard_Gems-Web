@@ -265,15 +265,15 @@ export class GameScene {
 
     const width = Math.max(1, this.root.clientWidth || this.initialSize);
     const height = Math.max(1, this.root.clientHeight || width);
-    const size = Math.floor(Math.min(width, height));
-    this.app.renderer.resize(size, size);
-    this.#syncCanvasCssSize(size);
+    this.app.renderer.resize(width, height);
+    this.#syncCanvasCssSize({ width, height });
     this.#layoutBackgroundSprite();
     if (this.cards.length > 0) {
       this.layoutCards();
     }
 
     if (!this.winPopupOptions.useSprite) {
+      const size = Math.min(width, height);
       const winPopupWidth = size * 0.40;
       const winPopupHeight = size * 0.15;
       this.winPopup?.setSize?.({ width: winPopupWidth, height: winPopupHeight });
@@ -282,7 +282,7 @@ export class GameScene {
       this.winPopup?.updatePosition?.();
     }
 
-    this.onResize?.(size);
+    this.onResize?.(Math.min(width, height));
   }
 
   #colorToHex(value, fallback = "#000000") {
@@ -469,25 +469,23 @@ export class GameScene {
     }
   }
 
-  #syncCanvasCssSize(size) {
+  #syncCanvasCssSize({ width, height }) {
     const canvas = this.app?.canvas;
     if (!canvas) return;
 
-    const cssSize = `${size}px`;
-    if (canvas.style.width !== cssSize) {
-      canvas.style.width = cssSize;
+    const cssWidth = `${width}px`;
+    const cssHeight = `${height}px`;
+    if (canvas.style.width !== cssWidth) {
+      canvas.style.width = cssWidth;
     }
-    if (canvas.style.height !== cssSize) {
-      canvas.style.height = cssSize;
+    if (canvas.style.height !== cssHeight) {
+      canvas.style.height = cssHeight;
     }
     if (canvas.style.maxWidth !== "100%") {
       canvas.style.maxWidth = "100%";
     }
     if (canvas.style.maxHeight !== "100%") {
       canvas.style.maxHeight = "100%";
-    }
-    if (canvas.style.aspectRatio !== "1 / 1") {
-      canvas.style.aspectRatio = "1 / 1";
     }
   }
 
