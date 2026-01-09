@@ -1,0 +1,75 @@
+{
+  "app": {
+    "gameName": "Mansory Flip 1",
+    "fileExtensions": {
+      "sounds": ".wav",
+      "cardTypes": ".png",
+      "scratchMasks": ".png",
+      "gameBackground": ".svg",
+      "scratchCover": ".png",
+      "spark": ".png",
+      "tile_flipped": ".svg",
+      "tile_hovered": ".svg",
+      "tile_unflipped": ".svg",
+      "winFrame": ".svg"
+    }
+  },
+  "gameplay": {
+    "gridRows": 3,
+    "gridColumns": 3,
+    "gameMode": "flip",
+    "hover": {
+      "enabled": true,
+      "enterDuration": 120,
+      "exitDuration": 200
+    },
+    "card": {
+      "iconType": "static",
+      "iconScale": 1.35,
+      "iconOffsetX": 0,
+      "iconOffsetY": -5,
+      "spritesheetAnimationSpeed": 0.14,
+      "matchShake": true,
+      "tileScaleFactorX": 0.7,
+      "tileScaleFactorY": 1.0,
+      "tilePaddingX": 1,
+      "tilePaddingY": 1,
+      "winFrameOffsetX": 0,
+      "winFrameOffsetY": 0
+    },
+    "scratch": {
+      "revealRadius": 40,
+      "coverFadeOutDuration": 200
+    },
+    "spritesheetProvider": {
+      "columns": 3,
+      "rows": 4,
+      "cellWidth": 152,
+      "cellHeight": 166,
+      "horizontalGap": 4,
+      "verticalGap": 8,
+      "paddingLeft": 0,
+      "paddingTop": 0,
+      "paddingRight": 0,
+      "paddingBottom": 0,
+      "resolutionFactor": 0.75
+    },
+    "winPopup": {
+      "useSprite": true,
+      "spriteName": "winPopup",
+      "scale": 0.4,
+      "minScale": 0.9,
+      "offsetX": 0,
+      "offsetY": -2,
+      "showDuration": 10000,
+      "animationDuration": 300,
+      "showText": true,
+      "textOffsetX": 0,
+      "textOffsetY": -80,
+      "textColor": "#FFFFFF",
+      "amountColor": "#EAFF00",
+      "fontSize": 42,
+      "amountFontSize": 38
+    }
+  }
+}
