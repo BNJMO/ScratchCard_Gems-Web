@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Media;
+using System.Runtime.Versioning;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -91,7 +92,8 @@ public sealed partial class AssetFileEntry : AssetEntryBase
     public void RefreshPreview()
     {
         PreviewImage = LoadPreviewImage();
-        IsAudio = string.Equals(Extension, ".wav", StringComparison.OrdinalIgnoreCase);
+        IsAudio = string.Equals(Extension, ".wav", StringComparison.OrdinalIgnoreCase)
+            && OperatingSystem.IsWindows();
         ResetAudioPlayer();
         OnPropertyChanged(nameof(IsImage));
         OnPropertyChanged(nameof(HasPreviewSquare));
@@ -124,10 +126,11 @@ public sealed partial class AssetFileEntry : AssetEntryBase
         OnPropertyChanged(nameof(HasPreviewSquare));
     }
 
+    [SupportedOSPlatform("windows")]
     [RelayCommand(CanExecute = nameof(CanPlayAudio))]
     private void PlayAudio()
     {
-        if (!IsAudio)
+        if (!IsAudio || !OperatingSystem.IsWindows())
         {
             return;
         }
@@ -146,10 +149,11 @@ public sealed partial class AssetFileEntry : AssetEntryBase
 
     private bool CanPlayAudio() => IsAudio && !IsAudioPlaying;
 
+    [SupportedOSPlatform("windows")]
     [RelayCommand(CanExecute = nameof(CanStopAudio))]
     private void StopAudio()
     {
-        if (!IsAudio)
+        if (!IsAudio || !OperatingSystem.IsWindows())
         {
             return;
         }
@@ -169,8 +173,14 @@ public sealed partial class AssetFileEntry : AssetEntryBase
         StopAudioCommand.NotifyCanExecuteChanged();
     }
 
+    [SupportedOSPlatform("windows")]
     private void ResetAudioPlayer()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
         if (soundPlayer is null)
         {
             return;
