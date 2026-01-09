@@ -41,10 +41,14 @@ export class GameScene {
       frameScale: cardOptions?.frameScale ?? 1.0,
       frameOffsetX: cardOptions?.frameOffsetX ?? 0,
       frameOffsetY: cardOptions?.frameOffsetY ?? 0,
+      tileScaleFactorX: cardOptions?.tileScaleFactorX ?? 1.0,
+      tileScaleFactorY: cardOptions?.tileScaleFactorY ?? 1.0,
       stateTextures: cardOptions?.stateTextures ?? {},
     };
     this.layoutOptions = {
       gapBetweenTiles: layoutOptions?.gapBetweenTiles ?? 0.012,
+      tilePaddingX: layoutOptions?.tilePaddingX ?? 1.0,
+      tilePaddingY: layoutOptions?.tilePaddingY ?? 1.0,
     };
     this.animationOptions = {
       hoverEnabled: animationOptions?.hoverEnabled ?? true,
@@ -197,6 +201,8 @@ export class GameScene {
           frameScale: this.cardOptions.frameScale,
           frameOffsetX: this.cardOptions.frameOffsetX,
           frameOffsetY: this.cardOptions.frameOffsetY,
+          tileScaleFactorX: this.cardOptions.tileScaleFactorX,
+          tileScaleFactorY: this.cardOptions.tileScaleFactorY,
           stateTextures: this.cardOptions.stateTextures,
           row: r,
           col: c,
@@ -222,7 +228,8 @@ export class GameScene {
 
     const {
       tileSize,
-      gap,
+      gapX,
+      gapY,
       contentWidth,
       contentHeight,
       boardCenterX,
@@ -233,8 +240,8 @@ export class GameScene {
 
     for (const card of this.cards) {
       const scale = tileSize / card._tileSize;
-      const x = startX + card.col * (tileSize + gap);
-      const y = startY + card.row * (tileSize + gap);
+      const x = startX + card.col * (tileSize + gapX);
+      const y = startY + card.row * (tileSize + gapY);
       card.setLayout({ x, y, scale });
     }
 
@@ -258,15 +265,15 @@ export class GameScene {
 
     const width = Math.max(1, this.root.clientWidth || this.initialSize);
     const height = Math.max(1, this.root.clientHeight || width);
-    const size = Math.floor(Math.min(width, height));
-    this.app.renderer.resize(size, size);
-    this.#syncCanvasCssSize(size);
+    this.app.renderer.resize(width, height);
+    this.#syncCanvasCssSize({ width, height });
     this.#layoutBackgroundSprite();
     if (this.cards.length > 0) {
       this.layoutCards();
     }
 
     if (!this.winPopupOptions.useSprite) {
+      const size = Math.min(width, height);
       const winPopupWidth = size * 0.40;
       const winPopupHeight = size * 0.15;
       this.winPopup?.setSize?.({ width: winPopupWidth, height: winPopupHeight });
@@ -275,7 +282,7 @@ export class GameScene {
       this.winPopup?.updatePosition?.();
     }
 
-    this.onResize?.(size);
+    this.onResize?.(Math.min(width, height));
   }
 
   #colorToHex(value, fallback = "#000000") {
@@ -462,25 +469,23 @@ export class GameScene {
     }
   }
 
-  #syncCanvasCssSize(size) {
+  #syncCanvasCssSize({ width, height }) {
     const canvas = this.app?.canvas;
     if (!canvas) return;
 
-    const cssSize = `${size}px`;
-    if (canvas.style.width !== cssSize) {
-      canvas.style.width = cssSize;
+    const cssWidth = `${width}px`;
+    const cssHeight = `${height}px`;
+    if (canvas.style.width !== cssWidth) {
+      canvas.style.width = cssWidth;
     }
-    if (canvas.style.height !== cssSize) {
-      canvas.style.height = cssSize;
+    if (canvas.style.height !== cssHeight) {
+      canvas.style.height = cssHeight;
     }
     if (canvas.style.maxWidth !== "100%") {
       canvas.style.maxWidth = "100%";
     }
     if (canvas.style.maxHeight !== "100%") {
       canvas.style.maxHeight = "100%";
-    }
-    if (canvas.style.aspectRatio !== "1 / 1") {
-      canvas.style.aspectRatio = "1 / 1";
     }
   }
 
@@ -505,9 +510,13 @@ export class GameScene {
     const topSpace = 30;
     const boardSpace = Math.max(40, size - topSpace - 5);
     const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0.012;
-    const gap = Math.max(1, Math.floor(boardSpace * gapValue));
-    const totalHorizontalGaps = gap * Math.max(0, this.gridColumns - 1);
-    const totalVerticalGaps = gap * Math.max(0, this.gridRows - 1);
+    const baseGap = Math.max(1, Math.floor(boardSpace * gapValue));
+    const paddingX = Number(this.layoutOptions?.tilePaddingX ?? 1);
+    const paddingY = Number(this.layoutOptions?.tilePaddingY ?? 1);
+    const gapX = Math.max(0, Math.floor(baseGap * paddingX));
+    const gapY = Math.max(0, Math.floor(baseGap * paddingY));
+    const totalHorizontalGaps = gapX * Math.max(0, this.gridColumns - 1);
+    const totalVerticalGaps = gapY * Math.max(0, this.gridRows - 1);
     const tileAreaWidth = Math.max(1, boardSpace - totalHorizontalGaps);
     const tileAreaHeight = Math.max(1, boardSpace - totalVerticalGaps);
     const tileSize = Math.max(
@@ -527,7 +536,8 @@ export class GameScene {
 
     return {
       tileSize,
-      gap,
+      gapX,
+      gapY,
       contentWidth,
       contentHeight,
       contentSize,

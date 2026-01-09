@@ -436,10 +436,30 @@ export async function createGame(mount, opts = {}) {
     gameConfig.gameplay.card.iconScale ?? 1.0
   );
   const iconOffsetX = Number(gameConfig.gameplay.card.iconOffsetX ?? 0) || 0;
-  const iconOffsetY = Number(gameConfig.gameplay.card.offsetYv ?? 0) || 0;
+  const iconOffsetY = Number(gameConfig.gameplay.card.iconOffsetY ?? 0) || 0;
   const matchShakeEnabled = gameConfig.gameplay.card.matchShake ?? true;
   const winFrameScale = (() => {
     const value = Number(gameConfig.gameplay.card.winFrameScale ?? 1.0);
+    if (!Number.isFinite(value)) return 1.0;
+    return Math.max(0, value);
+  })();
+  const tileScaleFactorX = (() => {
+    const value = Number(gameConfig.gameplay.card.tileScaleFactorX ?? 1.0);
+    if (!Number.isFinite(value)) return 1.0;
+    return Math.max(0, value);
+  })();
+  const tileScaleFactorY = (() => {
+    const value = Number(gameConfig.gameplay.card.tileScaleFactorY ?? 1.0);
+    if (!Number.isFinite(value)) return 1.0;
+    return Math.max(0, value);
+  })();
+  const tilePaddingX = (() => {
+    const value = Number(gameConfig.gameplay.card.tilePaddingX ?? 1.0);
+    if (!Number.isFinite(value)) return 1.0;
+    return Math.max(0, value);
+  })();
+  const tilePaddingY = (() => {
+    const value = Number(gameConfig.gameplay.card.tilePaddingY ?? 1.0);
     if (!Number.isFinite(value)) return 1.0;
     return Math.max(0, value);
   })();
@@ -697,6 +717,8 @@ export async function createGame(mount, opts = {}) {
       frameScale: winFrameScale,
       frameOffsetX: winFrameOffsetX,
       frameOffsetY: winFrameOffsetY,
+      tileScaleFactorX,
+      tileScaleFactorY,
       stateTextures: {
         default: tileDefaultTexture,
         hover: tileHoverTexture,
@@ -706,7 +728,7 @@ export async function createGame(mount, opts = {}) {
       winPopupHeight: winPopupOptions.winPopupHeight,
     },
     backgroundTexture: gameBackgroundTexture,
-    layoutOptions: { gapBetweenTiles },
+    layoutOptions: { gapBetweenTiles, tilePaddingX, tilePaddingY },
     animationOptions: {
       ...hoverOptions,
       ...wiggleOptions,
