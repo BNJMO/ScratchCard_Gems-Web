@@ -239,8 +239,10 @@ export class GameScene {
     } = layout;
     const stepX = (scaledTileWidth ?? tileSize) + gapX;
     const stepY = (scaledTileHeight ?? tileSize) + gapY;
-    const startX = -contentWidth / 2;
-    const startY = -contentHeight / 2;
+    const visualOffsetX = (tileSize - (scaledTileWidth ?? tileSize)) / 2;
+    const visualOffsetY = (tileSize - (scaledTileHeight ?? tileSize)) / 2;
+    const startX = -contentWidth / 2 - visualOffsetX;
+    const startY = -contentHeight / 2 - visualOffsetY;
 
     for (const card of this.cards) {
       const scale = tileSize / card._tileSize;
