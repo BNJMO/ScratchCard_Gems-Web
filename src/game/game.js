@@ -453,6 +453,16 @@ export async function createGame(mount, opts = {}) {
     if (!Number.isFinite(value)) return 1.0;
     return Math.max(0, value);
   })();
+  
+  // Read tile dimensions from config
+  const configuredTileWidth = Number(gameConfig?.gameplay?.card?.tileWidth);
+  const configuredTileHeight = Number(gameConfig?.gameplay?.card?.tileHeight);
+  const tileWidth = Number.isFinite(configuredTileWidth) && configuredTileWidth > 0 
+    ? configuredTileWidth 
+    : 0;
+  const tileHeight = Number.isFinite(configuredTileHeight) && configuredTileHeight > 0 
+    ? configuredTileHeight 
+    : 0;
   const tilePaddingX = (() => {
     const value = Number(gameConfig.gameplay.card.tilePaddingX ?? 1.0);
     if (!Number.isFinite(value)) return 1.0;
@@ -717,6 +727,8 @@ export async function createGame(mount, opts = {}) {
       frameScale: winFrameScale,
       frameOffsetX: winFrameOffsetX,
       frameOffsetY: winFrameOffsetY,
+      tileWidth,
+      tileHeight,
       tileScaleFactorX,
       tileScaleFactorY,
       stateTextures: {

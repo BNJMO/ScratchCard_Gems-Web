@@ -34,8 +34,8 @@
       "winFrameScale": 0.99,
       "tileScaleFactorX": 1.0,
       "tileScaleFactorY": 1.0,
-      "tilePaddingX": 1.0,
-      "tilePaddingY": 1.0,
+      "tileWidth": 184,
+      "tileHeight": 188,
       "winFrameOffsetX": 0,
       "winFrameOffsetY": -5
     },
