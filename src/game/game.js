@@ -500,6 +500,11 @@ export async function createGame(mount, opts = {}) {
     winPopupWidth: opts.winPopupWidth ?? 240,
     winPopupHeight: opts.winPopupHeight ?? 170,
   };
+  const winPopupScale = (() => {
+    const value = Number(gameConfig?.gameplay?.winPopup?.scale);
+    if (!Number.isFinite(value)) return 0.6;
+    return value;
+  })();
 
   // Resolve mount element
   const root =
@@ -738,7 +743,7 @@ export async function createGame(mount, opts = {}) {
     winPopupOptions: {
       useSprite: true,
       spriteName: "winPopup",
-      scale: 0.6,
+      scale: winPopupScale,
       offsetX: 0,
       offsetY: 0,
       showDuration: 10000,
