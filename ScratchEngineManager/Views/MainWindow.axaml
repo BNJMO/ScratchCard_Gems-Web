@@ -82,9 +82,8 @@
 
         <Border Grid.Column="1" Background="#1C1F26" Padding="16">
             <TabControl x:Name="ConfigTabs" Background="#1C1F26" BorderBrush="#3B414F">
-                <TabControl.Resources>
-                    <ResourceDictionary>
-                        <DataTemplate DataType="vm:AssetFolderEntry">
+                <TabControl.DataTemplates>
+                    <DataTemplate DataType="vm:AssetFolderEntry">
                             <StackPanel>
                                 <ToggleButton IsChecked="{Binding IsExpanded}"
                                               Background="Transparent"
@@ -109,8 +108,8 @@
                                               IsVisible="{Binding IsExpanded}"
                                               Margin="0,4,0,10"/>
                             </StackPanel>
-                        </DataTemplate>
-                        <DataTemplate DataType="vm:AssetFileEntry">
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:AssetFileEntry">
                             <StackPanel Margin="{Binding Indent}"
                                         Spacing="6"
                                         Width="160">
@@ -121,7 +120,7 @@
                                         Height="140"
                                         HorizontalAlignment="Left"
                                         IsVisible="{Binding HasPreviewSquare}"
-                                        InputElement.AllowDrop="True"
+                                        input:DragDrop.AllowDrop="True"
                                         input:DragDrop.Drop="OnAssetPreviewDrop"
                                         DoubleTapped="OnAssetPreviewDoubleTapped">
                                     <Grid>
@@ -157,9 +156,8 @@
                                            TextWrapping="Wrap"
                                            Width="140"/>
                             </StackPanel>
-                        </DataTemplate>
-                    </ResourceDictionary>
-                </TabControl.Resources>
+                    </DataTemplate>
+                </TabControl.DataTemplates>
                 <TabItem Header="Log">
                     <Border Background="#20242C"
                             BorderBrush="#3B414F"

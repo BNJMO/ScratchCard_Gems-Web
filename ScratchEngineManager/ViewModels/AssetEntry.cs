@@ -94,7 +94,14 @@ public sealed partial class AssetFileEntry : AssetEntryBase
         PreviewImage = LoadPreviewImage();
         IsAudio = string.Equals(Extension, ".wav", StringComparison.OrdinalIgnoreCase)
             && OperatingSystem.IsWindows();
-        ResetAudioPlayer();
+        if (OperatingSystem.IsWindows())
+        {
+            ResetAudioPlayer();
+        }
+        else
+        {
+            IsAudioPlaying = false;
+        }
         OnPropertyChanged(nameof(IsImage));
         OnPropertyChanged(nameof(HasPreviewSquare));
     }
@@ -173,7 +180,6 @@ public sealed partial class AssetFileEntry : AssetEntryBase
         StopAudioCommand.NotifyCanExecuteChanged();
     }
 
-    [SupportedOSPlatform("windows")]
     private void ResetAudioPlayer()
     {
         if (!OperatingSystem.IsWindows())
