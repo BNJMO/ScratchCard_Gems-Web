@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:ScratchEngineManager.ViewModels"
+        xmlns:input="using:Avalonia.Input"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
@@ -8,7 +9,8 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="Scratch Engine Manager"
-        Background="#1C1F26">
+        Background="#1C1F26"
+        PointerPressed="OnWindowPointerPressed">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -89,6 +91,142 @@
 
         <Border Grid.Column="1" Background="#1C1F26" Padding="16">
             <TabControl x:Name="ConfigTabs" Background="#1C1F26" BorderBrush="#3B414F">
+                <TabControl.DataTemplates>
+                    <DataTemplate DataType="vm:AssetFolderEntry">
+                            <StackPanel>
+                                <ToggleButton IsChecked="{Binding IsExpanded}"
+                                              Background="Transparent"
+                                              BorderBrush="Transparent"
+                                              Padding="6,4"
+                                              HorizontalAlignment="Stretch"
+                                              Margin="{Binding Indent}">
+                                    <StackPanel Orientation="Horizontal"
+                                                Spacing="8"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding ExpansionGlyph}"
+                                                   Foreground="#E6E8ED"
+                                                   FontWeight="Bold"
+                                                   FontFamily="Consolas"/>
+                                        <TextBlock Text="{Binding Name}"
+                                                   Foreground="#E6E8ED"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </ToggleButton>
+                                <ItemsControl ItemsSource="{Binding Children}"
+                                              IsVisible="{Binding IsExpanded}"
+                                              Margin="0,4,0,10"/>
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="8"
+                                            Margin="{Binding ChildIndent}"
+                                            IsVisible="{Binding IsExpanded}">
+                                    <TextBox Text="{Binding NewFileName, Mode=TwoWay}"
+                                             Background="#1C1F26"
+                                             Foreground="#E6E8ED"
+                                             BorderBrush="#3B414F"
+                                             CornerRadius="6"
+                                             Padding="6"
+                                             Width="160"/>
+                                    <Button Content="Create"
+                                            Command="{Binding CreateFileCommand}"
+                                            Background="#3E8EDE"
+                                            Foreground="#F7F8FA"
+                                            BorderBrush="#3E8EDE"
+                                            CornerRadius="6"
+                                            Padding="8,3"
+                                            FontSize="12"/>
+                                </StackPanel>
+                            </StackPanel>
+                    </DataTemplate>
+                        <DataTemplate DataType="vm:AssetFileEntry">
+                            <StackPanel Margin="{Binding Indent}"
+                                        Spacing="6"
+                                        Width="160">
+                                <Border Background="#243447"
+                                        BorderBrush="#3B414F"
+                                        CornerRadius="6"
+                                        Width="140"
+                                        Height="140"
+                                        HorizontalAlignment="Left"
+                                        IsVisible="{Binding HasPreviewSquare}"
+                                        input:DragDrop.AllowDrop="True"
+                                        input:DragDrop.Drop="OnAssetPreviewDrop"
+                                        DoubleTapped="OnAssetPreviewDoubleTapped">
+                                    <Grid>
+                                        <Image Source="{Binding PreviewImage}"
+                                               Stretch="Uniform"
+                                               IsVisible="{Binding IsImage}"/>
+                                        <StackPanel HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Spacing="8"
+                                                    IsVisible="{Binding IsAudio}">
+                                            <Button Content="Play"
+                                                    Command="{Binding PlayAudioCommand}"
+                                                    Background="#3E8EDE"
+                                                    Foreground="#F7F8FA"
+                                                    BorderBrush="#3E8EDE"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                            <Button Content="Stop"
+                                                    Command="{Binding StopAudioCommand}"
+                                                    Background="#3B414F"
+                                                    Foreground="#E6E8ED"
+                                                    BorderBrush="#3B414F"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                FontSize="12"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Rename"
+                                                      Command="{Binding BeginRenameCommand}"/>
+                                            <MenuItem Header="Delete"
+                                                      Command="{Binding DeleteFileCommand}"/>
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
+                                </Border>
+                                <TextBlock Text="{Binding FileName}"
+                                           Foreground="#E6E8ED"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Width="140"
+                                           Margin="0,0,0,6"
+                                           IsVisible="{Binding IsNotRenaming}"
+                                           DoubleTapped="OnAssetNameDoubleTapped">
+                                    <TextBlock.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Rename"
+                                                      Command="{Binding BeginRenameCommand}"/>
+                                            <MenuItem Header="Delete"
+                                                      Command="{Binding DeleteFileCommand}"/>
+                                        </ContextMenu>
+                                    </TextBlock.ContextMenu>
+                                </TextBlock>
+                                <TextBox Text="{Binding EditableFileName, Mode=TwoWay}"
+                                         Foreground="#E6E8ED"
+                                         Background="#1C1F26"
+                                         BorderBrush="#3B414F"
+                                         CornerRadius="6"
+                                         Padding="4"
+                                         Width="140"
+                                         IsVisible="{Binding IsRenaming}"
+                                         KeyDown="OnAssetNameEditorKeyDown"
+                                         LostFocus="OnAssetNameEditorLostFocus"
+                                         Margin="0,0,0,6">
+                                    <TextBox.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Rename"
+                                                      Command="{Binding BeginRenameCommand}"/>
+                                            <MenuItem Header="Delete"
+                                                      Command="{Binding DeleteFileCommand}"/>
+                                        </ContextMenu>
+                                    </TextBox.ContextMenu>
+                                </TextBox>
+                            </StackPanel>
+                    </DataTemplate>
+                </TabControl.DataTemplates>
                 <TabItem Header="Log">
                     <Border Background="#20242C"
                             BorderBrush="#3B414F"
@@ -563,6 +701,87 @@
                                                         </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.DataTemplates>
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </TabItem>
+                <TabItem Header="Assets">
+                    <Border Background="#20242C"
+                            BorderBrush="#3B414F"
+                            CornerRadius="6"
+                            Padding="12">
+                        <Grid RowDefinitions="*">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto,*">
+                                <Border Background="#1A1E25"
+                                        BorderBrush="#3B414F"
+                                        CornerRadius="6"
+                                        Padding="8">
+                                    <Grid RowDefinitions="Auto,Auto,*">
+                                        <TextBlock Text="Loaded Game"
+                                                   Foreground="#E6E8ED"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,8"/>
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                                            <Button Content="Refresh"
+                                                    Command="{Binding RefreshGameAssetsCommand}"
+                                                    Background="#3B414F"
+                                                    Foreground="#E6E8ED"
+                                                    BorderBrush="#3B414F"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="2">
+                                            <ItemsControl ItemsSource="{Binding GameAssetEntries}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+                                <GridSplitter Grid.Column="1"
+                                              Width="10"
+                                              Background="#2A2F38"
+                                              ResizeDirection="Columns"
+                                              HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Stretch"/>
+                                <Border Grid.Column="2"
+                                        Background="#1A1E25"
+                                        BorderBrush="#3B414F"
+                                        CornerRadius="6"
+                                        Padding="8">
+                                    <Grid RowDefinitions="Auto,Auto,*">
+                                        <TextBlock Text="Selected Variation"
+                                                   Foreground="#E6E8ED"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,8"/>
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                                            <Button Content="Refresh"
+                                                    Command="{Binding RefreshVariationAssetsCommand}"
+                                                    IsEnabled="{Binding IsVariationSelected}"
+                                                    Background="#3B414F"
+                                                    Foreground="#E6E8ED"
+                                                    BorderBrush="#3B414F"
+                                                    CornerRadius="6"
+                                                    Padding="8,3"
+                                                    FontSize="12"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="2">
+                                            <ItemsControl ItemsSource="{Binding VariationAssetEntries}">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>
                                                         <StackPanel/>

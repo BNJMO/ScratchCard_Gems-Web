@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using ScratchEngineManager.ViewModels;
 
@@ -135,6 +137,89 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnAssetPreviewDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is Control { DataContext: AssetFileEntry entry })
+        {
+            entry.OpenFileCommand.Execute(null);
+        }
+    }
+
+    private void OnAssetNameDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is Control { DataContext: AssetFileEntry entry })
+        {
+            entry.BeginRenameCommand.Execute(null);
+        }
+    }
+
+    private void OnAssetNameEditorLostFocus(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: AssetFileEntry entry })
+        {
+            entry.CommitRenameCommand.Execute(null);
+        }
+    }
+
+    private void OnAssetNameEditorKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (sender is not Control { DataContext: AssetFileEntry entry })
+
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            entry.CommitRenameCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            entry.CancelRenameCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.Source is TextBox { DataContext: AssetFileEntry })
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.CommitPendingAssetRenames();
+        }
+    }
+
+    private void OnAssetPreviewDrop(object? sender, DragEventArgs e)
+    {
+        if (sender is not Control { DataContext: AssetFileEntry entry })
+        {
+            return;
+        }
+
+        if (!e.Data.Contains(DataFormats.Files))
+        {
+            return;
+        }
+
+        var files = e.Data.GetFiles();
+        var firstFile = files?.FirstOrDefault();
+        var localPath = firstFile?.TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(localPath))
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.ReplaceAssetFile(entry, localPath);
+        }
+    }
+    
     private async void OnUpdateEngineClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not MainWindowViewModel viewModel)
