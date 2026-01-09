@@ -86,20 +86,16 @@ export class SpriteWinPopup {
         // Very small screens (≤480px) - controlled size
         const maxScale = (window.innerWidth * smallMobileMaxWidthPercent) / 400;
         scale = Math.min(scale, Math.max(minScale, maxScale));
-        scale = Math.min(0.7, scale);
       } else if (isTablet) {
         // Tablet screens (481-600px) - moderate size
         const maxScale = (window.innerWidth * tabletMaxWidthPercent) / 400;
         scale = Math.min(scale, Math.max(minScale, maxScale));
-        scale = Math.min(0.8, scale);
       } else if (isMobile) {
         // Mobile screens (601-768px) - reasonable size
         const maxScale = (window.innerWidth * mobileMaxWidthPercent) / 400;
         scale = Math.min(scale, Math.max(minScale, maxScale));
-        scale = Math.min(0.9, scale);
       }
       // 997px will fall through to desktop scaling (no restrictions)
-      
       return scale;
     }
     
