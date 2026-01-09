@@ -109,8 +109,8 @@ const cardIconScale = Number.isFinite(CARD_CONFIG.iconScale)
 const cardIconOffsetX = Number.isFinite(CARD_CONFIG.iconOffsetX)
   ? CARD_CONFIG.iconOffsetX
   : 0;
-const cardIconOffsetY = Number.isFinite(CARD_CONFIG.offsetYv)
-  ? CARD_CONFIG.offsetYv
+const cardIconOffsetY = Number.isFinite(CARD_CONFIG.iconOffsetY)
+  ? CARD_CONFIG.iconOffsetY
   : -5;
 const cardSpritesheetAnimationSpeed = Number.isFinite(
   CARD_CONFIG.spritesheetAnimationSpeed
