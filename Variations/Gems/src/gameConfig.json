@@ -32,6 +32,8 @@
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true,
          "winFrameScale": 0.99,
+      "tileScaleFactorX": 1.0,
+      "tileScaleFactorY": 1.0,
       "winFrameOffsetX": 0,
       "winFrameOffsetY": -5
     },

@@ -41,6 +41,8 @@ export class GameScene {
       frameScale: cardOptions?.frameScale ?? 1.0,
       frameOffsetX: cardOptions?.frameOffsetX ?? 0,
       frameOffsetY: cardOptions?.frameOffsetY ?? 0,
+      tileScaleFactorX: cardOptions?.tileScaleFactorX ?? 1.0,
+      tileScaleFactorY: cardOptions?.tileScaleFactorY ?? 1.0,
       stateTextures: cardOptions?.stateTextures ?? {},
     };
     this.layoutOptions = {
@@ -197,6 +199,8 @@ export class GameScene {
           frameScale: this.cardOptions.frameScale,
           frameOffsetX: this.cardOptions.frameOffsetX,
           frameOffsetY: this.cardOptions.frameOffsetY,
+          tileScaleFactorX: this.cardOptions.tileScaleFactorX,
+          tileScaleFactorY: this.cardOptions.tileScaleFactorY,
           stateTextures: this.cardOptions.stateTextures,
           row: r,
           col: c,

@@ -443,6 +443,16 @@ export async function createGame(mount, opts = {}) {
     if (!Number.isFinite(value)) return 1.0;
     return Math.max(0, value);
   })();
+  const tileScaleFactorX = (() => {
+    const value = Number(gameConfig.gameplay.card.tileScaleFactorX ?? 1.0);
+    if (!Number.isFinite(value)) return 1.0;
+    return Math.max(0, value);
+  })();
+  const tileScaleFactorY = (() => {
+    const value = Number(gameConfig.gameplay.card.tileScaleFactorY ?? 1.0);
+    if (!Number.isFinite(value)) return 1.0;
+    return Math.max(0, value);
+  })();
   const winFrameOffsetX =
     Number(gameConfig.gameplay.card.winFrameOffsetX ?? 0) || 0;
   const winFrameOffsetY =
@@ -697,6 +707,8 @@ export async function createGame(mount, opts = {}) {
       frameScale: winFrameScale,
       frameOffsetX: winFrameOffsetX,
       frameOffsetY: winFrameOffsetY,
+      tileScaleFactorX,
+      tileScaleFactorY,
       stateTextures: {
         default: tileDefaultTexture,
         hover: tileHoverTexture,

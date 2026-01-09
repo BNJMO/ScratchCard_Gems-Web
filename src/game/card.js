@@ -20,6 +20,8 @@ export class Card {
     frameScale,
     frameOffsetX,
     frameOffsetY,
+    tileScaleFactorX,
+    tileScaleFactorY,
     stateTextures,
     row,
     col,
@@ -55,6 +57,14 @@ export class Card {
     this.frameOffsetY = Number.isFinite(parsedFrameOffsetY)
       ? parsedFrameOffsetY
       : 0;
+    const parsedTileScaleFactorX = Number(tileScaleFactorX);
+    const parsedTileScaleFactorY = Number(tileScaleFactorY);
+    this.tileScaleFactorX = Number.isFinite(parsedTileScaleFactorX)
+      ? Math.max(0, parsedTileScaleFactorX)
+      : 1.0;
+    this.tileScaleFactorY = Number.isFinite(parsedTileScaleFactorY)
+      ? Math.max(0, parsedTileScaleFactorY)
+      : 1.0;
     this.stateTextures = {
       default: stateTextures?.default ?? null,
       hover: stateTextures?.hover ?? null,
@@ -1255,9 +1265,15 @@ export class Card {
       sprite.texture = texture;
     }
 
-    if (this._tileSize > 0) {
-      sprite.width = this._tileSize;
-      sprite.height = this._tileSize;
+    this.#applyTileSpriteScale(sprite);
+  }
+
+  #applyTileSpriteScale(sprite) {
+    if (!sprite) return;
+    const tileSize = Math.max(0, this._tileSize ?? 0);
+    if (tileSize > 0) {
+      sprite.width = tileSize * this.tileScaleFactorX;
+      sprite.height = tileSize * this.tileScaleFactorY;
     }
   }
 
@@ -1275,12 +1291,14 @@ export class Card {
     );
     const baseScale = tileSize > 0 ? tileSize / baseDimension : 1;
     const scale = baseScale * (this.frameScale ?? 1);
+    const scaleX = scale * (this.tileScaleFactorX ?? 1);
+    const scaleY = scale * (this.tileScaleFactorY ?? 1);
 
     if (frameSprite.scale?.set) {
-      frameSprite.scale.set(scale);
+      frameSprite.scale.set(scaleX, scaleY);
     } else if (frameSprite.scale) {
-      frameSprite.scale.x = scale;
-      frameSprite.scale.y = scale;
+      frameSprite.scale.x = scaleX;
+      frameSprite.scale.y = scaleY;
     }
 
     if (Number.isFinite(tileSize)) {
@@ -1296,8 +1314,7 @@ export class Card {
     const tileSprite = new Sprite(tileTexture);
     tileSprite.anchor.set(0.5);
     tileSprite.position.set(tileSize / 2, tileSize / 2);
-    tileSprite.width = tileSize;
-    tileSprite.height = tileSize;
+    this.#applyTileSpriteScale(tileSprite);
 
     const icon = new AnimatedSprite([Texture.EMPTY]);
     icon.anchor.set(0.5);
