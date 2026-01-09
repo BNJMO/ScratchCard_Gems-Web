@@ -511,12 +511,12 @@ export class GameScene {
 
     const availableWidth = Math.max(1, rendererWidth - horizontal * 2);
     const availableHeight = Math.max(1, rendererHeight - vertical * 2);
-    const size = Math.min(availableWidth, availableHeight);
-
     const topSpace = 30;
-    const boardSpace = Math.max(40, size - topSpace - 5);
+    const boardWidth = Math.max(1, availableWidth);
+    const boardHeight = Math.max(40, availableHeight - topSpace - 5);
     const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0.012;
-    const baseGap = Math.max(1, Math.floor(boardSpace * gapValue));
+    const gapBasis = Math.min(boardWidth, boardHeight);
+    const baseGap = Math.max(1, Math.floor(gapBasis * gapValue));
     const paddingX = Number(this.layoutOptions?.tilePaddingX ?? 1);
     const paddingY = Number(this.layoutOptions?.tilePaddingY ?? 1);
     const resolvedPaddingX = Number.isFinite(paddingX) ? paddingX : 1;
@@ -525,8 +525,8 @@ export class GameScene {
     const gapY = Math.floor(baseGap * resolvedPaddingY);
     const totalHorizontalGaps = gapX * Math.max(0, this.gridColumns - 1);
     const totalVerticalGaps = gapY * Math.max(0, this.gridRows - 1);
-    const tileAreaWidth = Math.max(1, boardSpace - totalHorizontalGaps);
-    const tileAreaHeight = Math.max(1, boardSpace - totalVerticalGaps);
+    const tileAreaWidth = Math.max(1, boardWidth - totalHorizontalGaps);
+    const tileAreaHeight = Math.max(1, boardHeight - totalVerticalGaps);
     const scaleX = Number(this.cardOptions?.tileScaleFactorX ?? 1);
     const scaleY = Number(this.cardOptions?.tileScaleFactorY ?? 1);
     const resolvedScaleX = Number.isFinite(scaleX) && scaleX > 0 ? scaleX : 1;
