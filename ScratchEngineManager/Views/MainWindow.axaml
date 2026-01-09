@@ -27,6 +27,7 @@
                            FontWeight="SemiBold"/>
                 <ComboBox ItemsSource="{Binding VariationOptions}"
                           SelectedItem="{Binding SelectedVariation}"
+                          DropDownOpened="OnVariationDropDownOpened"
                           Background="#1C1F26"
                           Foreground="#E6E8ED"
                           BorderBrush="#3B414F"

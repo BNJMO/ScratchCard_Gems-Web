@@ -803,7 +803,7 @@ public partial class MainWindowViewModel : ViewModelBase
         !string.IsNullOrWhiteSpace(variation) &&
         !string.Equals(variation, DefaultVariationOption, StringComparison.Ordinal);
 
-    private void RefreshVariationOptions(string? variationToSelect = null)
+    public void RefreshVariationOptions(string? variationToSelect = null)
     {
         VariationOptions.Clear();
         foreach (var option in BuildVariationOptions(repositoryRoot))
