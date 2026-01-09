@@ -17,15 +17,10 @@
       "iconOffsetX": 0,
       "offsetYv": -5,
       "offsetY": -5,
-      "tileWidth": 144,
-      "tileHeight": 148,
+      "tileWidth": 194,
+      "tileHeight": 198,
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true
-    },
-    "layout": {
-      "gapBetweenTiles": -7,
-      "paddingHorizontal": 0.02,
-      "paddingVertical": 0.06
     },
     "spritesheetProvider": {
       "columns": 3,
