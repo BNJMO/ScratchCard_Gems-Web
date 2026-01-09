@@ -10,6 +10,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using Avalonia;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -26,6 +27,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly string? repositoryRoot;
     private readonly string? gameConfigPath;
     private readonly string? buildConfigPath;
+    private readonly string? gitAuthConfigPath;
     private const string DefaultVariationOption = "Select Variation";
     private const string DefaultLocalServerUrl = "Local Server URL";
     private const int LocalServerPort = 3000;
@@ -40,13 +42,17 @@ public partial class MainWindowViewModel : ViewModelBase
     private JsonNode? variationGameConfigNode;
     private JsonNode? variationBuildConfigNode;
 
+    private GitAuthConfig gitAuthConfig = new();
+
     public MainWindowViewModel()
     {
         repositoryRoot = FindRepositoryRoot();
         gameConfigPath = repositoryRoot is null ? null : Path.Combine(repositoryRoot, "src", "gameConfig.json");
         buildConfigPath = repositoryRoot is null ? null : Path.Combine(repositoryRoot, "buildConfig.json");
+        gitAuthConfigPath = repositoryRoot is null ? null : Path.Combine(repositoryRoot, "ScratchEngineManager", "config.json");
         VariationOptions = new ObservableCollection<string>(BuildVariationOptions(repositoryRoot));
         SelectedVariation = DefaultVariationOption;
+        LoadGitAuthConfig();
         LoadConfigText();
         LoadVariationConfigText();
     }
@@ -1718,6 +1724,17 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task<bool> TryPullWithCredentialsAsync()
     {
+        if (TryGetConfigCredentials(out var configCredentials))
+        {
+            var configSuccess = await TryPullWithCredentialsAsync(configCredentials, saveOnSuccess: false);
+            if (configSuccess)
+            {
+                return true;
+            }
+
+            AppendInfo("Stored credentials failed. Please enter updated credentials.");
+        }
+
         if (RequestGitCredentialsAsync is null)
         {
             return false;
@@ -1730,6 +1747,11 @@ public partial class MainWindowViewModel : ViewModelBase
             return false;
         }
 
+        return await TryPullWithCredentialsAsync(credentials, saveOnSuccess: true);
+    }
+
+    private async Task<bool> TryPullWithCredentialsAsync(GitCredentialPromptResult credentials, bool saveOnSuccess)
+    {
         var originUrlResult = await RunProcessWithResultAsync("git", "config --get remote.origin.url", repositoryRoot!);
         if (originUrlResult.ExitCode != 0 || string.IsNullOrWhiteSpace(originUrlResult.StandardOutput))
         {
@@ -1754,6 +1776,13 @@ public partial class MainWindowViewModel : ViewModelBase
             AppendError("Git pull with the provided credentials failed.");
             AppendGitAuthGuidanceIfNeeded(pullResult.StandardError);
             return false;
+        }
+
+        if (saveOnSuccess)
+        {
+            gitAuthConfig.GitUsername = credentials.UserName;
+            gitAuthConfig.GitPersonalAccessToken = credentials.Token;
+            SaveGitAuthConfig();
         }
 
         return true;
@@ -1803,7 +1832,71 @@ public partial class MainWindowViewModel : ViewModelBase
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
     }
 
+    private void LoadGitAuthConfig()
+    {
+        gitAuthConfig = new GitAuthConfig();
+        if (string.IsNullOrWhiteSpace(gitAuthConfigPath) || !File.Exists(gitAuthConfigPath))
+        {
+            return;
+        }
+
+        try
+        {
+            var json = File.ReadAllText(gitAuthConfigPath);
+            var config = JsonSerializer.Deserialize<GitAuthConfig>(json);
+            if (config is not null)
+            {
+                gitAuthConfig = config;
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Failed to read git credentials config: {ex.Message}");
+        }
+    }
+
+    private void SaveGitAuthConfig()
+    {
+        if (string.IsNullOrWhiteSpace(gitAuthConfigPath))
+        {
+            return;
+        }
+
+        try
+        {
+            var json = JsonSerializer.Serialize(gitAuthConfig, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(gitAuthConfigPath, json);
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Failed to save git credentials config: {ex.Message}");
+        }
+    }
+
+    private bool TryGetConfigCredentials(out GitCredentialPromptResult credentials)
+    {
+        var userName = gitAuthConfig.GitUsername?.Trim() ?? string.Empty;
+        var token = gitAuthConfig.GitPersonalAccessToken?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(token))
+        {
+            credentials = new GitCredentialPromptResult(string.Empty, string.Empty);
+            return false;
+        }
+
+        credentials = new GitCredentialPromptResult(userName, token);
+        return true;
+    }
+
     private sealed record ProcessResult(int ExitCode, string StandardOutput, string StandardError);
 
     public sealed record GitCredentialPromptResult(string UserName, string Token);
+
+    private sealed class GitAuthConfig
+    {
+        [JsonPropertyName("gitUsername")]
+        public string GitUsername { get; set; } = string.Empty;
+
+        [JsonPropertyName("gitPersonalAccessToken")]
+        public string GitPersonalAccessToken { get; set; } = string.Empty;
+    }
 }
