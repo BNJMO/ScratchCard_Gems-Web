@@ -102,6 +102,13 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool isUpdatingEngine;
 
+    public bool CanUpdateEngine => !IsUpdatingEngine;
+
+    partial void OnIsUpdatingEngineChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanUpdateEngine));
+    }
+
     public string GameConfigTabHeader => IsGameConfigDirty ? "Game Config *" : "Game Config";
 
     public string BuildConfigTabHeader => IsBuildConfigDirty ? "Build Config *" : "Build Config";
@@ -597,8 +604,8 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             AppendInfo("Validating git availability...");
-            var gitVersionExitCode = await RunProcessAsync("git", "--version", repositoryRoot);
-            if (gitVersionExitCode != 0)
+            var gitVersionResult = await RunProcessWithResultAsync("git", "--version", repositoryRoot);
+            if (gitVersionResult.ExitCode != 0)
             {
                 AppendError("Git is not available. Please install Git and ensure it is on your PATH.");
                 return;
@@ -645,10 +652,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task<bool> RunGitCommandAsync(string arguments, string failureMessage)
     {
-        var exitCode = await RunProcessAsync("git", arguments, repositoryRoot!);
-        if (exitCode != 0)
+        var result = await RunProcessWithResultAsync("git", arguments, repositoryRoot!);
+        if (result.ExitCode != 0)
         {
             AppendError(failureMessage);
+            if (arguments == "pull")
+            {
+                AppendGitAuthGuidanceIfNeeded(result.StandardError);
+            }
             return false;
         }
 
@@ -1504,6 +1515,45 @@ public partial class MainWindowViewModel : ViewModelBase
         return process.ExitCode;
     }
 
+    private async Task<ProcessResult> RunProcessWithResultAsync(string fileName, string arguments, string workingDirectory)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = new Process { StartInfo = startInfo };
+        process.Start();
+
+        var outputBuilder = new StringBuilder();
+        var errorBuilder = new StringBuilder();
+
+        void AppendInfoLine(string line)
+        {
+            outputBuilder.AppendLine(line);
+            AppendInfo(line);
+        }
+
+        void AppendErrorLine(string line)
+        {
+            errorBuilder.AppendLine(line);
+            AppendError(line);
+        }
+
+        var outputTask = ReadStreamAsync(process.StandardOutput, AppendInfoLine);
+        var errorTask = ReadStreamAsync(process.StandardError, AppendErrorLine);
+
+        await Task.WhenAll(outputTask, errorTask, process.WaitForExitAsync());
+
+        return new ProcessResult(process.ExitCode, outputBuilder.ToString(), errorBuilder.ToString());
+    }
+
     private Process? StartLocalServerProcess(string fileName, string arguments, string workingDirectory)
     {
         var startInfo = new ProcessStartInfo
@@ -1610,4 +1660,24 @@ public partial class MainWindowViewModel : ViewModelBase
             }
         }
     }
+
+    private void AppendGitAuthGuidanceIfNeeded(string errorOutput)
+    {
+        if (string.IsNullOrWhiteSpace(errorOutput))
+        {
+            return;
+        }
+
+        var normalized = errorOutput.ToLowerInvariant();
+        if (normalized.Contains("permission denied (publickey)") ||
+            normalized.Contains("could not read from remote repository") ||
+            normalized.Contains("authentication failed"))
+        {
+            AppendInfo("Git authentication failed. If using SSH, ensure your SSH key is added to the agent and uploaded to your Git host.");
+            AppendInfo("If using HTTPS, update stored credentials (Windows Credential Manager / macOS Keychain) or switch the remote URL to HTTPS.");
+            AppendInfo("You can verify the remote URL with: git remote -v");
+        }
+    }
+
+    private sealed record ProcessResult(int ExitCode, string StandardOutput, string StandardError);
 }

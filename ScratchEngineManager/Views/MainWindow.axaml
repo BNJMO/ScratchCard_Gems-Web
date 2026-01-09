@@ -39,6 +39,7 @@
                            FontWeight="SemiBold"/>
                 <Button Content="Update Engine"
                         Click="OnUpdateEngineClick"
+                        IsEnabled="{Binding CanUpdateEngine}"
                         Background="#E56A2C"
                         Foreground="#F7F8FA"
                         BorderBrush="#E56A2C"
