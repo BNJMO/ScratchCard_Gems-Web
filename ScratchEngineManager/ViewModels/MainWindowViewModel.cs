@@ -13,6 +13,8 @@ using Avalonia;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Svg.Skia;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -28,6 +30,21 @@ public partial class MainWindowViewModel : ViewModelBase
     private const string DefaultVariationOption = "Select Variation";
     private const string DefaultLocalServerUrl = "Local Server URL";
     private const int LocalServerPort = 3000;
+    private static readonly HashSet<string> RasterImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".bmp",
+        ".webp",
+        ".tiff",
+    };
+    private static readonly HashSet<string> VectorImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".svg",
+        ".svgz",
+    };
     private string gameConfigSnapshot = string.Empty;
     private string buildConfigSnapshot = string.Empty;
     private string variationGameConfigSnapshot = string.Empty;
@@ -47,7 +64,9 @@ public partial class MainWindowViewModel : ViewModelBase
         VariationOptions = new ObservableCollection<string>(BuildVariationOptions(repositoryRoot));
         SelectedVariation = DefaultVariationOption;
         LoadConfigText();
+        LoadAssetEntries();
         LoadVariationConfigText();
+        LoadVariationAssetEntries();
     }
 
     public ObservableCollection<string> VariationOptions { get; }
@@ -64,6 +83,10 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<ConfigDisplayItem> VariationGameConfigEntries { get; } = new();
 
     public ObservableCollection<ConfigDisplayItem> VariationBuildConfigEntries { get; } = new();
+
+    public ObservableCollection<AssetDisplayItem> GameAssetEntries { get; } = new();
+
+    public ObservableCollection<AssetDisplayItem> VariationAssetEntries { get; } = new();
 
     [ObservableProperty]
     private string? selectedVariation;
@@ -217,6 +240,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
             AppendSuccess("Load Selected Variation To Game complete.");
             LoadConfigText();
+            LoadAssetEntries();
+            LoadVariationAssetEntries();
         }
         catch (Exception ex)
         {
@@ -296,6 +321,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             AppendSuccess($"{variationName} variation replaced from game successfully.");
+            LoadVariationAssetEntries();
         }
         catch (Exception ex)
         {
@@ -619,6 +645,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         IsVariationSelected = IsActualVariation(value);
         LoadVariationConfigText();
+        LoadVariationAssetEntries();
     }
 
     private static bool IsActualVariation(string? variation) =>
@@ -637,6 +664,18 @@ public partial class MainWindowViewModel : ViewModelBase
         buildConfigSnapshot = BuildConfigText;
         IsGameConfigDirty = false;
         IsBuildConfigDirty = false;
+    }
+
+    private void LoadAssetEntries()
+    {
+        if (string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            GameAssetEntries.Clear();
+            return;
+        }
+
+        var assetsRoot = Path.Combine(repositoryRoot, "assets");
+        PopulateAssetEntries(GameAssetEntries, assetsRoot);
     }
 
     private void LoadVariationConfigText()
@@ -669,6 +708,19 @@ public partial class MainWindowViewModel : ViewModelBase
         IsVariationBuildConfigDirty = false;
     }
 
+    private void LoadVariationAssetEntries()
+    {
+        if (!IsVariationSelected || string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            VariationAssetEntries.Clear();
+            return;
+        }
+
+        var variationRoot = Path.Combine(repositoryRoot, "Variations", SelectedVariation!);
+        var assetsRoot = Path.Combine(variationRoot, "assets");
+        PopulateAssetEntries(VariationAssetEntries, assetsRoot);
+    }
+
     private string LoadConfigFile(string? configPath)
     {
         if (string.IsNullOrWhiteSpace(configPath) || !File.Exists(configPath))
@@ -684,6 +736,176 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             AppendError($"Error loading config {configPath}: {ex.Message}");
             return string.Empty;
+        }
+    }
+
+    private void PopulateAssetEntries(ObservableCollection<AssetDisplayItem> target, string assetsRoot)
+    {
+        target.Clear();
+
+        if (!Directory.Exists(assetsRoot))
+        {
+            return;
+        }
+
+        var items = new List<AssetDisplayItem>();
+        CollectAssetEntries(assetsRoot, assetsRoot, items, 0, () => UpdateAssetVisibility(items));
+        UpdateAssetVisibility(items);
+
+        foreach (var item in items)
+        {
+            target.Add(item);
+        }
+    }
+
+    private void CollectAssetEntries(
+        string rootPath,
+        string currentPath,
+        List<AssetDisplayItem> target,
+        int depth,
+        Action visibilityUpdater)
+    {
+        var directories = Directory.GetDirectories(currentPath)
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        foreach (var directory in directories)
+        {
+            var relativePath = Path.GetRelativePath(rootPath, directory);
+            var segments = BuildAssetSegments(relativePath);
+            var label = segments.LastOrDefault() ?? relativePath;
+            var groupEntry = new AssetFolderEntry(label, segments, depth, _ => visibilityUpdater());
+            target.Add(groupEntry);
+            CollectAssetEntries(rootPath, directory, target, depth + 1, visibilityUpdater);
+        }
+
+        var files = Directory.GetFiles(currentPath)
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        foreach (var file in files)
+        {
+            var relativePath = Path.GetRelativePath(rootPath, file);
+            var segments = BuildAssetSegments(relativePath);
+            var fileName = Path.GetFileName(file);
+            var preview = TryLoadImage(file);
+            target.Add(new AssetFileEntry(fileName, file, segments, depth, preview));
+        }
+    }
+
+    private static IReadOnlyList<string> BuildAssetSegments(string relativePath)
+    {
+        return relativePath
+            .Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries)
+            .ToArray();
+    }
+
+    private static void UpdateAssetVisibility(IReadOnlyList<AssetDisplayItem> items)
+    {
+        var groupStates = items
+            .OfType<AssetFolderEntry>()
+            .ToDictionary(entry => BuildAssetKey(entry.Segments), entry => entry.IsExpanded, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var item in items)
+        {
+            item.IsVisible = ShouldAssetBeVisible(item, groupStates);
+        }
+    }
+
+    private static bool ShouldAssetBeVisible(
+        AssetDisplayItem item,
+        IReadOnlyDictionary<string, bool> groupStates)
+    {
+        if (item.Segments.Count == 0)
+        {
+            return true;
+        }
+
+        var segmentCount = item.Segments.Count - 1;
+        if (segmentCount <= 0)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < segmentCount; i++)
+        {
+            var key = BuildAssetKey(item.Segments.Take(i + 1));
+            if (groupStates.TryGetValue(key, out var isExpanded) && !isExpanded)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static string BuildAssetKey(IEnumerable<string> segments) =>
+        string.Join("/", segments);
+
+    private static IImage? TryLoadImage(string filePath)
+    {
+        var extension = Path.GetExtension(filePath);
+        if (RasterImageExtensions.Contains(extension))
+        {
+            try
+            {
+                return new Bitmap(filePath);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        if (VectorImageExtensions.Contains(extension))
+        {
+            try
+            {
+                var source = SvgSource.Load(filePath);
+                return new SvgImage { Source = source };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    public void OpenAssetFile(AssetFileEntry entry)
+    {
+        try
+        {
+            if (File.Exists(entry.FullPath))
+            {
+                Process.Start(new ProcessStartInfo(entry.FullPath) { UseShellExecute = true });
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Error opening asset {entry.FileName}: {ex.Message}");
+        }
+    }
+
+    public void ReplaceAssetFile(AssetFileEntry entry, string newFilePath)
+    {
+        try
+        {
+            if (!File.Exists(newFilePath))
+            {
+                AppendError($"Dropped file not found: {newFilePath}");
+                return;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(entry.FullPath)!);
+            File.Copy(newFilePath, entry.FullPath, true);
+            entry.PreviewImage = TryLoadImage(entry.FullPath);
+            AppendSuccess($"Replaced asset: {entry.FileName}");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Error replacing asset {entry.FileName}: {ex.Message}");
         }
     }
 
