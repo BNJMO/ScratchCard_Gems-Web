@@ -141,6 +141,7 @@ dlldata.c
 # DNX
 project.lock.json
 artifacts/
+ScratchEngineManager/config.json
 
 *_i.c
 *_p.c
