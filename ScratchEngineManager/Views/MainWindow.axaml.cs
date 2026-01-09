@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Specialized;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using ScratchEngineManager.ViewModels;
 
@@ -131,5 +133,50 @@ public partial class MainWindow : Window
         {
             viewModel.StopLocalServer();
         }
+    }
+
+    private void OnAssetPreviewDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is Control control &&
+            control.DataContext is AssetFileEntry entry &&
+            DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.OpenAssetFile(entry);
+        }
+    }
+
+    private void OnAssetPreviewDragOver(object? sender, DragEventArgs e)
+    {
+        if (sender is not Control control || control.DataContext is not AssetFileEntry)
+        {
+            e.DragEffects = DragDropEffects.None;
+            return;
+        }
+
+        e.DragEffects = e.Data.Contains(DataFormats.Files) ? DragDropEffects.Copy : DragDropEffects.None;
+    }
+
+    private void OnAssetPreviewDrop(object? sender, DragEventArgs e)
+    {
+        if (sender is not Control control ||
+            control.DataContext is not AssetFileEntry entry ||
+            DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        var file = e.Data.GetFiles()?.FirstOrDefault();
+        if (file is null)
+        {
+            return;
+        }
+
+        var localPath = file.TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(localPath))
+        {
+            return;
+        }
+
+        viewModel.ReplaceAssetFile(entry, localPath);
     }
 }
