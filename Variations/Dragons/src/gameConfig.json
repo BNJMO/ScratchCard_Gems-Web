@@ -1,6 +1,5 @@
 {
   "app": {
-    "vitePath": "/_Games/mine_crash/clients/dragons/",
     "gameName": "Flipping Cards - Dragons",
     "fileExtensions": {
       "sounds": ".wav",

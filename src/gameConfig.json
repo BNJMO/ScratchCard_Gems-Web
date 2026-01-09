@@ -1,6 +1,5 @@
 {
   "app": {
-    "vitePath": "/ScratchCard_Gems-Web/",
     "gameName": "Flipping Cards - Gems",
     "fileExtensions": {
       "sounds": ".wav",

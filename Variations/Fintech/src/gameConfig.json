@@ -1,6 +1,5 @@
 {
   "app": {
-    "vitePath": "/_Games/mine_crash/clients/fintech/",
     "gameName": "Flipping Cards - Fintech",
     "fileExtensions": {
       "sounds": ".wav",

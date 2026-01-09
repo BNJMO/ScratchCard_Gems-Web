@@ -1,6 +1,5 @@
 {
   "app": {
-    "vitePath": "/_Games/mine_crash/clients/lilbaby/",
     "gameName": "Flipping Cards - Bling",
     "fileExtensions": {
       "sounds": ".wav",
