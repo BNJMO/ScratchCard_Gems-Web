@@ -60,6 +60,7 @@
       "useSprite": true,
       "spriteName": "winPopup",
       "scale": 0.6,
+      "minScale": 0.15,
       "offsetX": 0,
       "offsetY": 0,
       "showDuration": 10000,

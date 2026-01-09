@@ -62,8 +62,6 @@ export class SpriteWinPopup {
   getResponsiveScale() {
     const { 
       minScale, 
-      minScaleMobile, 
-      minScaleSmallMobile, 
       mobileBreakpoint,
       tabletBreakpoint, 
       smallMobileBreakpoint,
@@ -87,31 +85,27 @@ export class SpriteWinPopup {
       if (isSmallMobile) {
         // Very small screens (≤480px) - controlled size
         const maxScale = (window.innerWidth * smallMobileMaxWidthPercent) / 400;
-        scale = Math.min(scale, Math.max(minScaleSmallMobile, maxScale));
-        scale = Math.min(0.7, scale);
+        scale = Math.min(scale, Math.max(minScale, maxScale));
       } else if (isTablet) {
         // Tablet screens (481-600px) - moderate size
         const maxScale = (window.innerWidth * tabletMaxWidthPercent) / 400;
-        scale = Math.min(scale, Math.max(minScaleMobile, maxScale));
-        scale = Math.min(0.8, scale);
+        scale = Math.min(scale, Math.max(minScale, maxScale));
       } else if (isMobile) {
         // Mobile screens (601-768px) - reasonable size
         const maxScale = (window.innerWidth * mobileMaxWidthPercent) / 400;
-        scale = Math.min(scale, Math.max(minScaleMobile, maxScale));
-        scale = Math.min(0.9, scale);
+        scale = Math.min(scale, Math.max(minScale, maxScale));
       }
       // 997px will fall through to desktop scaling (no restrictions)
-      
       return scale;
     }
     
     // Fallback scaling when no parent
     if (isSmallMobile) {
-      return Math.max(minScaleSmallMobile, Math.min(0.6, (window.innerWidth * smallMobileMaxWidthPercent) / 400));
+      return Math.max(minScale, Math.min(0.6, (window.innerWidth * smallMobileMaxWidthPercent) / 400));
     } else if (isTablet) {
-      return Math.max(minScaleMobile, Math.min(0.7, (window.innerWidth * tabletMaxWidthPercent) / 400));
+      return Math.max(minScale, Math.min(0.7, (window.innerWidth * tabletMaxWidthPercent) / 400));
     } else if (isMobile) {
-      return Math.max(minScaleMobile, Math.min(0.8, (window.innerWidth * mobileMaxWidthPercent) / 400));
+      return Math.max(minScale, Math.min(0.8, (window.innerWidth * mobileMaxWidthPercent) / 400));
     }
     
     return 1.0;
