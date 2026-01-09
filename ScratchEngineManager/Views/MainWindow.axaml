@@ -81,6 +81,82 @@
 
         <Border Grid.Column="1" Background="#1C1F26" Padding="16">
             <TabControl x:Name="ConfigTabs" Background="#1C1F26" BorderBrush="#3B414F">
+                <TabControl.Resources>
+                    <DataTemplate DataType="vm:AssetFolderEntry">
+                        <StackPanel>
+                            <ToggleButton IsChecked="{Binding IsExpanded}"
+                                          Background="Transparent"
+                                          BorderBrush="Transparent"
+                                          Padding="6,4"
+                                          HorizontalAlignment="Stretch"
+                                          Margin="{Binding Indent}">
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="8"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ExpansionGlyph}"
+                                               Foreground="#E6E8ED"
+                                               FontWeight="Bold"
+                                               FontFamily="Consolas"/>
+                                    <TextBlock Text="{Binding Name}"
+                                               Foreground="#E6E8ED"
+                                               FontSize="13"
+                                               FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </ToggleButton>
+                            <ItemsControl ItemsSource="{Binding Children}"
+                                          IsVisible="{Binding IsExpanded}"
+                                          Margin="0,4,0,10"/>
+                        </StackPanel>
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:AssetFileEntry">
+                        <StackPanel Margin="{Binding Indent}"
+                                    Spacing="6"
+                                    Width="160">
+                            <Border Background="#243447"
+                                    BorderBrush="#3B414F"
+                                    CornerRadius="6"
+                                    Width="140"
+                                    Height="140"
+                                    HorizontalAlignment="Left"
+                                    AllowDrop="True"
+                                    IsVisible="{Binding HasPreviewSquare}"
+                                    DoubleTapped="OnAssetPreviewDoubleTapped"
+                                    Drop="OnAssetPreviewDrop">
+                                <Grid>
+                                    <Image Source="{Binding PreviewImage}"
+                                           Stretch="Uniform"
+                                           IsVisible="{Binding IsImage}"/>
+                                    <StackPanel HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Spacing="8"
+                                                IsVisible="{Binding IsAudio}">
+                                        <Button Content="Play"
+                                                Command="{Binding PlayAudioCommand}"
+                                                Background="#3E8EDE"
+                                                Foreground="#F7F8FA"
+                                                BorderBrush="#3E8EDE"
+                                                CornerRadius="6"
+                                                Padding="8,3"
+                                                FontSize="12"/>
+                                        <Button Content="Stop"
+                                                Command="{Binding StopAudioCommand}"
+                                                Background="#3B414F"
+                                                Foreground="#E6E8ED"
+                                                BorderBrush="#3B414F"
+                                                CornerRadius="6"
+                                                Padding="8,3"
+                                                FontSize="12"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <TextBlock Text="{Binding FileName}"
+                                       Foreground="#E6E8ED"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Width="140"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </TabControl.Resources>
                 <TabItem Header="Log">
                     <Border Background="#20242C"
                             BorderBrush="#3B414F"
@@ -555,6 +631,66 @@
                                                         </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.DataTemplates>
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </TabItem>
+                <TabItem Header="Assets">
+                    <Border Background="#20242C"
+                            BorderBrush="#3B414F"
+                            CornerRadius="6"
+                            Padding="12">
+                        <Grid RowDefinitions="*">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto,*">
+                                <Border Background="#1A1E25"
+                                        BorderBrush="#3B414F"
+                                        CornerRadius="6"
+                                        Padding="8">
+                                    <Grid RowDefinitions="Auto,*">
+                                        <TextBlock Text="Loaded Game"
+                                                   Foreground="#E6E8ED"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,8"/>
+                                        <ScrollViewer Grid.Row="1">
+                                            <ItemsControl ItemsSource="{Binding GameAssetEntries}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Border>
+                                <GridSplitter Grid.Column="1"
+                                              Width="10"
+                                              Background="#2A2F38"
+                                              ResizeDirection="Columns"
+                                              HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Stretch"/>
+                                <Border Grid.Column="2"
+                                        Background="#1A1E25"
+                                        BorderBrush="#3B414F"
+                                        CornerRadius="6"
+                                        Padding="8">
+                                    <Grid RowDefinitions="Auto,*">
+                                        <TextBlock Text="Selected Variation"
+                                                   Foreground="#E6E8ED"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,8"/>
+                                        <ScrollViewer Grid.Row="1">
+                                            <ItemsControl ItemsSource="{Binding VariationAssetEntries}">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>
                                                         <StackPanel/>

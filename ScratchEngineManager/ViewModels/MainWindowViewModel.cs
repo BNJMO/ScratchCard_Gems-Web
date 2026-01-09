@@ -48,6 +48,7 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectedVariation = DefaultVariationOption;
         LoadConfigText();
         LoadVariationConfigText();
+        LoadAssetEntries();
     }
 
     public ObservableCollection<string> VariationOptions { get; }
@@ -64,6 +65,10 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<ConfigDisplayItem> VariationGameConfigEntries { get; } = new();
 
     public ObservableCollection<ConfigDisplayItem> VariationBuildConfigEntries { get; } = new();
+
+    public ObservableCollection<AssetEntryBase> GameAssetEntries { get; } = new();
+
+    public ObservableCollection<AssetEntryBase> VariationAssetEntries { get; } = new();
 
     [ObservableProperty]
     private string? selectedVariation;
@@ -217,6 +222,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             AppendSuccess("Load Selected Variation To Game complete.");
             LoadConfigText();
+            LoadAssetEntries();
         }
         catch (Exception ex)
         {
@@ -296,6 +302,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             AppendSuccess($"{variationName} variation replaced from game successfully.");
+            LoadAssetEntries();
         }
         catch (Exception ex)
         {
@@ -619,6 +626,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         IsVariationSelected = IsActualVariation(value);
         LoadVariationConfigText();
+        LoadVariationAssetEntries();
     }
 
     private static bool IsActualVariation(string? variation) =>
@@ -667,6 +675,95 @@ public partial class MainWindowViewModel : ViewModelBase
         variationBuildConfigSnapshot = VariationBuildConfigText;
         IsVariationGameConfigDirty = false;
         IsVariationBuildConfigDirty = false;
+    }
+
+    private void LoadAssetEntries()
+    {
+        if (string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            GameAssetEntries.Clear();
+            VariationAssetEntries.Clear();
+            return;
+        }
+
+        var assetsRoot = Path.Combine(repositoryRoot, "assets");
+        PopulateAssetEntries(GameAssetEntries, assetsRoot);
+        LoadVariationAssetEntries();
+    }
+
+    private void LoadVariationAssetEntries()
+    {
+        VariationAssetEntries.Clear();
+        if (!IsVariationSelected || string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            return;
+        }
+
+        var variationRoot = Path.Combine(repositoryRoot, "Variations", SelectedVariation!);
+        var variationAssets = Path.Combine(variationRoot, "assets");
+        PopulateAssetEntries(VariationAssetEntries, variationAssets);
+    }
+
+    private static void PopulateAssetEntries(ObservableCollection<AssetEntryBase> target, string assetsRoot)
+    {
+        target.Clear();
+        if (!Directory.Exists(assetsRoot))
+        {
+            return;
+        }
+
+        foreach (var directory in Directory.GetDirectories(assetsRoot).OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
+        {
+            target.Add(BuildFolderEntry(directory, 0));
+        }
+
+        foreach (var file in Directory.GetFiles(assetsRoot).OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
+        {
+            target.Add(new AssetFileEntry(file, 0));
+        }
+    }
+
+    private static AssetFolderEntry BuildFolderEntry(string folderPath, int depth)
+    {
+        var entry = new AssetFolderEntry(Path.GetFileName(folderPath), depth);
+
+        foreach (var directory in Directory.GetDirectories(folderPath).OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
+        {
+            entry.Children.Add(BuildFolderEntry(directory, depth + 1));
+        }
+
+        foreach (var file in Directory.GetFiles(folderPath).OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
+        {
+            entry.Children.Add(new AssetFileEntry(file, depth + 1));
+        }
+
+        return entry;
+    }
+
+    public void ReplaceAssetFile(AssetFileEntry entry, string sourcePath)
+    {
+        if (!File.Exists(sourcePath))
+        {
+            return;
+        }
+
+        try
+        {
+            var destinationPath = entry.FullPath;
+            var destinationDirectory = Path.GetDirectoryName(destinationPath);
+            if (!string.IsNullOrWhiteSpace(destinationDirectory))
+            {
+                Directory.CreateDirectory(destinationDirectory);
+            }
+
+            File.Copy(sourcePath, destinationPath, true);
+            entry.RefreshPreview();
+            AppendSuccess($"Replaced asset: {entry.FileName}");
+        }
+        catch (Exception ex)
+        {
+            AppendError($"Failed to replace asset {entry.FileName}: {ex.Message}");
+        }
     }
 
     private string LoadConfigFile(string? configPath)
