@@ -1,10 +1,10 @@
 {
   "buildId": "0.1.2",
-  "buildDate": "1/9/2026, 6:08:27 PM",
+  "buildDate": "1/9/2026, 6:23:15 PM",
   "environment": "Production",
   "vite": {
     "vitePath": "/ScratchCard_Gems-Web/",
     "localVitePath": "/ScratchCard_Gems-Web/",
-    "exportVitePath": "/_Games/mine_crash/clients/mansory_flip/"
+    "exportVitePath": "/_Games/mine_crash/clients/mansory_flip_2/"
   }
 }
