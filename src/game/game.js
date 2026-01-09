@@ -456,12 +456,12 @@ export async function createGame(mount, opts = {}) {
   const tilePaddingX = (() => {
     const value = Number(gameConfig.gameplay.card.tilePaddingX ?? 1.0);
     if (!Number.isFinite(value)) return 1.0;
-    return Math.max(0, value);
+    return value;
   })();
   const tilePaddingY = (() => {
     const value = Number(gameConfig.gameplay.card.tilePaddingY ?? 1.0);
     if (!Number.isFinite(value)) return 1.0;
-    return Math.max(0, value);
+    return value;
   })();
   const winFrameOffsetX =
     Number(gameConfig.gameplay.card.winFrameOffsetX ?? 0) || 0;

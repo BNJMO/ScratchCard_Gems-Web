@@ -513,8 +513,10 @@ export class GameScene {
     const baseGap = Math.max(1, Math.floor(boardSpace * gapValue));
     const paddingX = Number(this.layoutOptions?.tilePaddingX ?? 1);
     const paddingY = Number(this.layoutOptions?.tilePaddingY ?? 1);
-    const gapX = Math.max(0, Math.floor(baseGap * paddingX));
-    const gapY = Math.max(0, Math.floor(baseGap * paddingY));
+    const resolvedPaddingX = Number.isFinite(paddingX) ? paddingX : 1;
+    const resolvedPaddingY = Number.isFinite(paddingY) ? paddingY : 1;
+    const gapX = Math.floor(baseGap * resolvedPaddingX);
+    const gapY = Math.floor(baseGap * resolvedPaddingY);
     const totalHorizontalGaps = gapX * Math.max(0, this.gridColumns - 1);
     const totalVerticalGaps = gapY * Math.max(0, this.gridRows - 1);
     const tileAreaWidth = Math.max(1, boardSpace - totalHorizontalGaps);
