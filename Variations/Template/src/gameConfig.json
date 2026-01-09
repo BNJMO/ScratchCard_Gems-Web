@@ -68,7 +68,8 @@
       "textColor": "#FFFFFF",
       "amountColor": "#EAFF00",
       "fontSize": 42,
-      "amountFontSize": 38
+      "amountFontSize": 38,
+      "minScale": 0.15
     }
   }
 }

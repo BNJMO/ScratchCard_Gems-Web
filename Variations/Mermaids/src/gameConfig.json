@@ -30,7 +30,7 @@
       "iconOffsetY": -5,
       "spritesheetAnimationSpeed": 0.16,
       "matchShake": false,
-        "winFrameScale": 0.99,
+      "winFrameScale": 0.99,
       "tileScaleFactorX": 1.0,
       "tileScaleFactorY": 1.0,
       "tilePaddingX": 1.0,
@@ -69,7 +69,8 @@
       "textColor": "#FFFFFF",
       "amountColor": "#EAFF00",
       "fontSize": 42,
-      "amountFontSize": 38
+      "amountFontSize": 38,
+      "minScale": 0.15
     }
   }
 }
