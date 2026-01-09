@@ -41,6 +41,8 @@ export class GameScene {
       frameScale: cardOptions?.frameScale ?? 1.0,
       frameOffsetX: cardOptions?.frameOffsetX ?? 0,
       frameOffsetY: cardOptions?.frameOffsetY ?? 0,
+      tileWidth: cardOptions?.tileWidth ?? 0,
+      tileHeight: cardOptions?.tileHeight ?? 0,
       tileScaleFactorX: cardOptions?.tileScaleFactorX ?? 1.0,
       tileScaleFactorY: cardOptions?.tileScaleFactorY ?? 1.0,
       stateTextures: cardOptions?.stateTextures ?? {},
@@ -201,6 +203,8 @@ export class GameScene {
           frameScale: this.cardOptions.frameScale,
           frameOffsetX: this.cardOptions.frameOffsetX,
           frameOffsetY: this.cardOptions.frameOffsetY,
+          tileWidth: this.cardOptions.tileWidth,
+          tileHeight: this.cardOptions.tileHeight,
           tileScaleFactorX: this.cardOptions.tileScaleFactorX,
           tileScaleFactorY: this.cardOptions.tileScaleFactorY,
           stateTextures: this.cardOptions.stateTextures,
@@ -509,27 +513,49 @@ export class GameScene {
 
     const topSpace = 30;
     const boardSpace = Math.max(40, size - topSpace - 5);
-    const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0.012;
-    const baseGap = Math.max(1, Math.floor(boardSpace * gapValue));
-    const paddingX = Number(this.layoutOptions?.tilePaddingX ?? 1);
-    const paddingY = Number(this.layoutOptions?.tilePaddingY ?? 1);
-    const gapX = Math.max(0, Math.floor(baseGap * paddingX));
-    const gapY = Math.max(0, Math.floor(baseGap * paddingY));
-    const totalHorizontalGaps = gapX * Math.max(0, this.gridColumns - 1);
-    const totalVerticalGaps = gapY * Math.max(0, this.gridRows - 1);
-    const tileAreaWidth = Math.max(1, boardSpace - totalHorizontalGaps);
-    const tileAreaHeight = Math.max(1, boardSpace - totalVerticalGaps);
-    const tileSize = Math.max(
-      1,
-      Math.floor(
-        Math.min(
-          tileAreaWidth / this.gridColumns,
-          tileAreaHeight / this.gridRows
+    
+    // Check for configured tile dimensions
+    const configuredTileWidth = this.cardOptions.tileWidth > 0 ? this.cardOptions.tileWidth : 0;
+    const configuredTileHeight = this.cardOptions.tileHeight > 0 ? this.cardOptions.tileHeight : 0;
+    
+    let tileSize, gapX, gapY, contentWidth, contentHeight;
+    
+    if (configuredTileWidth > 0 && configuredTileHeight > 0) {
+      // Use configured dimensions
+      const maxTileDimension = Math.max(configuredTileWidth, configuredTileHeight);
+      tileSize = maxTileDimension;
+      
+      const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0.012;
+      const baseGap = Math.max(1, Math.floor(maxTileDimension * gapValue));
+      gapX = baseGap;
+      gapY = baseGap;
+      
+      contentWidth = configuredTileWidth * this.gridColumns + gapX * Math.max(0, this.gridColumns - 1);
+      contentHeight = configuredTileHeight * this.gridRows + gapY * Math.max(0, this.gridRows - 1);
+    } else {
+      // Use calculated dimensions (original logic)
+      const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0.012;
+      const baseGap = Math.max(1, Math.floor(boardSpace * gapValue));
+      const paddingX = Number(this.layoutOptions?.tilePaddingX ?? 1);
+      const paddingY = Number(this.layoutOptions?.tilePaddingY ?? 1);
+      gapX = Math.max(0, Math.floor(baseGap * paddingX));
+      gapY = Math.max(0, Math.floor(baseGap * paddingY));
+      const totalHorizontalGaps = gapX * Math.max(0, this.gridColumns - 1);
+      const totalVerticalGaps = gapY * Math.max(0, this.gridRows - 1);
+      const tileAreaWidth = Math.max(1, boardSpace - totalHorizontalGaps);
+      const tileAreaHeight = Math.max(1, boardSpace - totalVerticalGaps);
+      tileSize = Math.max(
+        1,
+        Math.floor(
+          Math.min(
+            tileAreaWidth / this.gridColumns,
+            tileAreaHeight / this.gridRows
+          )
         )
-      )
-    );
-    const contentWidth = tileSize * this.gridColumns + totalHorizontalGaps;
-    const contentHeight = tileSize * this.gridRows + totalVerticalGaps;
+      );
+      contentWidth = tileSize * this.gridColumns + totalHorizontalGaps;
+      contentHeight = tileSize * this.gridRows + totalVerticalGaps;
+    }
     const contentSize = Math.max(contentWidth, contentHeight);
     const boardCenterX = horizontal + availableWidth / 2;
     const boardCenterY = vertical + availableHeight / 2;
