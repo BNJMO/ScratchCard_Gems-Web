@@ -230,18 +230,24 @@ export class GameScene {
       tileSize,
       gapX,
       gapY,
+      scaledTileWidth,
+      scaledTileHeight,
       contentWidth,
       contentHeight,
       boardCenterX,
       boardCenterY,
     } = layout;
-    const startX = -contentWidth / 2;
-    const startY = -contentHeight / 2;
+    const stepX = (scaledTileWidth ?? tileSize) + gapX;
+    const stepY = (scaledTileHeight ?? tileSize) + gapY;
+    const visualOffsetX = (tileSize - (scaledTileWidth ?? tileSize)) / 2;
+    const visualOffsetY = (tileSize - (scaledTileHeight ?? tileSize)) / 2;
+    const startX = -contentWidth / 2 - visualOffsetX;
+    const startY = -contentHeight / 2 - visualOffsetY;
 
     for (const card of this.cards) {
       const scale = tileSize / card._tileSize;
-      const x = startX + card.col * (tileSize + gapX);
-      const y = startY + card.row * (tileSize + gapY);
+      const x = startX + card.col * stepX;
+      const y = startY + card.row * stepY;
       card.setLayout({ x, y, scale });
     }
 
@@ -505,31 +511,41 @@ export class GameScene {
 
     const availableWidth = Math.max(1, rendererWidth - horizontal * 2);
     const availableHeight = Math.max(1, rendererHeight - vertical * 2);
-    const size = Math.min(availableWidth, availableHeight);
-
     const topSpace = 30;
-    const boardSpace = Math.max(40, size - topSpace - 5);
+    const boardWidth = Math.max(1, availableWidth);
+    const boardHeight = Math.max(40, availableHeight - topSpace - 5);
     const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0.012;
-    const baseGap = Math.max(1, Math.floor(boardSpace * gapValue));
+    const gapBasis = Math.min(boardWidth, boardHeight);
+    const baseGap = Math.max(1, Math.floor(gapBasis * gapValue));
     const paddingX = Number(this.layoutOptions?.tilePaddingX ?? 1);
     const paddingY = Number(this.layoutOptions?.tilePaddingY ?? 1);
-    const gapX = Math.max(0, Math.floor(baseGap * paddingX));
-    const gapY = Math.max(0, Math.floor(baseGap * paddingY));
+    const resolvedPaddingX = Number.isFinite(paddingX) ? paddingX : 1;
+    const resolvedPaddingY = Number.isFinite(paddingY) ? paddingY : 1;
+    const gapX = Math.floor(baseGap * resolvedPaddingX);
+    const gapY = Math.floor(baseGap * resolvedPaddingY);
     const totalHorizontalGaps = gapX * Math.max(0, this.gridColumns - 1);
     const totalVerticalGaps = gapY * Math.max(0, this.gridRows - 1);
-    const tileAreaWidth = Math.max(1, boardSpace - totalHorizontalGaps);
-    const tileAreaHeight = Math.max(1, boardSpace - totalVerticalGaps);
+    const tileAreaWidth = Math.max(1, boardWidth - totalHorizontalGaps);
+    const tileAreaHeight = Math.max(1, boardHeight - totalVerticalGaps);
+    const scaleX = Number(this.cardOptions?.tileScaleFactorX ?? 1);
+    const scaleY = Number(this.cardOptions?.tileScaleFactorY ?? 1);
+    const resolvedScaleX = Number.isFinite(scaleX) && scaleX > 0 ? scaleX : 1;
+    const resolvedScaleY = Number.isFinite(scaleY) && scaleY > 0 ? scaleY : 1;
     const tileSize = Math.max(
       1,
       Math.floor(
         Math.min(
-          tileAreaWidth / this.gridColumns,
-          tileAreaHeight / this.gridRows
+          tileAreaWidth / (this.gridColumns * resolvedScaleX),
+          tileAreaHeight / (this.gridRows * resolvedScaleY)
         )
       )
     );
-    const contentWidth = tileSize * this.gridColumns + totalHorizontalGaps;
-    const contentHeight = tileSize * this.gridRows + totalVerticalGaps;
+    const scaledTileWidth = tileSize * resolvedScaleX;
+    const scaledTileHeight = tileSize * resolvedScaleY;
+    const contentWidth =
+      scaledTileWidth * this.gridColumns + totalHorizontalGaps;
+    const contentHeight =
+      scaledTileHeight * this.gridRows + totalVerticalGaps;
     const contentSize = Math.max(contentWidth, contentHeight);
     const boardCenterX = horizontal + availableWidth / 2;
     const boardCenterY = vertical + availableHeight / 2;
@@ -538,6 +554,8 @@ export class GameScene {
       tileSize,
       gapX,
       gapY,
+      scaledTileWidth,
+      scaledTileHeight,
       contentWidth,
       contentHeight,
       contentSize,
