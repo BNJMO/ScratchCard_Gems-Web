@@ -9,7 +9,8 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="Scratch Engine Manager"
-        Background="#1C1F26">
+        Background="#1C1F26"
+        PointerPressed="OnWindowPointerPressed">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,

@@ -178,6 +178,19 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.Source is TextBox { DataContext: AssetFileEntry })
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.CommitPendingAssetRenames();
+        }
+    }
+
     private void OnAssetPreviewDrop(object? sender, DragEventArgs e)
     {
         if (sender is not Control { DataContext: AssetFileEntry entry })

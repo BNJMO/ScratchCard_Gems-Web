@@ -783,6 +783,28 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    public void CommitPendingAssetRenames()
+    {
+        CommitRenamesInCollection(GameAssetEntries);
+        CommitRenamesInCollection(VariationAssetEntries);
+    }
+
+    private static void CommitRenamesInCollection(IEnumerable<AssetEntryBase> entries)
+    {
+        foreach (var entry in entries)
+        {
+            switch (entry)
+            {
+                case AssetFileEntry fileEntry when fileEntry.IsRenaming:
+                    fileEntry.CommitRenameCommand.Execute(null);
+                    break;
+                case AssetFolderEntry folderEntry:
+                    CommitRenamesInCollection(folderEntry.Children);
+                    break;
+            }
+        }
+    }
+
     private string LoadConfigFile(string? configPath)
     {
         if (string.IsNullOrWhiteSpace(configPath) || !File.Exists(configPath))
