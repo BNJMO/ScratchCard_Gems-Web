@@ -627,9 +627,9 @@
                                                                     BorderBrush="#4B5A70"
                                                                     CornerRadius="6"
                                                                     IsVisible="{Binding HasPreview}"
-                                                                    AllowDrop="True"
-                                                                    DragOver="OnAssetPreviewDragOver"
-                                                                    Drop="OnAssetPreviewDrop"
+                                                                    DragDrop.AllowDrop="True"
+                                                                    DragDrop.DragOver="OnAssetPreviewDragOver"
+                                                                    DragDrop.Drop="OnAssetPreviewDrop"
                                                                     DoubleTapped="OnAssetPreviewDoubleTapped">
                                                                 <Image Source="{Binding PreviewImage}"
                                                                        Stretch="Uniform"/>
@@ -712,9 +712,9 @@
                                                                     BorderBrush="#4B5A70"
                                                                     CornerRadius="6"
                                                                     IsVisible="{Binding HasPreview}"
-                                                                    AllowDrop="True"
-                                                                    DragOver="OnAssetPreviewDragOver"
-                                                                    Drop="OnAssetPreviewDrop"
+                                                                    DragDrop.AllowDrop="True"
+                                                                    DragDrop.DragOver="OnAssetPreviewDragOver"
+                                                                    DragDrop.Drop="OnAssetPreviewDrop"
                                                                     DoubleTapped="OnAssetPreviewDoubleTapped">
                                                                 <Image Source="{Binding PreviewImage}"
                                                                        Stretch="Uniform"/>

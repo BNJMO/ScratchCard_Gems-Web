@@ -153,7 +153,14 @@ public partial class MainWindow : Window
             return;
         }
 
-        e.DragEffects = e.Data.Contains(DataFormats.Files) ? DragDropEffects.Copy : DragDropEffects.None;
+        var dataTransfer = e.DataTransfer;
+        if (dataTransfer is null)
+        {
+            e.DragEffects = DragDropEffects.None;
+            return;
+        }
+
+        e.DragEffects = dataTransfer.Contains(DataFormats.File) ? DragDropEffects.Copy : DragDropEffects.None;
     }
 
     private void OnAssetPreviewDrop(object? sender, DragEventArgs e)
@@ -165,7 +172,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var file = e.Data.GetFiles()?.FirstOrDefault();
+        var file = e.DataTransfer?.GetFiles()?.FirstOrDefault();
         if (file is null)
         {
             return;
