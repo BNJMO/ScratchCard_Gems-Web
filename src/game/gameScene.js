@@ -230,18 +230,22 @@ export class GameScene {
       tileSize,
       gapX,
       gapY,
+      scaledTileWidth,
+      scaledTileHeight,
       contentWidth,
       contentHeight,
       boardCenterX,
       boardCenterY,
     } = layout;
+    const stepX = (scaledTileWidth ?? tileSize) + gapX;
+    const stepY = (scaledTileHeight ?? tileSize) + gapY;
     const startX = -contentWidth / 2;
     const startY = -contentHeight / 2;
 
     for (const card of this.cards) {
       const scale = tileSize / card._tileSize;
-      const x = startX + card.col * (tileSize + gapX);
-      const y = startY + card.row * (tileSize + gapY);
+      const x = startX + card.col * stepX;
+      const y = startY + card.row * stepY;
       card.setLayout({ x, y, scale });
     }
 
@@ -521,17 +525,25 @@ export class GameScene {
     const totalVerticalGaps = gapY * Math.max(0, this.gridRows - 1);
     const tileAreaWidth = Math.max(1, boardSpace - totalHorizontalGaps);
     const tileAreaHeight = Math.max(1, boardSpace - totalVerticalGaps);
+    const scaleX = Number(this.cardOptions?.tileScaleFactorX ?? 1);
+    const scaleY = Number(this.cardOptions?.tileScaleFactorY ?? 1);
+    const resolvedScaleX = Number.isFinite(scaleX) && scaleX > 0 ? scaleX : 1;
+    const resolvedScaleY = Number.isFinite(scaleY) && scaleY > 0 ? scaleY : 1;
     const tileSize = Math.max(
       1,
       Math.floor(
         Math.min(
-          tileAreaWidth / this.gridColumns,
-          tileAreaHeight / this.gridRows
+          tileAreaWidth / (this.gridColumns * resolvedScaleX),
+          tileAreaHeight / (this.gridRows * resolvedScaleY)
         )
       )
     );
-    const contentWidth = tileSize * this.gridColumns + totalHorizontalGaps;
-    const contentHeight = tileSize * this.gridRows + totalVerticalGaps;
+    const scaledTileWidth = tileSize * resolvedScaleX;
+    const scaledTileHeight = tileSize * resolvedScaleY;
+    const contentWidth =
+      scaledTileWidth * this.gridColumns + totalHorizontalGaps;
+    const contentHeight =
+      scaledTileHeight * this.gridRows + totalVerticalGaps;
     const contentSize = Math.max(contentWidth, contentHeight);
     const boardCenterX = horizontal + availableWidth / 2;
     const boardCenterY = vertical + availableHeight / 2;
@@ -540,6 +552,8 @@ export class GameScene {
       tileSize,
       gapX,
       gapY,
+      scaledTileWidth,
+      scaledTileHeight,
       contentWidth,
       contentHeight,
       contentSize,
