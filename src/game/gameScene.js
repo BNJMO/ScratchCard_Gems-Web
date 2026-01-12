@@ -613,8 +613,12 @@ export class GameScene {
 
     const rendererWidth = this.app.renderer.width;
     const rendererHeight = this.app.renderer.height;
-    const configPaddingX = Number(gameConfig?.gameplay?.card?.gridPaddingX ?? 0);
-    const configPaddingY = Number(gameConfig?.gameplay?.card?.gridPaddingY ?? 0);
+    const configPaddingX = Number(
+      gameConfig?.gameplay?.card?.mobileGridPaddingX ?? 0
+    );
+    const configPaddingY = Number(
+      gameConfig?.gameplay?.card?.mobileGridPaddingY ?? 0
+    );
     const extraPaddingX = Number.isFinite(configPaddingX)
       ? Math.max(0, configPaddingX)
       : 0;
