@@ -34,6 +34,8 @@
       "tileScaleFactorY": 1.0,
       "tilePaddingX": 1,
       "tilePaddingY": 1,
+      "mobileGridPaddingX": 0,
+      "mobileGridPaddingY": 0,
       "winFrameOffsetX": 0,
       "winFrameOffsetY": 0
     },
