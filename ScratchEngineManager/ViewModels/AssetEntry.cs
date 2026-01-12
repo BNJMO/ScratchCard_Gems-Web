@@ -109,6 +109,18 @@ public sealed partial class AssetFileEntry : AssetEntryBase
 
     private static string? clipboardFilePath;
     private SoundPlayer? soundPlayer;
+    private static readonly IReadOnlyList<IBrush> ExtensionPalette =
+    [
+        new SolidColorBrush(Color.Parse("#F97316")),
+        new SolidColorBrush(Color.Parse("#38BDF8")),
+        new SolidColorBrush(Color.Parse("#A855F7")),
+        new SolidColorBrush(Color.Parse("#22C55E")),
+        new SolidColorBrush(Color.Parse("#EAB308")),
+        new SolidColorBrush(Color.Parse("#F43F5E")),
+        new SolidColorBrush(Color.Parse("#14B8A6")),
+        new SolidColorBrush(Color.Parse("#60A5FA"))
+    ];
+    private static readonly IBrush DefaultExtensionBrush = new SolidColorBrush(Color.Parse("#94A3B8"));
 
     public AssetFileEntry(string filePath, int depth, Action<AssetFileEntry>? removeAction = null)
         : base(Path.GetFileName(filePath), depth)
@@ -131,6 +143,12 @@ public sealed partial class AssetFileEntry : AssetEntryBase
     public string FullPath { get; private set; }
 
     public bool IsImage => PreviewImage is not null;
+
+    public string FileBaseName => Path.GetFileNameWithoutExtension(FileName);
+
+    public string ExtensionText => Extension;
+
+    public IBrush ExtensionBrush => GetExtensionBrush(Extension);
 
     [ObservableProperty]
     private bool isAudio;
@@ -206,6 +224,18 @@ public sealed partial class AssetFileEntry : AssetEntryBase
         OnPropertyChanged(nameof(IsNotRenaming));
     }
 
+    partial void OnFileNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(FileBaseName));
+        OnPropertyChanged(nameof(ExtensionText));
+    }
+
+    partial void OnExtensionChanged(string value)
+    {
+        OnPropertyChanged(nameof(ExtensionText));
+        OnPropertyChanged(nameof(ExtensionBrush));
+    }
+
     [RelayCommand]
     private void BeginRename()
     {
@@ -262,6 +292,37 @@ public sealed partial class AssetFileEntry : AssetEntryBase
         }
 
         return lifetime.MainWindow?.Clipboard;
+    }
+
+    private static IBrush GetExtensionBrush(string extension)
+    {
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            return DefaultExtensionBrush;
+        }
+
+        var normalized = extension.Trim().ToLowerInvariant();
+        var hash = GetStableHash(normalized);
+        var index = Math.Abs(hash) % ExtensionPalette.Count;
+        return ExtensionPalette[index];
+    }
+
+    private static int GetStableHash(string value)
+    {
+        unchecked
+        {
+            const int fnvOffset = unchecked((int)2166136261);
+            const int fnvPrime = 16777619;
+            var hash = fnvOffset;
+
+            foreach (var character in value)
+            {
+                hash ^= character;
+                hash *= fnvPrime;
+            }
+
+            return hash;
+        }
     }
 
     [RelayCommand]

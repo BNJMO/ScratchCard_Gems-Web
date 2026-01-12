@@ -199,14 +199,18 @@
                                         </ContextMenu>
                                     </Border.ContextMenu>
                                 </Border>
-                                <TextBlock Text="{Binding FileName}"
-                                           Foreground="#E6E8ED"
+                                <TextBlock Foreground="#E6E8ED"
                                            FontSize="12"
                                            TextWrapping="Wrap"
                                            Width="140"
                                            Margin="0,0,0,6"
                                            IsVisible="{Binding IsNotRenaming}"
                                            DoubleTapped="OnAssetNameDoubleTapped">
+                                    <TextBlock.Inlines>
+                                        <Run Text="{Binding FileBaseName}"/>
+                                        <Run Text="{Binding ExtensionText}"
+                                             Foreground="{Binding ExtensionBrush}"/>
+                                    </TextBlock.Inlines>
                                     <TextBlock.ContextMenu>
                                         <ContextMenu>
                                             <MenuItem Header="Rename"
