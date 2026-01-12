@@ -476,17 +476,17 @@ export async function createGame(mount, opts = {}) {
   ).toLowerCase();
   const useSingleSpritesheet = spritesheetType === "single";
   const cardSpritesheetAnimationSpeed = (() => {
-    const configuredSpeed = Number(
-      gameConfig.gameplay.card.spritesheetAnimationSpeed
-    );
-    if (Number.isFinite(configuredSpeed)) {
-      return configuredSpeed;
-    }
     if (useSingleSpritesheet) {
       const singleSpeed = getSingleSpritesheetAnimationSpeed();
       if (Number.isFinite(singleSpeed)) {
         return singleSpeed;
       }
+    }
+    const configuredSpeed = Number(
+      gameConfig.gameplay.card.spritesheetAnimationSpeed
+    );
+    if (Number.isFinite(configuredSpeed)) {
+      return configuredSpeed;
     }
     return DEFAULT_CARD_ANIMATION_SPEED;
   })();
