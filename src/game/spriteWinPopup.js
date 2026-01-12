@@ -16,6 +16,8 @@ const DEFAULT_OPTIONS = {
   amountColor: "#EAFF00",
   baseFontSize: 2,  
   baseAmountFontSize: 4, 
+  textOffsetX: 0,
+  textOffsetY: 0,
   minScale: 0.15,
   minScaleMobile: 0.2,
   minScaleSmallMobile: 0.25,
@@ -149,6 +151,7 @@ export class SpriteWinPopup {
     if (!this.titleTextNode || !this.amountTextNode) return;
     
     const { fontSize, amountFontSize } = this.getResponsiveFontSizes();
+    const { textOffsetX, textOffsetY } = this.options;
     
     // Update font sizes with even smaller multipliers
     this.titleTextNode.style.fontSize = Math.round(fontSize * 1.5) + "px";  // Reduced from 2.0 to 1.5
@@ -160,6 +163,7 @@ export class SpriteWinPopup {
       this.textOverlayNode.style.left = "0";
       this.textOverlayNode.style.right = "0";
       this.textOverlayNode.style.bottom = "0";
+      this.textOverlayNode.style.transform = "translate(" + textOffsetX + "px," + textOffsetY + "px)";
     }
   }
 
@@ -168,8 +172,9 @@ export class SpriteWinPopup {
     
     // Get the parent element's position and size
     const parentRect = this.parent.getBoundingClientRect();
-    const centerX = parentRect.left + parentRect.width / 2;
-    const centerY = parentRect.top + parentRect.height / 2;
+    const { offsetX, offsetY } = this.options;
+    const centerX = parentRect.left + parentRect.width / 2 + offsetX;
+    const centerY = parentRect.top + parentRect.height / 2 + offsetY;
     
     // Update container position to stay centered on the parent
     this.container.style.left = centerX + "px";
@@ -240,17 +245,17 @@ export class SpriteWinPopup {
   }
 
   hiddenTransform() {
-    const { offsetX, offsetY, scaleHidden } = this.options;
+    const { scaleHidden } = this.options;
     const responsiveScale = this.getResponsiveScale();
     const finalScale = this.options.scale * responsiveScale * scaleHidden;
-    return "translate(-50%,-50%) translate(" + offsetX + "px," + offsetY + "px) scale(" + finalScale + ")";
+    return "translate(-50%,-50%) scale(" + finalScale + ")";
   }
 
   visibleTransform() {
-    const { offsetX, offsetY, scaleVisible } = this.options;
+    const { scaleVisible } = this.options;
     const responsiveScale = this.getResponsiveScale();
     const finalScale = this.options.scale * responsiveScale * scaleVisible;
-    return "translate(-50%,-50%) translate(" + offsetX + "px," + offsetY + "px) scale(" + finalScale + ")";
+    return "translate(-50%,-50%) scale(" + finalScale + ")";
   }
 
   formatAmount(value) {
@@ -287,6 +292,7 @@ export class SpriteWinPopup {
     // Update text elements with responsive styling
     if (this.titleTextNode && this.amountTextNode && this.textOverlayNode) {
       const { fontSize, amountFontSize } = this.getResponsiveFontSizes();
+      const { textOffsetX, textOffsetY } = this.options;
       
       // Update title text styling with smaller multiplier
       this.titleTextNode.style.fontSize = Math.round(fontSize * 1.5) + "px";
@@ -312,6 +318,8 @@ export class SpriteWinPopup {
       if (amountContainer) {
         amountContainer.style.gap = Math.round(amountFontSize * 0.25) + "px";
       }
+
+      this.textOverlayNode.style.transform = "translate(" + textOffsetX + "px," + textOffsetY + "px)";
     }
     
     // Update transform if visible
