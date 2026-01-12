@@ -613,6 +613,14 @@ export class GameScene {
 
     const rendererWidth = this.app.renderer.width;
     const rendererHeight = this.app.renderer.height;
+    const configPaddingX = Number(gameConfig?.gameplay?.card?.gridPaddingX ?? 0);
+    const configPaddingY = Number(gameConfig?.gameplay?.card?.gridPaddingY ?? 0);
+    const extraPaddingX = Number.isFinite(configPaddingX)
+      ? Math.max(0, configPaddingX)
+      : 0;
+    const extraPaddingY = Number.isFinite(configPaddingY)
+      ? Math.max(0, configPaddingY)
+      : 0;
 
     const horizontalPadding = rendererWidth > 0 ? rendererWidth * 0.02 : 0;
 
@@ -632,8 +640,14 @@ export class GameScene {
     const maxVertical = Math.max(0, rendererHeight / 2 - 1);
 
     return {
-      horizontal: Math.max(0, Math.min(horizontalPadding, maxHorizontal)),
-      vertical: Math.max(0, Math.min(verticalPadding, maxVertical)),
+      horizontal: Math.max(
+        0,
+        Math.min(horizontalPadding + extraPaddingX, maxHorizontal)
+      ),
+      vertical: Math.max(
+        0,
+        Math.min(verticalPadding + extraPaddingY, maxVertical)
+      ),
     };
   }
 
