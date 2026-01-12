@@ -25,6 +25,7 @@
     },
     "card": {
       "iconType": "static",
+      "spritesheetType": "grid",
       "iconScale": 1.35,
       "iconOffsetX": 0,
       "iconOffsetY": -5,
@@ -43,7 +44,13 @@
       "revealRadius": 40,
       "coverFadeOutDuration": 200
     },
-    "spritesheetProvider": {
+    "singleSpritesheetProvider": {
+      "totalFrames": 12,
+      "columns": 4,
+      "rows": 3,
+      "speed": 0.14
+    },
+    "gridSpritesheetProvider": {
       "columns": 3,
       "rows": 4,
       "cellWidth": 152,
