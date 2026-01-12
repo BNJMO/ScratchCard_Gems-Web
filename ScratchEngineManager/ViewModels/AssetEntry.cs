@@ -7,6 +7,8 @@ using System.Media;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Svg.Skia;
@@ -226,7 +228,7 @@ public sealed partial class AssetFileEntry : AssetEntryBase
         }
 
         clipboardFilePath = FullPath;
-        if (Application.Current?.Clipboard is { } clipboard)
+        if (TryGetClipboard() is { } clipboard)
         {
             await clipboard.SetTextAsync(FullPath);
         }
@@ -249,6 +251,16 @@ public sealed partial class AssetFileEntry : AssetEntryBase
         {
             // ignore - paste failures will be reflected by the current file contents
         }
+    }
+
+    private static IClipboard? TryGetClipboard()
+    {
+        if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime lifetime)
+        {
+            return null;
+        }
+
+        return lifetime.MainWindow?.Clipboard;
     }
 
     [RelayCommand]
