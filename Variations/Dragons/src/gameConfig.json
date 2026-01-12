@@ -25,6 +25,7 @@
     },
     "card": {
       "iconType": "animated",
+      "spritesheetType": "grid",
       "iconScale": 1.25,
       "iconOffsetX": 0,
       "iconOffsetY": -5,
@@ -41,6 +42,12 @@
     "scratch": {
       "revealRadius": 40,
       "coverFadeOutDuration": 200
+    },
+    "singleSpritesheetProvider": {
+      "totalFrames": 12,
+      "columns": 4,
+      "rows": 3,
+      "speed": 0.16
     },
     "gridSpritesheetProvider": {
       "columns": 3,

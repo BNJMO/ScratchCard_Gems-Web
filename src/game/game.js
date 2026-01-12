@@ -2,6 +2,10 @@ import { Assets } from "pixi.js";
 import { GameScene } from "./gameScene.js";
 import { GameRules } from "./gameRules.js";
 import { loadCardTypeAnimations } from "./gridSpritesheetProvider.js";
+import {
+  loadCardTypeAnimations as loadSingleSpritesheetAnimations,
+  getSpritesheetAnimationSpeed as getSingleSpritesheetAnimationSpeed,
+} from "./singleSpritesheetProvider.js";
 import { CoverScratch } from "./coverScratch.js";
 import {
   getFileExtension,
@@ -467,11 +471,25 @@ export async function createGame(mount, opts = {}) {
     Number(gameConfig.gameplay.card.winFrameOffsetX ?? 0) || 0;
   const winFrameOffsetY =
     Number(gameConfig.gameplay.card.winFrameOffsetY ?? 0) || 0;
-  const cardSpritesheetAnimationSpeed = Number.isFinite(
-    gameConfig.gameplay.card.spritesheetAnimationSpeed
-  )
-    ? gameConfig.gameplay.card.spritesheetAnimationSpeed
-    : DEFAULT_CARD_ANIMATION_SPEED;
+  const spritesheetType = String(
+    gameConfig?.gameplay?.card?.spritesheetType ?? "grid"
+  ).toLowerCase();
+  const useSingleSpritesheet = spritesheetType === "single";
+  const cardSpritesheetAnimationSpeed = (() => {
+    const configuredSpeed = Number(
+      gameConfig.gameplay.card.spritesheetAnimationSpeed
+    );
+    if (Number.isFinite(configuredSpeed)) {
+      return configuredSpeed;
+    }
+    if (useSingleSpritesheet) {
+      const singleSpeed = getSingleSpritesheetAnimationSpeed();
+      if (Number.isFinite(singleSpeed)) {
+        return singleSpeed;
+      }
+    }
+    return DEFAULT_CARD_ANIMATION_SPEED;
+  })();
   const cardsSpawnDuration = opts.cardsSpawnDuration ?? 350;
   const revealAllIntervalDelay = opts.revealAllIntervalDelay ?? 40;
   const autoResetDelayMs = Number(opts.autoResetDelayMs ?? 1500);
@@ -574,7 +592,9 @@ export async function createGame(mount, opts = {}) {
   const cardType = gameConfig?.gameplay?.card?.iconType ?? "static";
   const cardTypeEntries =
     cardType === "animated"
-      ? await loadCardTypeAnimations()
+      ? await (useSingleSpritesheet
+          ? loadSingleSpritesheetAnimations()
+          : loadCardTypeAnimations())
       : await loadCardTypeTextures({
           svgResolution: svgRasterizationResolution,
         });
