@@ -1,4 +1,11 @@
-import { Application, Container, Graphics, Rectangle, Sprite, Text } from "pixi.js";
+import {
+  Application,
+  Container,
+  Graphics,
+  Rectangle,
+  Sprite,
+  Text,
+} from "pixi.js";
 import { Card } from "./card.js";
 import { WinPopup } from "./winPopup.js";
 import { SpriteWinPopup } from "./spriteWinPopup.js";
@@ -59,27 +66,71 @@ export class GameScene {
       wiggleSelectionEnabled: animationOptions?.wiggleSelectionEnabled ?? true,
       wiggleSelectionDuration: animationOptions?.wiggleSelectionDuration ?? 900,
       wiggleSelectionTimes: animationOptions?.wiggleSelectionTimes ?? 15,
-      wiggleSelectionIntensity: animationOptions?.wiggleSelectionIntensity ?? 0.03,
+      wiggleSelectionIntensity:
+        animationOptions?.wiggleSelectionIntensity ?? 0.03,
       wiggleSelectionScale: animationOptions?.wiggleSelectionScale ?? 0.005,
       cardsSpawnDuration: animationOptions?.cardsSpawnDuration ?? 350,
       disableAnimations: animationOptions?.disableAnimations ?? false,
     };
     this.winPopupOptions = {
-      useSprite: winPopupOptions?.useSprite ?? gameConfig?.gameplay?.winPopup?.useSprite ?? true,
-      spriteName: winPopupOptions?.spriteName ?? gameConfig?.gameplay?.winPopup?.spriteName ?? "winPopup",
-      scale: winPopupOptions?.scale ?? gameConfig?.gameplay?.winPopup?.scale ?? 0.6,
-      minScale: winPopupOptions?.minScale ?? gameConfig?.gameplay?.winPopup?.minScale,
-      offsetX: winPopupOptions?.offsetX ?? gameConfig?.gameplay?.winPopup?.offsetX ?? 0,
-      offsetY: winPopupOptions?.offsetY ?? gameConfig?.gameplay?.winPopup?.offsetY ?? 0,
-      showDuration: winPopupOptions?.showDuration ?? gameConfig?.gameplay?.winPopup?.showDuration ?? 2000,
-      animationDuration: winPopupOptions?.animationDuration ?? gameConfig?.gameplay?.winPopup?.animationDuration ?? 300,
-      showText: winPopupOptions?.showText ?? gameConfig?.gameplay?.winPopup?.showText ?? true,
-      textColor: winPopupOptions?.textColor ?? gameConfig?.gameplay?.winPopup?.textColor ?? "#FFFFFF",
-      amountColor: winPopupOptions?.amountColor ?? gameConfig?.gameplay?.winPopup?.amountColor ?? "#EAFF00",
-      baseFontSize: winPopupOptions?.baseFontSize ?? winPopupOptions?.fontSize ?? gameConfig?.gameplay?.winPopup?.fontSize ?? 22,
-      baseAmountFontSize: winPopupOptions?.baseAmountFontSize ?? winPopupOptions?.amountFontSize ?? gameConfig?.gameplay?.winPopup?.amountFontSize ?? 18,
-      textOffsetX: winPopupOptions?.textOffsetX ?? gameConfig?.gameplay?.winPopup?.textOffsetX ?? 0,
-      textOffsetY: winPopupOptions?.textOffsetY ?? gameConfig?.gameplay?.winPopup?.textOffsetY ?? 0,
+      useSprite:
+        winPopupOptions?.useSprite ??
+        gameConfig?.gameplay?.winPopup?.useSprite ??
+        true,
+      spriteName:
+        winPopupOptions?.spriteName ??
+        gameConfig?.gameplay?.winPopup?.spriteName ??
+        "winPopup",
+      scale:
+        winPopupOptions?.scale ?? gameConfig?.gameplay?.winPopup?.scale ?? 0.6,
+      minScale:
+        winPopupOptions?.minScale ?? gameConfig?.gameplay?.winPopup?.minScale,
+      offsetX:
+        winPopupOptions?.offsetX ??
+        gameConfig?.gameplay?.winPopup?.offsetX ??
+        0,
+      offsetY:
+        winPopupOptions?.offsetY ??
+        gameConfig?.gameplay?.winPopup?.offsetY ??
+        0,
+      showDuration:
+        winPopupOptions?.showDuration ??
+        gameConfig?.gameplay?.winPopup?.showDuration ??
+        2000,
+      animationDuration:
+        winPopupOptions?.animationDuration ??
+        gameConfig?.gameplay?.winPopup?.animationDuration ??
+        300,
+      showText:
+        winPopupOptions?.showText ??
+        gameConfig?.gameplay?.winPopup?.showText ??
+        true,
+      textColor:
+        winPopupOptions?.textColor ??
+        gameConfig?.gameplay?.winPopup?.textColor ??
+        "#FFFFFF",
+      amountColor:
+        winPopupOptions?.amountColor ??
+        gameConfig?.gameplay?.winPopup?.amountColor ??
+        "#EAFF00",
+      baseFontSize:
+        winPopupOptions?.baseFontSize ??
+        winPopupOptions?.fontSize ??
+        gameConfig?.gameplay?.winPopup?.fontSize ??
+        22,
+      baseAmountFontSize:
+        winPopupOptions?.baseAmountFontSize ??
+        winPopupOptions?.amountFontSize ??
+        gameConfig?.gameplay?.winPopup?.amountFontSize ??
+        18,
+      textOffsetX:
+        winPopupOptions?.textOffsetX ??
+        gameConfig?.gameplay?.winPopup?.textOffsetX ??
+        0,
+      textOffsetY:
+        winPopupOptions?.textOffsetY ??
+        gameConfig?.gameplay?.winPopup?.textOffsetY ??
+        0,
     };
     this.onResize = onResize;
 
@@ -253,10 +304,8 @@ export class GameScene {
       card.setLayout({ x, y, scale });
     }
 
-    const centerX =
-      boardCenterX ?? (this.app?.renderer?.width ?? 0) / 2;
-    const centerY =
-      boardCenterY ?? (this.app?.renderer?.height ?? 0) / 2;
+    const centerX = boardCenterX ?? (this.app?.renderer?.width ?? 0) / 2;
+    const centerY = boardCenterY ?? (this.app?.renderer?.height ?? 0) / 2;
 
     this.board.position.set(centerX, centerY);
     this._lastLayout = layout;
@@ -282,9 +331,12 @@ export class GameScene {
 
     if (!this.winPopupOptions.useSprite) {
       const size = Math.min(width, height);
-      const winPopupWidth = size * 0.40;
+      const winPopupWidth = size * 0.4;
       const winPopupHeight = size * 0.15;
-      this.winPopup?.setSize?.({ width: winPopupWidth, height: winPopupHeight });
+      this.winPopup?.setSize?.({
+        width: winPopupWidth,
+        height: winPopupHeight,
+      });
     } else {
       // Update sprite win popup position on resize
       this.winPopup?.updatePosition?.();
@@ -324,10 +376,7 @@ export class GameScene {
     );
 
     this.backgroundSprite.scale.set(scale);
-    this.backgroundSprite.position.set(
-      rendererWidth / 2,
-      rendererHeight / 2
-    );
+    this.backgroundSprite.position.set(rendererWidth / 2, rendererHeight / 2);
   }
 
   clearGrid() {
@@ -364,14 +413,14 @@ export class GameScene {
       ...this.winPopupOptions,
       ...newOptions,
     };
-    
-    if (this.winPopup && typeof this.winPopup.updateOptions === 'function') {
+
+    if (this.winPopup && typeof this.winPopup.updateOptions === "function") {
       this.winPopup.updateOptions(newOptions);
     }
   }
 
   // Debug method to test win popup
-  testWinPopup(amount = 100.50) {
+  testWinPopup(amount = 100.5) {
     console.log("Testing win popup with amount:", amount);
     this.showWinPopup({ amount });
   }
@@ -382,7 +431,7 @@ export class GameScene {
       this.winPopup.destroy();
       this.winPopup = null;
     }
-    
+
     // Recreate with current options
     const accentColor = this.#colorToHex(
       this.palette?.winPopupBorder,
@@ -418,7 +467,7 @@ export class GameScene {
         backgroundColor,
       });
     }
-    
+
     console.log("Popup recreated with new settings");
   }
 
@@ -428,20 +477,20 @@ export class GameScene {
       scale: 0.5,
       baseFontSize: 90,
       baseAmountFontSize: 22,
-      ...newSettings
+      ...newSettings,
     };
-    
+
     // Update the options
     this.winPopupOptions = {
       ...this.winPopupOptions,
-      ...defaultSettings
+      ...defaultSettings,
     };
-    
+
     // Recreate the popup
     this.recreatePopup();
-    
+
     console.log("Updated popup settings:", defaultSettings);
-    
+
     // Test the popup with new settings
     setTimeout(() => {
       this.testWinPopup(123.45);
@@ -546,8 +595,7 @@ export class GameScene {
     const scaledTileHeight = tileSize * resolvedScaleY;
     const contentWidth =
       scaledTileWidth * this.gridColumns + totalHorizontalGaps;
-    const contentHeight =
-      scaledTileHeight * this.gridRows + totalVerticalGaps;
+    const contentHeight = scaledTileHeight * this.gridRows + totalVerticalGaps;
     const contentSize = Math.max(contentWidth, contentHeight);
     const boardCenterX = horizontal + availableWidth / 2;
     const boardCenterY = vertical + availableHeight / 2;
@@ -607,24 +655,19 @@ export class GameScene {
       return { horizontal: 0, vertical: 0 };
     }
 
+    const configMobilePaddingX = Number(
+      gameConfig?.gameplay?.card?.mobileGridPaddingX ?? 0
+    );
+    const configMobilePaddingY = Number(
+      gameConfig?.gameplay?.card?.mobileGridPaddingY ?? 0
+    );
+
     if (this.#isPortraitViewport()) {
-      return { horizontal: 0, vertical: 0 };
+      return { horizontal: configMobilePaddingX, vertical: configMobilePaddingY };
     }
 
     const rendererWidth = this.app.renderer.width;
     const rendererHeight = this.app.renderer.height;
-    const configPaddingX = Number(
-      gameConfig?.gameplay?.card?.mobileGridPaddingX ?? 0
-    );
-    const configPaddingY = Number(
-      gameConfig?.gameplay?.card?.mobileGridPaddingY ?? 0
-    );
-    const extraPaddingX = Number.isFinite(configPaddingX)
-      ? Math.max(0, configPaddingX)
-      : 0;
-    const extraPaddingY = Number.isFinite(configPaddingY)
-      ? Math.max(0, configPaddingY)
-      : 0;
 
     const horizontalPadding = rendererWidth > 0 ? rendererWidth * 0.02 : 0;
 
@@ -644,14 +687,8 @@ export class GameScene {
     const maxVertical = Math.max(0, rendererHeight / 2 - 1);
 
     return {
-      horizontal: Math.max(
-        0,
-        Math.min(horizontalPadding + extraPaddingX, maxHorizontal)
-      ),
-      vertical: Math.max(
-        0,
-        Math.min(verticalPadding + extraPaddingY, maxVertical)
-      ),
+      horizontal: Math.max(0, Math.min(horizontalPadding, maxHorizontal)),
+      vertical: Math.max(0, Math.min(verticalPadding, maxVertical)),
     };
   }
 
