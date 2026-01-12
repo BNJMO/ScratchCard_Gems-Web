@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Media;
 using System.Runtime.Versioning;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -102,6 +103,8 @@ public sealed partial class AssetFileEntry : AssetEntryBase
         ".webp",
         ".svg"
     };
+
+    private static string? clipboardFilePath;
     private SoundPlayer? soundPlayer;
 
     public AssetFileEntry(string filePath, int depth, Action<AssetFileEntry>? removeAction = null)
@@ -212,6 +215,40 @@ public sealed partial class AssetFileEntry : AssetEntryBase
     {
         EditableFileName = FileName;
         IsRenaming = false;
+    }
+
+    [RelayCommand]
+    private async Task CopyFileAsync()
+    {
+        if (!File.Exists(FullPath))
+        {
+            return;
+        }
+
+        clipboardFilePath = FullPath;
+        if (Application.Current?.Clipboard is { } clipboard)
+        {
+            await clipboard.SetTextAsync(FullPath);
+        }
+    }
+
+    [RelayCommand]
+    private void PasteFile()
+    {
+        if (string.IsNullOrWhiteSpace(clipboardFilePath) || !File.Exists(clipboardFilePath))
+        {
+            return;
+        }
+
+        try
+        {
+            File.Copy(clipboardFilePath, FullPath, true);
+            RefreshPreview();
+        }
+        catch
+        {
+            // ignore - paste failures will be reflected by the current file contents
+        }
     }
 
     [RelayCommand]

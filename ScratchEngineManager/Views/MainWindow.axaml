@@ -188,6 +188,10 @@
                                     </Grid>
                                     <Border.ContextMenu>
                                         <ContextMenu>
+                                            <MenuItem Header="Copy"
+                                                      Command="{Binding CopyFileCommand}"/>
+                                            <MenuItem Header="Paste"
+                                                      Command="{Binding PasteFileCommand}"/>
                                             <MenuItem Header="Rename"
                                                       Command="{Binding BeginRenameCommand}"/>
                                             <MenuItem Header="Delete"
