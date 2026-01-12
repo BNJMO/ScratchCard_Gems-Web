@@ -764,8 +764,8 @@ export async function createGame(mount, opts = {}) {
       useSprite: true,
       spriteName: "winPopup",
       scale: winPopupScale,
-      offsetX: 0,
-      offsetY: 0,
+      offsetX: gameConfig?.gameplay?.winPopup?.offsetX ?? 0,
+      offsetY: gameConfig?.gameplay?.winPopup?.offsetY ?? 0,
       showDuration: 10000,
       animationDuration: 300,
       showText: true,
@@ -773,8 +773,8 @@ export async function createGame(mount, opts = {}) {
       amountColor: "#EAFF00",
       baseFontSize: 34,
       baseAmountFontSize: 24,
-      textOffsetX: 0,
-      textOffsetY: 0,
+      textOffsetX: gameConfig?.gameplay?.winPopup?.textOffsetX ?? 0,
+      textOffsetY: gameConfig?.gameplay?.winPopup?.textOffsetY ?? 0,
     },
     onResize: () => {
       coverScratch?.syncWithLayout();
