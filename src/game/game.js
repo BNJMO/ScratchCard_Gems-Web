@@ -514,10 +514,6 @@ export async function createGame(mount, opts = {}) {
     wiggleSelectionScale: opts.wiggleSelectionScale ?? 0.005,
   };
 
-  const winPopupOptions = {
-    winPopupWidth: opts.winPopupWidth ?? 240,
-    winPopupHeight: opts.winPopupHeight ?? 170,
-  };
   const winPopupScale = (() => {
     const value = Number(gameConfig?.gameplay?.winPopup?.scale);
     if (!Number.isFinite(value)) return 0.6;
@@ -749,8 +745,6 @@ export async function createGame(mount, opts = {}) {
         hover: tileHoverTexture,
         flipped: tileFlippedTexture,
       },
-      winPopupWidth: winPopupOptions.winPopupWidth,
-      winPopupHeight: winPopupOptions.winPopupHeight,
     },
     backgroundTexture: gameBackgroundTexture,
     layoutOptions: { gapBetweenTiles, tilePaddingX, tilePaddingY },
@@ -761,7 +755,6 @@ export async function createGame(mount, opts = {}) {
       disableAnimations,
     },
     winPopupOptions: {
-      useSprite: true,
       spriteName: "winPopup",
       scale: winPopupScale,
       offsetX: gameConfig?.gameplay?.winPopup?.offsetX ?? 0,

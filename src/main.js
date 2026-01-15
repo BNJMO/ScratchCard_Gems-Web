@@ -1062,8 +1062,6 @@ const opts = {
   roundWinSoundPath: roundWinSoundUrl,
   roundLostSoundPath: roundLostSoundUrl,
   winPopupShowDuration: 260,
-  winPopupWidth: 260,
-  winPopupHeight: 200,
   getMode: () => controlPanelMode,
   onCardSelected: (selection) => handleCardSelected(selection),
   onChange: handleGameStateChange,
