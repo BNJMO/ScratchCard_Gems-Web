@@ -16,6 +16,7 @@
     }
   },
   "gameplay": {
+    "gameMode": "flip",
     "grid": {
       "rows": 3,
       "columns": 3,
@@ -25,7 +26,6 @@
       "mobilePaddingX": 10,
       "mobilePaddingY": 0
     },
-    "gameMode": "flip",
     "hover": {
       "enabled": true,
       "enterDuration": 120,
