@@ -74,6 +74,7 @@ async function startApp(config) {
   const CONFIG = config ?? {};
 const APP_CONFIG = CONFIG.app ?? {};
 const GAMEPLAY_CONFIG = CONFIG.gameplay ?? {};
+const GRID_CONFIG = GAMEPLAY_CONFIG.grid ?? {};
 const HOVER_CONFIG = GAMEPLAY_CONFIG.hover ?? {};
 const CARD_CONFIG = GAMEPLAY_CONFIG.card ?? {};
 
@@ -83,16 +84,16 @@ const GAME_NAME =
     : "Flip Cards - Gems";
 const GRID_ROWS = Math.max(
   1,
-  Number.isFinite(GAMEPLAY_CONFIG.gridRows)
-    ? GAMEPLAY_CONFIG.gridRows
+  Number.isFinite(GRID_CONFIG.rows)
+    ? GRID_CONFIG.rows
     : Number.isFinite(GAMEPLAY_CONFIG.gridSize)
     ? GAMEPLAY_CONFIG.gridSize
     : 3
 );
 const GRID_COLUMNS = Math.max(
   1,
-  Number.isFinite(GAMEPLAY_CONFIG.gridColumns)
-    ? GAMEPLAY_CONFIG.gridColumns
+  Number.isFinite(GRID_CONFIG.columns)
+    ? GRID_CONFIG.columns
     : Number.isFinite(GAMEPLAY_CONFIG.gridSize)
     ? GAMEPLAY_CONFIG.gridSize
     : 3

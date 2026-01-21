@@ -619,10 +619,10 @@ export class GameScene {
     }
 
     const configMobilePaddingX = Number(
-      gameConfig?.gameplay?.card?.mobileGridPaddingX ?? 0
+      gameConfig?.gameplay?.grid?.mobilePaddingX ?? 0
     );
     const configMobilePaddingY = Number(
-      gameConfig?.gameplay?.card?.mobileGridPaddingY ?? 0
+      gameConfig?.gameplay?.grid?.mobilePaddingY ?? 0
     );
 
     if (this.#isPortraitViewport()) {

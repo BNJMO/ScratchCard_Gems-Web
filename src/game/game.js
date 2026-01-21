@@ -394,8 +394,8 @@ function isAutoModeActive(getMode) {
 }
 
 export async function createGame(mount, opts = {}) {
-  const configRows = Number(gameConfig?.gameplay?.gridRows);
-  const configColumns = Number(gameConfig?.gameplay?.gridColumns);
+  const configRows = Number(gameConfig?.gameplay?.grid?.rows);
+  const configColumns = Number(gameConfig?.gameplay?.grid?.columns);
   const legacyGrid = Number(gameConfig?.gameplay?.gridSize);
   const GRID_ROWS = Math.max(
     1,
