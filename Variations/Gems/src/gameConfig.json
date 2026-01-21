@@ -15,9 +15,16 @@
     }
   },
   "gameplay": {
-    "gridRows": 3,
-    "gridColumns": 3,
     "gameMode": "flip",
+    "grid": {
+      "rows": 3,
+      "columns": 3,
+      "scaleFactor": 1,
+      "positionOffsetX": 0,
+      "positionOffsetY": 0,
+      "mobilePaddingX": 10,
+      "mobilePaddingY": 0
+    },
     "hover": {
       "enabled": true,
       "enterDuration": 120,
@@ -36,8 +43,6 @@
       "tileScaleFactorY": 1.0,
       "tilePaddingX": 1.0,
       "tilePaddingY": 1.0,
-      "mobileGridPaddingX": 10,
-      "mobileGridPaddingY": 0,
       "winFrameOffsetX": 0,
       "winFrameOffsetY": -5
     },

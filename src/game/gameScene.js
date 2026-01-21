@@ -25,6 +25,7 @@ export class GameScene {
     strokeWidth,
     cardOptions,
     layoutOptions,
+    gridOptions,
     animationOptions,
     winPopupOptions,
     onResize,
@@ -53,6 +54,20 @@ export class GameScene {
       gapBetweenTiles: layoutOptions?.gapBetweenTiles ?? 0.012,
       tilePaddingX: layoutOptions?.tilePaddingX ?? 1.0,
       tilePaddingY: layoutOptions?.tilePaddingY ?? 1.0,
+    };
+    this.gridOptions = {
+      scaleFactor:
+        gridOptions?.scaleFactor ??
+        gameConfig?.gameplay?.grid?.scaleFactor ??
+        1,
+      positionOffsetX:
+        gridOptions?.positionOffsetX ??
+        gameConfig?.gameplay?.grid?.positionOffsetX ??
+        0,
+      positionOffsetY:
+        gridOptions?.positionOffsetY ??
+        gameConfig?.gameplay?.grid?.positionOffsetY ??
+        0,
     };
     this.animationOptions = {
       hoverEnabled: animationOptions?.hoverEnabled ?? true,
@@ -265,6 +280,8 @@ export class GameScene {
       boardCenterX,
       boardCenterY,
     } = layout;
+    const gridScale = this.#resolveGridScale();
+    const { offsetX, offsetY } = this.#resolveGridOffsets();
     const stepX = (scaledTileWidth ?? tileSize) + gapX;
     const stepY = (scaledTileHeight ?? tileSize) + gapY;
     const visualOffsetX = (tileSize - (scaledTileWidth ?? tileSize)) / 2;
@@ -282,7 +299,11 @@ export class GameScene {
     const centerX = boardCenterX ?? (this.app?.renderer?.width ?? 0) / 2;
     const centerY = boardCenterY ?? (this.app?.renderer?.height ?? 0) / 2;
 
-    this.board.position.set(centerX, centerY);
+    this.board.position.set(centerX + offsetX, centerY + offsetY);
+    this.board.scale.set(gridScale);
+    layout.gridScale = gridScale;
+    layout.gridOffsetX = offsetX;
+    layout.gridOffsetY = offsetY;
     this._lastLayout = layout;
   }
 
@@ -549,6 +570,23 @@ export class GameScene {
     };
   }
 
+  #resolveGridScale() {
+    const scaleFactor = Number(this.gridOptions?.scaleFactor ?? 1);
+    if (!Number.isFinite(scaleFactor) || scaleFactor <= 0) {
+      return 1;
+    }
+    return scaleFactor;
+  }
+
+  #resolveGridOffsets() {
+    const offsetX = Number(this.gridOptions?.positionOffsetX ?? 0);
+    const offsetY = Number(this.gridOptions?.positionOffsetY ?? 0);
+    return {
+      offsetX: Number.isFinite(offsetX) ? offsetX : 0,
+      offsetY: Number.isFinite(offsetY) ? offsetY : 0,
+    };
+  }
+
   getBoardLayout() {
     const layout = this._lastLayout;
     if (!layout) return null;
@@ -581,10 +619,10 @@ export class GameScene {
     }
 
     const configMobilePaddingX = Number(
-      gameConfig?.gameplay?.card?.mobileGridPaddingX ?? 0
+      gameConfig?.gameplay?.grid?.mobilePaddingX ?? 0
     );
     const configMobilePaddingY = Number(
-      gameConfig?.gameplay?.card?.mobileGridPaddingY ?? 0
+      gameConfig?.gameplay?.grid?.mobilePaddingY ?? 0
     );
 
     if (this.#isPortraitViewport()) {
