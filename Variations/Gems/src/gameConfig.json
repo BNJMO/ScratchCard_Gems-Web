@@ -17,6 +17,11 @@
   "gameplay": {
     "gridRows": 3,
     "gridColumns": 3,
+    "grid": {
+      "scaleFactor": 1,
+      "positionOffsetX": 0,
+      "positionOffsetY": 0
+    },
     "gameMode": "flip",
     "hover": {
       "enabled": true,

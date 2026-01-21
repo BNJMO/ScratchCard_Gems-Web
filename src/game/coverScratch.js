@@ -40,6 +40,7 @@ export class CoverScratch {
     this.coverBounds = new Rectangle();
     this._currentRadius = null;
     this._currentBlur = null;
+    this._gridScale = 1;
     this._pointerMoveHandler = (event) => this.#handlePointerMove(event);
     this._pointerDownHandler = (event) => this.#handlePointerDown(event);
     this._pointerUpHandler = () => this.#handlePointerUp();
@@ -91,6 +92,9 @@ export class CoverScratch {
 
     const contentWidth = layout.contentWidth ?? layout.contentSize ?? 0;
     const contentHeight = layout.contentHeight ?? layout.contentSize ?? 0;
+    const gridScale = Number(layout.gridScale ?? 1);
+    this._gridScale =
+      Number.isFinite(gridScale) && gridScale > 0 ? gridScale : 1;
     const halfWidth = contentWidth / 2;
     const halfHeight = contentHeight / 2;
 
@@ -201,8 +205,14 @@ export class CoverScratch {
     const board = this.scene?.board;
     if (!app || !board) return false;
 
-    const width = Math.max(1, Math.ceil(this.coverBounds.width));
-    const height = Math.max(1, Math.ceil(this.coverBounds.height));
+    const width = Math.max(
+      1,
+      Math.ceil(this.coverBounds.width * this._gridScale)
+    );
+    const height = Math.max(
+      1,
+      Math.ceil(this.coverBounds.height * this._gridScale)
+    );
 
     const needsNew =
       !this.maskTexture ||
