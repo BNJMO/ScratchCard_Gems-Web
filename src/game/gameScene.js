@@ -19,6 +19,7 @@ export class GameScene {
     initialSize,
     palette,
     backgroundTexture,
+    gridBackgroundTexture,
     fontFamily = DEFAULT_FONT_FAMILY,
     gridRows,
     gridColumns,
@@ -36,6 +37,7 @@ export class GameScene {
     this.palette = palette;
     this.fontFamily = fontFamily;
     this.backgroundTexture = backgroundTexture ?? null;
+    this.gridBackgroundTexture = gridBackgroundTexture ?? null;
     this.gridRows = Math.max(1, gridRows || 1);
     this.gridColumns = Math.max(1, gridColumns || 1);
     this.strokeWidth = strokeWidth;
@@ -147,6 +149,7 @@ export class GameScene {
 
     this.app = null;
     this.board = null;
+    this.gridBackgroundSprite = null;
     this.boardShadows = null;
     this.boardContent = null;
     this.winPopup = null;
@@ -179,6 +182,12 @@ export class GameScene {
     }
 
     this.board = new Container();
+    if (this.gridBackgroundTexture) {
+      this.gridBackgroundSprite = new Sprite(this.gridBackgroundTexture);
+      this.gridBackgroundSprite.anchor.set(0.5, 0.5);
+      this.gridBackgroundSprite.eventMode = "none";
+      this.board.addChild(this.gridBackgroundSprite);
+    }
     this.boardShadows = new Container();
     this.boardShadows.eventMode = "none";
     this.boardContent = new Container();
@@ -301,6 +310,7 @@ export class GameScene {
 
     this.board.position.set(centerX + offsetX, centerY + offsetY);
     this.board.scale.set(gridScale);
+    this.#layoutGridBackground(layout);
     layout.gridScale = gridScale;
     layout.gridOffsetX = offsetX;
     layout.gridOffsetY = offsetY;
@@ -351,6 +361,16 @@ export class GameScene {
 
     this.backgroundSprite.scale.set(scale);
     this.backgroundSprite.position.set(rendererWidth / 2, rendererHeight / 2);
+  }
+
+  #layoutGridBackground(layout) {
+    if (!this.gridBackgroundSprite || !layout) return;
+
+    const width = Math.max(1, layout.contentWidth ?? 0);
+    const height = Math.max(1, layout.contentHeight ?? 0);
+    this.gridBackgroundSprite.width = width;
+    this.gridBackgroundSprite.height = height;
+    this.gridBackgroundSprite.position.set(0, 0);
   }
 
   clearGrid() {
