@@ -27,10 +27,17 @@ const optionalBackgroundSpriteModules = import.meta.glob(
     eager: true,
   }
 );
+const optionalGridBackgroundSpriteModules = import.meta.glob(
+  "../../assets/sprites/gridBackground.*",
+  {
+    eager: true,
+  }
+);
 
 const SOUND_EXTENSION = getFileExtension("sounds", ".wav");
 const CARD_TYPE_EXTENSION = getFileExtension("cardTypes", ".svg");
 const GAME_BACKGROUND_EXTENSION = getFileExtension("gameBackground", ".svg");
+const GRID_BACKGROUND_EXTENSION = getFileExtension("gridBackground", ".png");
 
 const tileTapDownSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "TileTapDown", {
   extension: SOUND_EXTENSION,
@@ -96,6 +103,14 @@ const gameBackgroundSpriteUrl = resolveAssetFromGlob(
   {
     extension: GAME_BACKGROUND_EXTENSION,
     fallbackExtension: ".svg",
+  }
+);
+const gridBackgroundSpriteUrl = resolveAssetFromGlob(
+  optionalGridBackgroundSpriteModules,
+  "gridBackground",
+  {
+    extension: GRID_BACKGROUND_EXTENSION,
+    fallbackExtension: ".png",
   }
 );
 
@@ -691,6 +706,7 @@ export async function createGame(mount, opts = {}) {
 
   const [
     gameBackgroundTexture,
+    gridBackgroundTexture,
     matchSparkTexture,
     winFrameTexture,
     tileDefaultTexture,
@@ -700,6 +716,7 @@ export async function createGame(mount, opts = {}) {
     loadTexture(gameBackgroundSpriteUrl, {
       svgResolution: svgRasterizationResolution,
     }),
+    loadTexture(gridBackgroundSpriteUrl),
     loadTexture(sparkSpriteUrl),
     loadTexture(winFrameSpriteUrl),
     loadTexture(tileUnflippedSpriteUrl, {
@@ -747,6 +764,7 @@ export async function createGame(mount, opts = {}) {
       },
     },
     backgroundTexture: gameBackgroundTexture,
+    gridBackgroundTexture,
     layoutOptions: { gapBetweenTiles, tilePaddingX, tilePaddingY },
     animationOptions: {
       ...hoverOptions,

@@ -6,6 +6,7 @@
       "cardTypes": ".png",
       "scratchMasks": ".png",
       "gameBackground": ".png",
+      "gridBackground": ".png",
       "scratchCover": ".png",
       "spark": ".png",
       "tile_flipped": ".svg",
