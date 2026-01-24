@@ -1,0 +1,91 @@
+{
+  "app": {
+    "gameName": "Flipping Cards - Dragons",
+    "fileExtensions": {
+      "sounds": ".wav",
+      "cardTypes": ".svg",
+      "scratchMasks": ".png",
+      "gameBackground": ".svg",
+      "gridBackground": ".png",
+      "scratchCover": ".png",
+      "spark": ".png",
+      "tile_flipped": ".svg",
+      "tile_hovered": ".svg",
+      "tile_unflipped": ".svg",
+      "winFrame": ".svg"
+    }
+  },
+  "gameplay": {
+    "gameMode": "flip",
+    "grid": {
+      "rows": 3,
+      "columns": 3,
+      "scaleFactor": 1,
+      "positionOffsetX": 0,
+      "positionOffsetY": 0,
+      "mobilePaddingX": 10,
+      "mobilePaddingY": 0
+    },
+    "hover": {
+      "enabled": true,
+      "enterDuration": 120,
+      "exitDuration": 200
+    },
+    "card": {
+      "iconType": "animated",
+      "spritesheetType": "grid",
+      "iconScale": 1.25,
+      "iconOffsetX": 0,
+      "iconOffsetY": -5,
+      "spritesheetAnimationSpeed": 0.16,
+      "matchShake": false,
+      "winFrameScale": 0.99,
+      "tileScaleFactorX": 1.0,
+      "tileScaleFactorY": 1.0,
+      "tilePaddingX": 1.0,
+      "tilePaddingY": 1.0,
+      "winFrameOffsetX": 0,
+      "winFrameOffsetY": -5
+    },
+    "scratch": {
+      "revealRadius": 40,
+      "coverFadeOutDuration": 200
+    },
+    "singleSpritesheetProvider": {
+      "totalFrames": 12,
+      "columns": 4,
+      "rows": 3,
+      "speed": 0.16
+    },
+    "gridSpritesheetProvider": {
+      "columns": 3,
+      "rows": 4,
+      "cellWidth": 144,
+      "cellHeight": 148,
+      "horizontalGap": 5,
+      "verticalGap": 21,
+      "paddingLeft": 11,
+      "paddingTop": 29,
+      "paddingRight": 8,
+      "paddingBottom": 0,
+      "resolutionFactor": 0.75
+    },
+    "winPopup": {
+      "useSprite": true,
+      "spriteName": "winPopup",
+      "scale": 0.6,
+      "minScale": 0.15,
+      "offsetX": 0,
+      "offsetY": 0,
+      "showDuration": 10000,
+      "animationDuration": 300,
+      "showText": true,
+      "textOffsetX": 0,
+      "textOffsetY": 0,
+      "textColor": "#FFFFFF",
+      "amountColor": "#EAFF00",
+      "fontSize": 42,
+      "amountFontSize": 38
+    }
+  }
+}

@@ -1,9 +1,9 @@
 {
   "app": {
-    "gameName": "Flipping Cards - Gems",
+    "gameName": "Mansory Flip 1",
     "fileExtensions": {
       "sounds": ".wav",
-      "cardTypes": ".svg",
+      "cardTypes": ".png",
       "scratchMasks": ".png",
       "gameBackground": ".svg",
       "gridBackground": ".png",
@@ -12,8 +12,7 @@
       "tile_flipped": ".svg",
       "tile_hovered": ".svg",
       "tile_unflipped": ".svg",
-      "winFrame": ".svg",
-      "winPopup": ".png"
+      "winFrame": ".svg"
     }
   },
   "gameplay": {
@@ -24,7 +23,7 @@
       "scaleFactor": 1,
       "positionOffsetX": 0,
       "positionOffsetY": 0,
-      "mobilePaddingX": 10,
+      "mobilePaddingX": 0,
       "mobilePaddingY": 0
     },
     "hover": {
@@ -35,18 +34,17 @@
     "card": {
       "iconType": "static",
       "spritesheetType": "grid",
-      "iconScale": 1,
+      "iconScale": 1.35,
       "iconOffsetX": 0,
       "iconOffsetY": -5,
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true,
-      "winFrameScale": 0.99,
-      "tileScaleFactorX": 1.0,
+      "tileScaleFactorX": 0.7,
       "tileScaleFactorY": 1.0,
-      "tilePaddingX": 1.0,
-      "tilePaddingY": 1.0,
+      "tilePaddingX": 1,
+      "tilePaddingY": 1,
       "winFrameOffsetX": 0,
-      "winFrameOffsetY": -5
+      "winFrameOffsetY": 0
     },
     "scratch": {
       "revealRadius": 40,
@@ -72,11 +70,12 @@
       "resolutionFactor": 0.75
     },
     "winPopup": {
+      "useSprite": true,
       "spriteName": "winPopup",
-      "scale": 0.6,
-      "minScale": 0.15,
+      "scale": 0.4,
+      "minScale": 0.9,
       "offsetX": 0,
-      "offsetY": 0,
+      "offsetY": -2,
       "showDuration": 10000,
       "animationDuration": 300,
       "showText": true,
@@ -84,8 +83,8 @@
       "textOffsetY": 0,
       "textColor": "#FFFFFF",
       "amountColor": "#EAFF00",
-      "fontSize": 32,
-      "amountFontSize": 26
+      "fontSize": 42,
+      "amountFontSize": 38
     }
   }
 }
