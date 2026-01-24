@@ -141,6 +141,10 @@ export class GameScene {
         winPopupOptions?.textOffsetY ??
         gameConfig?.gameplay?.winPopup?.textOffsetY ??
         0,
+      textLinesPadding:
+        winPopupOptions?.textLinesPadding ??
+        gameConfig?.gameplay?.winPopup?.textLinesPadding ??
+        0,
     };
     this.onResize = onResize;
 
@@ -213,6 +217,7 @@ export class GameScene {
       baseAmountFontSize: this.winPopupOptions.baseAmountFontSize,
       textOffsetX: this.winPopupOptions.textOffsetX,
       textOffsetY: this.winPopupOptions.textOffsetY,
+      textLinesPadding: this.winPopupOptions.textLinesPadding,
     });
 
     this.#setupRootSizing();
@@ -442,6 +447,7 @@ export class GameScene {
       baseAmountFontSize: this.winPopupOptions.baseAmountFontSize,
       textOffsetX: this.winPopupOptions.textOffsetX,
       textOffsetY: this.winPopupOptions.textOffsetY,
+      textLinesPadding: this.winPopupOptions.textLinesPadding,
     });
 
     console.log("Popup recreated with new settings");

@@ -81,6 +81,7 @@
       "showText": true,
       "textOffsetX": 0,
       "textOffsetY": 0,
+      "textLinesPadding": 0,
       "textColor": "#FFFFFF",
       "amountColor": "#EAFF00",
       "fontSize": 42,
