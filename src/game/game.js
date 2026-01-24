@@ -1,5 +1,6 @@
 import { Assets } from "pixi.js";
 import { GameScene } from "./gameScene.js";
+import { createGridCover } from "./gridCover.js";
 import { GameRules } from "./gameRules.js";
 import { loadCardTypeAnimations } from "./gridSpritesheetProvider.js";
 import {
@@ -800,6 +801,8 @@ export async function createGame(mount, opts = {}) {
     gridColumns: GRID_COLUMNS,
   });
 
+  let gridCover = null;
+
   const cardsByKey = new Map();
   const currentAssignments = new Map();
   const currentRoundOutcome = {
@@ -1310,6 +1313,21 @@ export async function createGame(mount, opts = {}) {
     }
   }
 
+  function rebuildGridCover() {
+    if (!scene.boardContent) return;
+    if (gridCover?.container?.parent) {
+      gridCover.container.parent.removeChild(gridCover.container);
+    }
+
+    const bounds = scene.boardContent.getLocalBounds();
+    const width = Math.max(1, bounds.width);
+    const height = Math.max(1, bounds.height);
+
+    gridCover = createGridCover({ width, height });
+    gridCover.container.position.set(bounds.x, bounds.y);
+    scene.boardContent.addChild(gridCover.container);
+  }
+
   scene.buildGrid({
     interactionFactory: () => ({
       onPointerOver: handlePointerOver,
@@ -1335,6 +1353,7 @@ export async function createGame(mount, opts = {}) {
   }
 
   registerCards();
+  rebuildGridCover();
 
   function reset() {
     rules.reset();
@@ -1357,6 +1376,7 @@ export async function createGame(mount, opts = {}) {
     coverScratch?.syncWithLayout();
     coverScratch?.reset();
     registerCards();
+    rebuildGridCover();
     notifyStateChange();
   }
 
