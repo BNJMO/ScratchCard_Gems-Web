@@ -15,8 +15,8 @@ const DEFAULT_OPTIONS = {
   showText: true,
   textColor: "#FFFFFF",
   amountColor: "#EAFF00",
-  baseFontSize: 2,  
-  baseAmountFontSize: 4, 
+  baseFontSize: 2,
+  baseAmountFontSize: 4,
   textOffsetX: 0,
   textOffsetY: 0,
   minScale: 0.15,
@@ -28,6 +28,27 @@ const DEFAULT_OPTIONS = {
   mobileMaxWidthPercent: 0.6,
   tabletMaxWidthPercent: 0.7,
   smallMobileMaxWidthPercent: 0.8,
+
+  // Responsive size
+  portraitWidthVW: 78, 
+  maxWidthPx: 520,
+  minWidthPx: 260,
+
+  // Inner padding inside the box
+  paddingY: 12,
+  paddingX: 12,
+
+  // Typography
+  titleLetterSpacing: 0.03,
+  amountLetterSpacing: 0.01,
+
+  removeTextShadow: true,
+  removeIconShadow: true,
+
+  // Spacing
+  gapPx: 8,
+
+  referenceWidthPx: 520,
 };
 
 export class WinPopup {
@@ -38,52 +59,78 @@ export class WinPopup {
     this._hideTimer = null;
     this._autoHideTimer = null;
     this._resizeHandler = null;
+
     this.amountValue = 0;
     this.spriteUrl = winPopupSpriteUrl;
+
     this.container = this.createContainer();
     if (this.container) {
       document.body.appendChild(this.container);
     }
+
     this.setupResizeHandler();
-    
+
     // Apply responsive styling
     this.forceUpdateToLatestDefaults();
   }
 
+  // setupResizeHandler() {
+  //   this._resizeHandler = () => {
+  //     if (this.visible && this.container) {
+  //       this.updatePosition();
+  //       this.updateResponsiveText();
+  //       // Update the popup scale when window resizes
+  //       this.container.style.transform = this.visibleTransform();
+  //     }
+  //   };
+  //   window.addEventListener('resize', this._resizeHandler);
+  // }
+
   setupResizeHandler() {
     this._resizeHandler = () => {
+      // ✅ keep wrapper width responsive on resize/orientation change
+      if (this.wrapperNode) {
+        this.wrapperNode.style.width = this.getPopupWidth() + "px";
+      }
       if (this.visible && this.container) {
-        this.updatePosition();
-        this.updateResponsiveText();
-        // Update the popup scale when window resizes
+        // ✅ scale text based on wrapper width (NOT old font logic)
+        this.applyResponsiveOverlay();
         this.container.style.transform = this.visibleTransform();
       }
     };
-    window.addEventListener('resize', this._resizeHandler);
+    window.addEventListener("resize", this._resizeHandler);
   }
 
+  getScaledOffset(valuePx) {
+  if (!this.wrapperNode) return valuePx;
+  const w = this.wrapperNode.getBoundingClientRect().width;
+  const scale = w / this.options.referenceWidthPx;
+  return valuePx * scale;
+}
+
   getResponsiveScale() {
-    const { 
-      minScale, 
+    const {
+      minScale,
       mobileBreakpoint,
-      tabletBreakpoint, 
+      tabletBreakpoint,
       smallMobileBreakpoint,
       mobileMaxWidthPercent,
       tabletMaxWidthPercent,
-      smallMobileMaxWidthPercent 
+      smallMobileMaxWidthPercent,
     } = this.options;
-    
+
     // Check screen size categories - adjusted breakpoints
     const isMobile = window.innerWidth <= mobileBreakpoint; // ≤768px
-    const isTablet = window.innerWidth <= tabletBreakpoint && window.innerWidth > smallMobileBreakpoint; // 481-600px
+    const isTablet =
+      window.innerWidth <= tabletBreakpoint && window.innerWidth > smallMobileBreakpoint; // 481-600px
     const isSmallMobile = window.innerWidth <= smallMobileBreakpoint; // ≤480px
-    
+
     // Scale popup based on parent container size (grid-related)
     if (this.parent) {
       const parentRect = this.parent.getBoundingClientRect();
       const containerSize = Math.min(parentRect.width, parentRect.height);
       let scale = Math.max(minScale, Math.min(1.2, containerSize / 500));
-      
+
       // Apply device-specific scaling - 997px will now be treated as desktop
       if (isSmallMobile) {
         // Very small screens (≤480px) - controlled size
@@ -101,17 +148,27 @@ export class WinPopup {
       // 997px will fall through to desktop scaling (no restrictions)
       return scale;
     }
-    
+
     // Fallback scaling when no parent
     if (isSmallMobile) {
-      return Math.max(minScale, Math.min(0.6, (window.innerWidth * smallMobileMaxWidthPercent) / 400));
+      return Math.max(
+        minScale,
+        Math.min(0.6, (window.innerWidth * smallMobileMaxWidthPercent) / 400)
+      );
     } else if (isTablet) {
       return Math.max(minScale, Math.min(0.7, (window.innerWidth * tabletMaxWidthPercent) / 400));
     } else if (isMobile) {
       return Math.max(minScale, Math.min(0.8, (window.innerWidth * mobileMaxWidthPercent) / 400));
     }
-    
+
     return 1.0;
+  }
+
+  getPopupWidth() {
+    const vw = window.innerWidth;
+    const target = (vw * this.options.portraitWidthVW) / 100;
+
+    return Math.max(this.options.minWidthPx, Math.min(this.options.maxWidthPx, target));
   }
 
   getResponsiveFontSizes() {
@@ -119,14 +176,16 @@ export class WinPopup {
     const fontSize = this.options.baseFontSize;
     const amountFontSize = this.options.baseAmountFontSize;
     const responsiveScale = this.getResponsiveScale();
-    
+
     // Apply device-specific font adjustments but don't scale down too much
     const isSmallMobile = window.innerWidth <= this.options.smallMobileBreakpoint;
-    const isTablet = window.innerWidth <= this.options.tabletBreakpoint && window.innerWidth > this.options.smallMobileBreakpoint;
+    const isTablet =
+      window.innerWidth <= this.options.tabletBreakpoint &&
+      window.innerWidth > this.options.smallMobileBreakpoint;
     const isMobile = window.innerWidth <= this.options.mobileBreakpoint;
-    
+
     let fontMultiplier = 1.0;
-    
+
     // Base multiplier for device type - keep text readable
     if (isSmallMobile) {
       fontMultiplier = 1.1; // Slightly larger for readability
@@ -135,48 +194,43 @@ export class WinPopup {
     } else if (isMobile) {
       fontMultiplier = 1.0;
     }
-    
+
     // Don't scale fonts down too much - maintain minimum readability
     const scaleMultiplier = Math.max(0.8, Math.min(1.2, responsiveScale));
     const finalMultiplier = fontMultiplier * scaleMultiplier;
-    
-    return { 
-      fontSize: Math.round(fontSize * finalMultiplier), 
-      amountFontSize: Math.round(amountFontSize * finalMultiplier), 
-      responsiveScale, 
-      totalScale: this.options.scale * responsiveScale 
+
+    return {
+      fontSize: Math.round(fontSize * finalMultiplier),
+      amountFontSize: Math.round(amountFontSize * finalMultiplier),
+      responsiveScale,
+      totalScale: this.options.scale * responsiveScale,
     };
   }
 
   updateResponsiveText() {
     if (!this.titleTextNode || !this.amountTextNode) return;
-    
-    const { fontSize, amountFontSize } = this.getResponsiveFontSizes();
+
     const { textOffsetX, textOffsetY } = this.options;
-    
-    // Update font sizes with even smaller multipliers
-    this.titleTextNode.style.fontSize = Math.round(fontSize * 1.5) + "px";  // Reduced from 2.0 to 1.5
-    this.amountTextNode.style.fontSize = Math.round(amountFontSize * 1.3) + "px";  // Reduced from 1.8 to 1.3
-    
-    // Keep text overlay positioning consistent
+
     if (this.textOverlayNode) {
       this.textOverlayNode.style.top = "0";
       this.textOverlayNode.style.left = "0";
       this.textOverlayNode.style.right = "0";
       this.textOverlayNode.style.bottom = "0";
-      this.textOverlayNode.style.transform = "translate(" + textOffsetX + "px," + textOffsetY + "px)";
+      this.textOverlayNode.style.transform =
+        "translate(" + textOffsetX + "px," + textOffsetY + "px)";
     }
   }
 
   updatePosition() {
     if (!this.container || !this.parent) return;
-    
+
     // Get the parent element's position and size
     const parentRect = this.parent.getBoundingClientRect();
     const { offsetX, offsetY } = this.options;
     const centerX = parentRect.left + parentRect.width / 2 + offsetX;
     const centerY = parentRect.top + parentRect.height / 2 + offsetY;
-    
+
     // Update container position to stay centered on the parent
     this.container.style.left = centerX + "px";
     this.container.style.top = centerY + "px";
@@ -184,55 +238,110 @@ export class WinPopup {
 
   createContainer() {
     const { animationDuration, easing, zIndex, showText } = this.options;
-    const { fontSize, amountFontSize } = this.getResponsiveFontSizes();
-    
+
     const container = document.createElement("div");
     container.className = "sprite-win-popup";
-    container.style.cssText = "position:fixed;top:50%;left:50%;opacity:0;pointer-events:none;display:none;user-select:none;z-index:" + zIndex + ";transition:opacity " + animationDuration + "ms " + easing + ",transform " + animationDuration + "ms " + easing + ";transform:" + this.hiddenTransform();
+    container.style.cssText = `
+      position:fixed;
+      top:50%;
+      left:50%;
+      opacity:0;
+      pointer-events:none;
+      display:none;
+      user-select:none;
+      z-index:${zIndex};
+      transition:opacity ${animationDuration}ms ${easing},transform ${animationDuration}ms ${easing};
+      transform:${this.hiddenTransform()};
+    `;
 
+    // Wrapper controls the SIZE (responsive)
     const wrapper = document.createElement("div");
-    wrapper.style.cssText = "position:relative;display:inline-block";
+    wrapper.style.cssText = `
+      position:relative;
+      width:${this.getPopupWidth()}px;
+      margin:0 auto;
+    `;
+    this.wrapperNode = wrapper;
 
-    const image = document.createElement("img");
-    image.src = this.spriteUrl;
-    image.alt = "You Won!";
-    image.style.cssText = "display:block;max-width:none;max-height:none;object-fit:contain;user-select:none;pointer-events:none";
-    image.onload = () => {};
-    image.onerror = () => {
-      image.style.display = "none";
-      const fallback = document.createElement("div");
-      fallback.style.cssText = "background:linear-gradient(135deg,rgba(11,30,41,0.95) 0%,rgba(15,40,55,0.95) 100%);border-radius:20px;border:4px solid #EAFF00;box-shadow:0 0 30px rgba(234,255,0,0.8),0 0 60px rgba(234,255,0,0.4),inset 0 0 20px rgba(234,255,0,0.1);padding:40px 60px;min-width:300px;position:relative";
-      wrapper.appendChild(fallback);
-    };
-
-    wrapper.appendChild(image);
-    this.imageNode = image;
+    // Background sprite (glow box)
+    const bg = document.createElement("img");
+    bg.src = this.spriteUrl; // winPopup.png
+    bg.alt = "Win Popup";
+    bg.style.cssText = `
+      display:block;
+      width:100%;
+      height:auto;
+      object-fit:contain;
+      user-select:none;
+      pointer-events:none;
+    `;
+    wrapper.appendChild(bg);
+    this.imageNode = bg;
 
     if (showText) {
       const textOverlay = document.createElement("div");
-      textOverlay.style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;user-select:none;z-index:1;text-align:center";
+      textOverlay.style.cssText = `
+        position:absolute;
+        inset:0;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        text-align:center;
+        pointer-events:none;
+        user-select:none;
+        padding:${this.options.paddingY}px ${this.options.paddingX}px;
+        box-sizing:border-box;
+      `;
 
       const titleText = document.createElement("div");
       titleText.textContent = "YOU WON";
-      titleText.style.cssText = "color:#FFFFFF;font-size:" + Math.round(fontSize * 1.5) + "px;font-weight:700;font-family:Arial,sans-serif;text-shadow:0 0 8px rgba(255,255,255,0.6);letter-spacing:" + Math.round(fontSize * 0.15) + "px;margin-bottom:" + Math.round(fontSize * 0.2) + "px;text-transform:uppercase;line-height:0.9;text-align:center";
+      titleText.style.cssText = `
+        color:${this.options.textColor};
+        font-weight:800;
+        font-family:Arial,sans-serif;
+        letter-spacing:${this.options.titleLetterSpacing}em;
+        text-transform:uppercase;
+        line-height:1;
+        margin:0;
+        ${this.options.removeTextShadow ? "text-shadow:none;" : "text-shadow:0 0 8px rgba(255,255,255,0.5);"}
+      `;
 
-      const amountContainer = document.createElement("div");
-      amountContainer.style.cssText = "display:flex;align-items:center;justify-content:center;gap:" + Math.round(amountFontSize * 0.25) + "px;";
+      const amountRow = document.createElement("div");
+      amountRow.style.cssText = `
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:10px;
+        margin-top:${this.options.gapPx}px;
+      `;
 
       const amountText = document.createElement("span");
-      const amountTextSize = Math.round(amountFontSize * 1.3);
       amountText.textContent = this.formatAmount(this.amountValue);
-      amountText.style.cssText = "color:#EAFF00;font-size:" + amountTextSize + "px;font-weight:700;font-family:Arial,sans-serif;text-shadow:0 0 8px rgba(234,255,0,0.8);line-height:1;letter-spacing:" + Math.round(amountFontSize * 0.03) + "px";
+      amountText.style.cssText = `
+        color:${this.options.amountColor};
+        font-weight:800;
+        font-family:Arial,sans-serif;
+        letter-spacing:${this.options.amountLetterSpacing}em;
+        line-height:1;
+        ${this.options.removeTextShadow ? "text-shadow:none;" : "text-shadow:0 0 8px rgba(234,255,0,0.7);"}
+      `;
 
       const amountIcon = document.createElement("img");
       amountIcon.src = bitCoinIconUrl;
-      amountIcon.alt = "Bitcoin";
-      amountIcon.style.cssText = "width:" + amountTextSize + "px;height:" + amountTextSize + "px;display:block;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(234,255,0,0.6))";
+      amountIcon.alt = "Coin";
+      amountIcon.style.cssText = `
+        display:block;
+        object-fit:contain;
+        flex-shrink:0;
+        ${this.options.removeIconShadow ? "filter:none;" : "filter:drop-shadow(0 0 6px rgba(234,255,0,0.6));"}
+      `;
 
-      amountContainer.appendChild(amountText);
-      amountContainer.appendChild(amountIcon);
+      amountRow.appendChild(amountText);
+      amountRow.appendChild(amountIcon);
+
       textOverlay.appendChild(titleText);
-      textOverlay.appendChild(amountContainer);
+      textOverlay.appendChild(amountRow);
       wrapper.appendChild(textOverlay);
 
       this.titleTextNode = titleText;
@@ -245,18 +354,83 @@ export class WinPopup {
     return container;
   }
 
+  applyResponsiveOverlay() {
+  if (!this.wrapperNode || !this.titleTextNode || !this.amountTextNode || !this.textOverlayNode) return;
+
+  const w = this.wrapperNode.getBoundingClientRect().width;
+const { textOffsetX, textOffsetY } = this.options;
+const ox = this.getScaledOffset(textOffsetX);
+const oy = this.getScaledOffset(textOffsetY);
+const titlePx  = Math.round(Math.max(20, Math.min(52, w * 0.11)));  
+const amountPx = Math.round(Math.max(16, Math.min(34, w * 0.075))); 
+const gapPx    = Math.round(Math.max(8, Math.min(16, w * 0.03)));
+
+  this.textOverlayNode.style.padding = `${this.options.paddingY}px ${this.options.paddingX}px`;
+  // this.textOverlayNode.style.paddingBottom = "10px";
+  this.textOverlayNode.style.boxSizing = "border-box";
+
+  this.titleTextNode.style.fontSize = titlePx + "px";
+  this.titleTextNode.style.fontWeight = "600";
+  this.titleTextNode.style.letterSpacing = `${this.options.titleLetterSpacing}em`;
+  this.titleTextNode.style.lineHeight = "1";
+  this.titleTextNode.style.textShadow = "none";
+  this.titleTextNode.style.margin = "0";
+  this.titleTextNode.style.marginBottom = Math.max(2, gapPx * 0.4) + "px";
+  this.titleTextNode.style.whiteSpace = "nowrap"; 
+  this.textOverlayNode.style.transform = `translate(${ox}px, ${oy}px)`;
+  this.textOverlayNode.style.transformOrigin = "center";
+  const overlayWidth = this.textOverlayNode.getBoundingClientRect().width;
+  const titleWidth = this.titleTextNode.getBoundingClientRect().width;
+
+  const desired = overlayWidth * 0.82;
+
+  let sx = 1;
+  if (titleWidth > 0) {
+    sx = desired / titleWidth;
+    // sx = Math.max(1.0, Math.min(1.25, sx));
+    sx = Math.max(1.0, Math.min(1.15, sx));
+  }
+  // this.titleTextNode.style.transform = `scaleX(${sx})`;
+  this.titleTextNode.style.transform = "none";
+  this.titleTextNode.style.transformOrigin = "center";
+
+  this.amountTextNode.style.fontSize = amountPx + "px";
+  this.amountTextNode.style.fontWeight = "400";
+  this.amountTextNode.style.letterSpacing = `${this.options.amountLetterSpacing}em`;
+  this.amountTextNode.style.lineHeight = "1";
+  this.amountTextNode.style.textShadow = "none";
+
+  if (this.amountIconNode) {
+    this.amountIconNode.style.width  = Math.round(amountPx * 0.95) + "px";
+    this.amountIconNode.style.height = Math.round(amountPx * 0.95) + "px";
+    this.amountIconNode.style.filter = "none";
+  }
+
+  const row = this.amountTextNode.parentElement;
+  if (row) {
+    row.style.marginTop = "0px";
+    row.style.marginBottom = "5px";
+    row.style.gap = Math.round(Math.max(6, Math.min(12, w * 0.02))) + "px";
+  }
+}
+
+
   hiddenTransform() {
     const { scaleHidden } = this.options;
     const responsiveScale = this.getResponsiveScale();
     const finalScale = this.options.scale * responsiveScale * scaleHidden;
-    return "translate(-50%,-50%) scale(" + finalScale + ")";
+
+    // return "translate(-50%,-50%) scale(" + finalScale + ")";
+    return `translate(-50%,-50%) scale(${this.options.scaleHidden})`;
   }
 
   visibleTransform() {
     const { scaleVisible } = this.options;
     const responsiveScale = this.getResponsiveScale();
     const finalScale = this.options.scale * responsiveScale * scaleVisible;
-    return "translate(-50%,-50%) scale(" + finalScale + ")";
+
+    // return "translate(-50%,-50%) scale(" + finalScale + ")";
+    return `translate(-50%,-50%) scale(${this.options.scaleVisible})`;
   }
 
   formatAmount(value) {
@@ -278,51 +452,25 @@ export class WinPopup {
 
   updateOptions(newOptions) {
     this.options = { ...this.options, ...newOptions };
-    
+
     // If the popup is visible, update the transform immediately
     if (this.visible && this.container) {
       this.container.style.transform = this.visibleTransform();
-      this.updateResponsiveText();
+      // this.updateResponsiveText();
+      this.applyResponsiveOverlay();
     }
   }
 
   forceUpdateToLatestDefaults() {
     // Update options with latest DEFAULT_OPTIONS
     this.options = { ...DEFAULT_OPTIONS, ...this.options };
-    
+
     // Update text elements with responsive styling
     if (this.titleTextNode && this.amountTextNode && this.textOverlayNode) {
-      const { fontSize, amountFontSize } = this.getResponsiveFontSizes();
-      const { textOffsetX, textOffsetY } = this.options;
-      
-      // Update title text styling with smaller multiplier
-      this.titleTextNode.style.fontSize = Math.round(fontSize * 1.5) + "px";
-      this.titleTextNode.style.fontWeight = "700";
-      this.titleTextNode.style.letterSpacing = Math.round(fontSize * 0.15) + "px";
-      this.titleTextNode.style.marginBottom = Math.round(fontSize * 0.2) + "px";
-      this.titleTextNode.style.lineHeight = "0.9";
-      
-      // Update amount text styling with smaller multiplier
-      const amountTextSize = Math.round(amountFontSize * 1.3);
-      this.amountTextNode.style.fontSize = amountTextSize + "px";
-      this.amountTextNode.style.fontWeight = "700";
-      this.amountTextNode.style.letterSpacing = Math.round(amountFontSize * 0.03) + "px";
-      
-      // Update icon sizing
-      if (this.amountIconNode) {
-        this.amountIconNode.style.width = amountTextSize + "px";
-        this.amountIconNode.style.height = amountTextSize + "px";
-      }
-      
-      // Update container gap
-      const amountContainer = this.amountTextNode.parentElement;
-      if (amountContainer) {
-        amountContainer.style.gap = Math.round(amountFontSize * 0.25) + "px";
-      }
-
-      this.textOverlayNode.style.transform = "translate(" + textOffsetX + "px," + textOffsetY + "px)";
+      // ✅ use new sizing system (do not override with old multipliers)
+      this.applyResponsiveOverlay();
     }
-    
+
     // Update transform if visible
     if (this.visible && this.container) {
       this.container.style.transform = this.visibleTransform();
@@ -332,15 +480,19 @@ export class WinPopup {
   show({ amount, duration } = {}) {
     if (amount != null) this.setAmount(amount);
     if (!this.container) return;
+
     this.visible = true;
     clearTimeout(this._hideTimer);
     clearTimeout(this._autoHideTimer);
+
     this.container.style.display = "block";
-    
+
     // Update position and responsive text when showing
     this.updatePosition();
-    this.updateResponsiveText();
-    
+    if (this.wrapperNode) this.wrapperNode.style.width = this.getPopupWidth() + "px";
+    this.applyResponsiveOverlay();
+    // this.updateResponsiveText(); // ❌ don't call (it overrides sizes)
+
     // Add a slight delay to ensure proper rendering
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -350,7 +502,7 @@ export class WinPopup {
         }
       });
     });
-    
+
     const dur = duration !== undefined ? duration : this.options.showDuration;
     if (dur > 0) this._autoHideTimer = setTimeout(() => this.hide(), dur);
   }
@@ -370,17 +522,23 @@ export class WinPopup {
   destroy() {
     // Remove resize event listener
     if (this._resizeHandler) {
-      window.removeEventListener('resize', this._resizeHandler);
+      window.removeEventListener("resize", this._resizeHandler);
       this._resizeHandler = null;
     }
-    
+
     clearTimeout(this._hideTimer);
     clearTimeout(this._autoHideTimer);
-    if (this.container && this.container.parentNode) this.container.parentNode.removeChild(this.container);
+
+    if (this.container && this.container.parentNode) {
+      this.container.parentNode.removeChild(this.container);
+    }
+
     this.container = null;
+    this.wrapperNode = null;
     this.imageNode = null;
     this.titleTextNode = null;
     this.amountTextNode = null;
     this.amountIconNode = null;
+    this.textOverlayNode = null;
   }
 }
