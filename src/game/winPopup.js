@@ -19,6 +19,7 @@ const DEFAULT_OPTIONS = {
   baseAmountFontSize: 4,
   textOffsetX: 0,
   textOffsetY: 0,
+  textLinesPadding: 0,
   minScale: 0.15,
   minScaleMobile: 0.2,
   minScaleSmallMobile: 0.25,
@@ -313,7 +314,7 @@ export class WinPopup {
         align-items:center;
         justify-content:center;
         gap:10px;
-        margin-top:${this.options.gapPx}px;
+        margin-top:${this.options.textLinesPadding}px;
       `;
 
       const amountText = document.createElement("span");
@@ -364,6 +365,7 @@ const oy = this.getScaledOffset(textOffsetY);
 const titlePx  = Math.round(Math.max(20, Math.min(52, w * 0.11)));  
 const amountPx = Math.round(Math.max(16, Math.min(34, w * 0.075))); 
 const gapPx    = Math.round(Math.max(8, Math.min(16, w * 0.03)));
+const textLinesPadding = this.getScaledOffset(this.options.textLinesPadding);
 
   this.textOverlayNode.style.padding = `${this.options.paddingY}px ${this.options.paddingX}px`;
   // this.textOverlayNode.style.paddingBottom = "10px";
@@ -375,7 +377,7 @@ const gapPx    = Math.round(Math.max(8, Math.min(16, w * 0.03)));
   this.titleTextNode.style.lineHeight = "1";
   this.titleTextNode.style.textShadow = "none";
   this.titleTextNode.style.margin = "0";
-  this.titleTextNode.style.marginBottom = Math.max(2, gapPx * 0.4) + "px";
+  this.titleTextNode.style.marginBottom = textLinesPadding + "px";
   this.titleTextNode.style.whiteSpace = "nowrap"; 
   this.textOverlayNode.style.transform = `translate(${ox}px, ${oy}px)`;
   this.textOverlayNode.style.transformOrigin = "center";
@@ -408,7 +410,7 @@ const gapPx    = Math.round(Math.max(8, Math.min(16, w * 0.03)));
 
   const row = this.amountTextNode.parentElement;
   if (row) {
-    row.style.marginTop = "0px";
+    row.style.marginTop = textLinesPadding + "px";
     row.style.marginBottom = "5px";
     row.style.gap = Math.round(Math.max(6, Math.min(12, w * 0.02))) + "px";
   }

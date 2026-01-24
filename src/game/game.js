@@ -786,6 +786,7 @@ export async function createGame(mount, opts = {}) {
       baseAmountFontSize: 24,
       textOffsetX: gameConfig?.gameplay?.winPopup?.textOffsetX ?? 0,
       textOffsetY: gameConfig?.gameplay?.winPopup?.textOffsetY ?? 0,
+      textLinesPadding: gameConfig?.gameplay?.winPopup?.textLinesPadding ?? 0,
     },
     onResize: () => {
       coverScratch?.syncWithLayout();
