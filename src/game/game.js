@@ -200,7 +200,18 @@ function resolveSvgResolution(svgResolution) {
 async function loadTexture(path, options = {}) {
   if (!path) return null;
   try {
-    const isSvg = typeof path === "string" && /\.svg(?:$|\?)/i.test(path);
+    const svgExtensions = Array.from(
+      new Set(
+        [".svg", CARD_TYPE_EXTENSION]
+          .map((ext) => (typeof ext === "string" ? ext.toLowerCase() : ""))
+          .filter(Boolean)
+      )
+    );
+    const normalizedPath =
+      typeof path === "string" ? path.toLowerCase().split("?")[0] : "";
+    const isSvg =
+      typeof path === "string" &&
+      svgExtensions.some((ext) => normalizedPath.endsWith(ext));
     const asset = isSvg
       ? {
           src: path,
