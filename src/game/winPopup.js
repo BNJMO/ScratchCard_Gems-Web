@@ -395,7 +395,7 @@ const gapPx    = Math.round(Math.max(8, Math.min(16, w * 0.03)));
   this.titleTextNode.style.transformOrigin = "center";
 
   this.amountTextNode.style.fontSize = amountPx + "px";
-  this.amountTextNode.style.fontWeight = "400";
+  this.amountTextNode.style.fontWeight = "600";
   this.amountTextNode.style.letterSpacing = `${this.options.amountLetterSpacing}em`;
   this.amountTextNode.style.lineHeight = "1";
   this.amountTextNode.style.textShadow = "none";
