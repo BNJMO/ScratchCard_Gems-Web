@@ -22,10 +22,14 @@
       "rows": 3,
       "columns": 3,
       "scaleFactor": 1,
-      "positionOffsetX": 0,
+      "positionOffsetX": 1,
       "positionOffsetY": 0,
       "mobilePaddingX": 10,
-      "mobilePaddingY": 0
+      "mobilePaddingY": 10,
+      "outerPaddingX": 150,
+      "outerPaddingY": 100,
+      "innerPaddingX": 100,
+      "innerPaddingY": 20
     },
     "hover": {
       "enabled": true,
@@ -41,10 +45,10 @@
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true,
       "winFrameScale": 0.99,
-      "tileScaleFactorX": 1.0,
-      "tileScaleFactorY": 1.0,
-      "tilePaddingX": 1.0,
-      "tilePaddingY": 1.0,
+      "tileScaleFactorX": 1,
+      "tileScaleFactorY": 1,
+      "tilePaddingX": 1,
+      "tilePaddingY": 1,
       "winFrameOffsetX": 0,
       "winFrameOffsetY": -5
     },
