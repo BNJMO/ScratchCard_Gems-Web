@@ -24,7 +24,11 @@
       "positionOffsetX": 0,
       "positionOffsetY": 0,
       "mobilePaddingX": 0,
-      "mobilePaddingY": 0
+      "mobilePaddingY": 0,
+      "outerPaddingX": 0,
+      "outerPaddingY": 0,
+      "innerPaddingX": 0,
+      "innerPaddingY": 0
     },
     "hover": {
       "enabled": true,
@@ -40,7 +44,7 @@
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true,
       "tileScaleFactorX": 0.7,
-      "tileScaleFactorY": 1.0,
+      "tileScaleFactorY": 1,
       "tilePaddingX": 1,
       "tilePaddingY": 1,
       "winFrameOffsetX": 0,
