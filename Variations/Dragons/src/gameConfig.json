@@ -24,7 +24,11 @@
       "positionOffsetX": 0,
       "positionOffsetY": 0,
       "mobilePaddingX": 10,
-      "mobilePaddingY": 0
+      "mobilePaddingY": 0,
+      "outerPaddingX": 0,
+      "outerPaddingY": 0,
+      "innerPaddingX": 0,
+      "innerPaddingY": 0
     },
     "hover": {
       "enabled": true,
@@ -40,10 +44,10 @@
       "spritesheetAnimationSpeed": 0.16,
       "matchShake": false,
       "winFrameScale": 0.99,
-      "tileScaleFactorX": 1.0,
-      "tileScaleFactorY": 1.0,
-      "tilePaddingX": 1.0,
-      "tilePaddingY": 1.0,
+      "tileScaleFactorX": 1,
+      "tileScaleFactorY": 1,
+      "tilePaddingX": 1,
+      "tilePaddingY": 1,
       "winFrameOffsetX": 0,
       "winFrameOffsetY": -5
     },

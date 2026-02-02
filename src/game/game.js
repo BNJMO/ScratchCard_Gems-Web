@@ -122,6 +122,8 @@ const CARD_TYPE_TEXTURE_MODULES = import.meta.glob(
   { eager: true }
 );
 
+
+
 const DEFAULT_PALETTE = {
   appBg: 0x091b26,
   tileBase: 0x223845, // main tile face
@@ -412,6 +414,12 @@ export async function createGame(mount, opts = {}) {
   const configRows = Number(gameConfig?.gameplay?.grid?.rows);
   const configColumns = Number(gameConfig?.gameplay?.grid?.columns);
   const legacyGrid = Number(gameConfig?.gameplay?.gridSize);
+
+  const gridOuterPaddingX = Number(gameConfig?.gameplay?.grid?.outerPaddingX ?? 0);
+  const gridOuterPaddingY = Number(gameConfig?.gameplay?.grid?.outerPaddingY ?? 0);
+  const gridInnerPaddingX = Number(gameConfig?.gameplay?.grid?.innerPaddingX ?? 0);
+  const gridInnerPaddingY = Number(gameConfig?.gameplay?.grid?.innerPaddingY ?? 0);
+
   const GRID_ROWS = Math.max(
     1,
     Number.isFinite(configRows)
@@ -765,7 +773,16 @@ export async function createGame(mount, opts = {}) {
     },
     backgroundTexture: gameBackgroundTexture,
     gridBackgroundTexture,
-    layoutOptions: { gapBetweenTiles, tilePaddingX, tilePaddingY },
+    layoutOptions: {
+      gapBetweenTiles,
+      tilePaddingX,
+      tilePaddingY,
+
+      outerPaddingX: gridOuterPaddingX,
+      outerPaddingY: gridOuterPaddingY,
+      innerPaddingX: gridInnerPaddingX,
+      innerPaddingY: gridInnerPaddingY,
+    },
     animationOptions: {
       ...hoverOptions,
       ...wiggleOptions,

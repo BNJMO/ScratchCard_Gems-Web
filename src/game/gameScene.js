@@ -1,10 +1,8 @@
 import {
   Application,
   Container,
-  Graphics,
   Rectangle,
   Sprite,
-  Text,
 } from "pixi.js";
 import { Card } from "./card.js";
 import { WinPopup } from "./winPopup.js";
@@ -41,6 +39,7 @@ export class GameScene {
     this.gridRows = Math.max(1, gridRows || 1);
     this.gridColumns = Math.max(1, gridColumns || 1);
     this.strokeWidth = strokeWidth;
+
     this.cardOptions = {
       icon: cardOptions?.icon ?? {},
       matchEffects: cardOptions?.matchEffects ?? {},
@@ -52,11 +51,21 @@ export class GameScene {
       tileScaleFactorY: cardOptions?.tileScaleFactorY ?? 1.0,
       stateTextures: cardOptions?.stateTextures ?? {},
     };
+
+    // NOTE: Keep legacy tilePaddingX/Y for backward compatibility
+    // NEW: outerPaddingX/Y and innerPaddingX/Y
     this.layoutOptions = {
       gapBetweenTiles: layoutOptions?.gapBetweenTiles ?? 0.012,
+
       tilePaddingX: layoutOptions?.tilePaddingX ?? 1.0,
       tilePaddingY: layoutOptions?.tilePaddingY ?? 1.0,
+
+      outerPaddingX: layoutOptions?.outerPaddingX ?? 0,
+      outerPaddingY: layoutOptions?.outerPaddingY ?? 0,
+      innerPaddingX: layoutOptions?.innerPaddingX ?? 0,
+      innerPaddingY: layoutOptions?.innerPaddingY ?? 0,
     };
+
     this.gridOptions = {
       scaleFactor:
         gridOptions?.scaleFactor ??
@@ -71,6 +80,7 @@ export class GameScene {
         gameConfig?.gameplay?.grid?.positionOffsetY ??
         0,
     };
+
     this.animationOptions = {
       hoverEnabled: animationOptions?.hoverEnabled ?? true,
       hoverEnterDuration: animationOptions?.hoverEnterDuration ?? 120,
@@ -86,6 +96,7 @@ export class GameScene {
       cardsSpawnDuration: animationOptions?.cardsSpawnDuration ?? 350,
       disableAnimations: animationOptions?.disableAnimations ?? false,
     };
+
     this.winPopupOptions = {
       spriteName:
         winPopupOptions?.spriteName ??
@@ -146,6 +157,7 @@ export class GameScene {
         gameConfig?.gameplay?.winPopup?.textLinesPadding ??
         0,
     };
+
     this.onResize = onResize;
 
     this.cards = [];
@@ -166,7 +178,8 @@ export class GameScene {
 
   async init() {
     this.app = new Application();
-    const initialResolution = this.#getTargetResolution();
+    const initialResolution = this._getTargetResolution();
+
     await this.app.init({
       background: this.backgroundColor,
       width: this.initialSize,
@@ -186,12 +199,14 @@ export class GameScene {
     }
 
     this.board = new Container();
+
     if (this.gridBackgroundTexture) {
       this.gridBackgroundSprite = new Sprite(this.gridBackgroundTexture);
       this.gridBackgroundSprite.anchor.set(0.5, 0.5);
       this.gridBackgroundSprite.eventMode = "none";
       this.board.addChild(this.gridBackgroundSprite);
     }
+
     this.boardShadows = new Container();
     this.boardShadows.eventMode = "none";
     this.boardContent = new Container();
@@ -220,8 +235,8 @@ export class GameScene {
       textLinesPadding: this.winPopupOptions.textLinesPadding,
     });
 
-    this.#setupRootSizing();
-    this.#setupWindowResizeListener();
+    this._setupRootSizing();
+    this._setupWindowResizeListener();
     this.resize();
   }
 
@@ -231,20 +246,21 @@ export class GameScene {
       window.removeEventListener("resize", this._windowResizeListener);
     }
     this._windowResizeListener = null;
-    this.cards.forEach((card) => {
-      card?.destroy?.();
-    });
+
+    this.cards.forEach((card) => card?.destroy?.());
     this.cards = [];
+
     this.app?.destroy(true);
     if (this.app?.canvas?.parentNode === this.root) {
       this.root.removeChild(this.app.canvas);
     }
+
     this.winPopup?.destroy?.();
   }
 
   buildGrid({ interactionFactory }) {
     this.clearGrid();
-    const layout = this.#layoutSizes();
+    const layout = this._layoutSizes();
 
     for (let r = 0; r < this.gridRows; r += 1) {
       for (let c = 0; c < this.gridColumns; c += 1) {
@@ -280,7 +296,7 @@ export class GameScene {
     this.layoutCards(layout);
   }
 
-  layoutCards(layout = this.#layoutSizes()) {
+  layoutCards(layout = this._layoutSizes()) {
     if (!this.cards.length) return;
 
     const {
@@ -293,15 +309,22 @@ export class GameScene {
       contentHeight,
       boardCenterX,
       boardCenterY,
+      outerPaddingX,
+      outerPaddingY,
     } = layout;
-    const gridScale = this.#resolveGridScale();
-    const { offsetX, offsetY } = this.#resolveGridOffsets();
+
+    const gridScale = this._resolveGridScale();
+    const { offsetX, offsetY } = this._resolveGridOffsets();
+
     const stepX = (scaledTileWidth ?? tileSize) + gapX;
     const stepY = (scaledTileHeight ?? tileSize) + gapY;
+
     const visualOffsetX = (tileSize - (scaledTileWidth ?? tileSize)) / 2;
     const visualOffsetY = (tileSize - (scaledTileHeight ?? tileSize)) / 2;
-    const startX = -contentWidth / 2 - visualOffsetX;
-    const startY = -contentHeight / 2 - visualOffsetY;
+
+    // NEW: start position includes outer padding (background stays fixed, tiles shift inward)
+    const startX = -contentWidth / 2 + (outerPaddingX ?? 0) - visualOffsetX;
+    const startY = -contentHeight / 2 + (outerPaddingY ?? 0) - visualOffsetY;
 
     for (const card of this.cards) {
       const scale = tileSize / card._tileSize;
@@ -315,7 +338,9 @@ export class GameScene {
 
     this.board.position.set(centerX + offsetX, centerY + offsetY);
     this.board.scale.set(gridScale);
-    this.#layoutGridBackground(layout);
+
+    this._layoutGridBackground(layout);
+
     layout.gridScale = gridScale;
     layout.gridOffsetX = offsetX;
     layout.gridOffsetY = offsetY;
@@ -325,7 +350,7 @@ export class GameScene {
   resize() {
     if (!this.app) return;
 
-    const resolution = this.#getTargetResolution();
+    const resolution = this._getTargetResolution();
     if (resolution !== this._currentResolution) {
       this._currentResolution = resolution;
       this.app.renderer.resolution = resolution;
@@ -334,18 +359,19 @@ export class GameScene {
     const width = Math.max(1, this.root.clientWidth || this.initialSize);
     const height = Math.max(1, this.root.clientHeight || width);
     this.app.renderer.resize(width, height);
-    this.#syncCanvasCssSize({ width, height });
-    this.#layoutBackgroundSprite();
+    this._syncCanvasCssSize({ width, height });
+
+    this._layoutBackgroundSprite();
+
     if (this.cards.length > 0) {
       this.layoutCards();
     }
 
     this.winPopup?.updatePosition?.();
-
     this.onResize?.(Math.min(width, height));
   }
 
-  #layoutBackgroundSprite() {
+  _layoutBackgroundSprite() {
     if (!this.app || !this.backgroundSprite) return;
 
     const rendererWidth = this.app.renderer.width;
@@ -355,9 +381,7 @@ export class GameScene {
     const texture = this.backgroundSprite.texture;
     const textureWidth = texture?.orig?.width || texture?.width || 0;
     const textureHeight = texture?.orig?.height || texture?.height || 0;
-    if (textureWidth <= 0 || textureHeight <= 0) {
-      return;
-    }
+    if (textureWidth <= 0 || textureHeight <= 0) return;
 
     const scale = Math.max(
       rendererWidth / textureWidth,
@@ -368,20 +392,20 @@ export class GameScene {
     this.backgroundSprite.position.set(rendererWidth / 2, rendererHeight / 2);
   }
 
-  #layoutGridBackground(layout) {
+  _layoutGridBackground(layout) {
     if (!this.gridBackgroundSprite || !layout) return;
 
+    // Background is stable and matches the "board area"
     const width = Math.max(1, layout.contentWidth ?? 0);
     const height = Math.max(1, layout.contentHeight ?? 0);
+
     this.gridBackgroundSprite.width = width;
     this.gridBackgroundSprite.height = height;
     this.gridBackgroundSprite.position.set(0, 0);
   }
 
   clearGrid() {
-    for (const card of this.cards) {
-      card?.destroy?.();
-    }
+    for (const card of this.cards) card?.destroy?.();
     this.boardShadows?.removeChildren();
     this.boardContent?.removeChildren();
     this.cards = [];
@@ -390,9 +414,7 @@ export class GameScene {
 
   setAnimationsEnabled(enabled) {
     this.disableAnimations = !enabled;
-    for (const card of this.cards) {
-      card.setDisableAnimations(!enabled);
-    }
+    for (const card of this.cards) card.setDisableAnimations(!enabled);
   }
 
   hideWinPopup() {
@@ -408,34 +430,28 @@ export class GameScene {
   }
 
   updateWinPopupOptions(newOptions = {}) {
-    this.winPopupOptions = {
-      ...this.winPopupOptions,
-      ...newOptions,
-    };
-
+    this.winPopupOptions = { ...this.winPopupOptions, ...newOptions };
     if (this.winPopup && typeof this.winPopup.updateOptions === "function") {
       this.winPopup.updateOptions(newOptions);
     }
   }
 
-  // Debug method to test win popup
   testWinPopup(amount = 100.5) {
     console.log("Testing win popup with amount:", amount);
     this.showWinPopup({ amount });
   }
 
-  // Method to force recreate popup with new settings
   recreatePopup() {
     if (this.winPopup) {
       this.winPopup.destroy();
       this.winPopup = null;
     }
 
-    // Recreate with current options
     this.winPopup = new WinPopup({
       parent: this.root,
       spriteName: this.winPopupOptions.spriteName,
       scale: this.winPopupOptions.scale,
+      minScale: this.winPopupOptions.minScale,
       offsetX: this.winPopupOptions.offsetX,
       offsetY: this.winPopupOptions.offsetY,
       showDuration: this.winPopupOptions.showDuration,
@@ -453,7 +469,6 @@ export class GameScene {
     console.log("Popup recreated with new settings");
   }
 
-  // Method to update popup settings and recreate
   updatePopupSettings(newSettings = {}) {
     const defaultSettings = {
       scale: 0.5,
@@ -462,27 +477,20 @@ export class GameScene {
       ...newSettings,
     };
 
-    // Update the options
-    this.winPopupOptions = {
-      ...this.winPopupOptions,
-      ...defaultSettings,
-    };
-
-    // Recreate the popup
+    this.winPopupOptions = { ...this.winPopupOptions, ...defaultSettings };
     this.recreatePopup();
 
     console.log("Updated popup settings:", defaultSettings);
 
-    // Test the popup with new settings
-    setTimeout(() => {
-      this.testWinPopup(123.45);
-    }, 100);
+    setTimeout(() => this.testWinPopup(123.45), 100);
   }
 
-  #setupRootSizing() {
+  _setupRootSizing() {
     if (!this.root) return;
+
     this.root.style.position = this.root.style.position || "relative";
     this.root.style.aspectRatio = this.root.style.aspectRatio || "1 / 1";
+
     if (!this.root.style.width && !this.root.style.height) {
       this.root.style.width = `${this.initialSize}px`;
       this.root.style.maxWidth = "100%";
@@ -492,14 +500,12 @@ export class GameScene {
     this.resizeObserver.observe(this.root);
   }
 
-  #setupWindowResizeListener() {
+  _setupWindowResizeListener() {
     if (this._windowResizeListener && typeof window !== "undefined") {
       window.removeEventListener("resize", this._windowResizeListener);
     }
 
-    this._windowResizeListener = () => {
-      this.resize();
-    };
+    this._windowResizeListener = () => this.resize();
 
     if (typeof window !== "undefined") {
       window.addEventListener("resize", this._windowResizeListener, {
@@ -508,62 +514,97 @@ export class GameScene {
     }
   }
 
-  #syncCanvasCssSize({ width, height }) {
+  _syncCanvasCssSize({ width, height }) {
     const canvas = this.app?.canvas;
     if (!canvas) return;
 
     const cssWidth = `${width}px`;
     const cssHeight = `${height}px`;
-    if (canvas.style.width !== cssWidth) {
-      canvas.style.width = cssWidth;
-    }
-    if (canvas.style.height !== cssHeight) {
-      canvas.style.height = cssHeight;
-    }
-    if (canvas.style.maxWidth !== "100%") {
-      canvas.style.maxWidth = "100%";
-    }
-    if (canvas.style.maxHeight !== "100%") {
-      canvas.style.maxHeight = "100%";
-    }
+
+    if (canvas.style.width !== cssWidth) canvas.style.width = cssWidth;
+    if (canvas.style.height !== cssHeight) canvas.style.height = cssHeight;
+
+    if (canvas.style.maxWidth !== "100%") canvas.style.maxWidth = "100%";
+    if (canvas.style.maxHeight !== "100%") canvas.style.maxHeight = "100%";
   }
 
-  #getTargetResolution() {
-    if (typeof window === "undefined") {
-      return 1;
-    }
-
+  _getTargetResolution() {
+    if (typeof window === "undefined") return 1;
     const deviceRatio = Number(window.devicePixelRatio) || 1;
     return Math.max(1, Math.min(deviceRatio, 2));
   }
 
-  #layoutSizes() {
+  // -------- NEW GRID LAYOUT (outer + inner padding) --------
+  _layoutSizes() {
     const rendererWidth = this.app?.renderer?.width ?? 1;
     const rendererHeight = this.app?.renderer?.height ?? 1;
-    const { horizontal, vertical } = this.#getGridPadding();
 
+    const { horizontal, vertical } = this._getGridPadding();
     const availableWidth = Math.max(1, rendererWidth - horizontal * 2);
     const availableHeight = Math.max(1, rendererHeight - vertical * 2);
+
     const topSpace = 30;
+
+    // Stable "board area"
     const boardWidth = Math.max(1, availableWidth);
     const boardHeight = Math.max(40, availableHeight - topSpace - 5);
-    const gapValue = this.layoutOptions?.gapBetweenTiles ?? 0.012;
+
+    // Background is fixed to the board area
+    const contentWidth = boardWidth;
+    const contentHeight = boardHeight;
+    const contentSize = Math.max(contentWidth, contentHeight);
+
+    const gapValue = Number(this.layoutOptions?.gapBetweenTiles ?? 0.012);
     const gapBasis = Math.min(boardWidth, boardHeight);
-    const baseGap = Math.max(1, Math.floor(gapBasis * gapValue));
-    const paddingX = Number(this.layoutOptions?.tilePaddingX ?? 1);
-    const paddingY = Number(this.layoutOptions?.tilePaddingY ?? 1);
-    const resolvedPaddingX = Number.isFinite(paddingX) ? paddingX : 1;
-    const resolvedPaddingY = Number.isFinite(paddingY) ? paddingY : 1;
-    const gapX = Math.floor(baseGap * resolvedPaddingX);
-    const gapY = Math.floor(baseGap * resolvedPaddingY);
+    const baseGap = Math.max(1, Math.floor(gapBasis * (Number.isFinite(gapValue) ? gapValue : 0.012)));
+
+    const asNumber = (v, fallback = 0) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    };
+
+    // outerPadding: if 0<value<=0.5 => fraction of gapBasis, else pixels
+    const resolveOuter = (value) => {
+      const v = asNumber(value, 0);
+      if (v <= 0) return 0;
+      if (v <= 0.5) return Math.floor(gapBasis * v);
+      return Math.floor(v);
+    };
+
+    // innerPadding: 0 => legacy (baseGap * tilePadding),
+    //               0<value<=2 => multiplier of baseGap,
+    //               else pixels
+    const legacyPadX = asNumber(this.layoutOptions?.tilePaddingX, 1);
+    const legacyPadY = asNumber(this.layoutOptions?.tilePaddingY, 1);
+
+    const resolveInner = (value, legacyMultiplier) => {
+      const v = asNumber(value, 0);
+      if (v === 0) return Math.floor(baseGap * legacyMultiplier);
+      if (v > 0 && v <= 2) return Math.floor(baseGap * v);
+      return Math.floor(v);
+    };
+
+    const outerPaddingX = resolveOuter(this.layoutOptions?.outerPaddingX);
+    const outerPaddingY = resolveOuter(this.layoutOptions?.outerPaddingY);
+
+    const gapX = resolveInner(this.layoutOptions?.innerPaddingX, legacyPadX);
+    const gapY = resolveInner(this.layoutOptions?.innerPaddingY, legacyPadY);
+
+    const innerWidth = Math.max(1, contentWidth - outerPaddingX * 2);
+    const innerHeight = Math.max(1, contentHeight - outerPaddingY * 2);
+
     const totalHorizontalGaps = gapX * Math.max(0, this.gridColumns - 1);
     const totalVerticalGaps = gapY * Math.max(0, this.gridRows - 1);
-    const tileAreaWidth = Math.max(1, boardWidth - totalHorizontalGaps);
-    const tileAreaHeight = Math.max(1, boardHeight - totalVerticalGaps);
-    const scaleX = Number(this.cardOptions?.tileScaleFactorX ?? 1);
-    const scaleY = Number(this.cardOptions?.tileScaleFactorY ?? 1);
-    const resolvedScaleX = Number.isFinite(scaleX) && scaleX > 0 ? scaleX : 1;
-    const resolvedScaleY = Number.isFinite(scaleY) && scaleY > 0 ? scaleY : 1;
+
+    const tileAreaWidth = Math.max(1, innerWidth - totalHorizontalGaps);
+    const tileAreaHeight = Math.max(1, innerHeight - totalVerticalGaps);
+
+    const scaleX = asNumber(this.cardOptions?.tileScaleFactorX, 1);
+    const scaleY = asNumber(this.cardOptions?.tileScaleFactorY, 1);
+    const resolvedScaleX = scaleX > 0 ? scaleX : 1;
+    const resolvedScaleY = scaleY > 0 ? scaleY : 1;
+
+    // Cards dynamically rescale (including pivot/portrait) to fit new paddings
     const tileSize = Math.max(
       1,
       Math.floor(
@@ -573,12 +614,10 @@ export class GameScene {
         )
       )
     );
+
     const scaledTileWidth = tileSize * resolvedScaleX;
     const scaledTileHeight = tileSize * resolvedScaleY;
-    const contentWidth =
-      scaledTileWidth * this.gridColumns + totalHorizontalGaps;
-    const contentHeight = scaledTileHeight * this.gridRows + totalVerticalGaps;
-    const contentSize = Math.max(contentWidth, contentHeight);
+
     const boardCenterX = horizontal + availableWidth / 2;
     const boardCenterY = vertical + availableHeight / 2;
 
@@ -591,22 +630,23 @@ export class GameScene {
       contentWidth,
       contentHeight,
       contentSize,
+      outerPaddingX,
+      outerPaddingY,
       boardCenterX,
       boardCenterY,
     };
   }
 
-  #resolveGridScale() {
+  _resolveGridScale() {
     const scaleFactor = Number(this.gridOptions?.scaleFactor ?? 1);
-    if (!Number.isFinite(scaleFactor) || scaleFactor <= 0) {
-      return 1;
-    }
+    if (!Number.isFinite(scaleFactor) || scaleFactor <= 0) return 1;
     return scaleFactor;
   }
 
-  #resolveGridOffsets() {
+  _resolveGridOffsets() {
     const offsetX = Number(this.gridOptions?.positionOffsetX ?? 0);
     const offsetY = Number(this.gridOptions?.positionOffsetY ?? 0);
+
     return {
       offsetX: Number.isFinite(offsetX) ? offsetX : 0,
       offsetY: Number.isFinite(offsetY) ? offsetY : 0,
@@ -616,10 +656,7 @@ export class GameScene {
   getBoardLayout() {
     const layout = this._lastLayout;
     if (!layout) return null;
-
-    return {
-      ...layout,
-    };
+    return { ...layout };
   }
 
   getBoardBounds() {
@@ -628,6 +665,7 @@ export class GameScene {
 
     const width = layout.contentWidth ?? layout.contentSize ?? 0;
     const height = layout.contentHeight ?? layout.contentSize ?? 0;
+
     const halfWidth = width / 2;
     const halfHeight = height / 2;
 
@@ -639,10 +677,8 @@ export class GameScene {
     );
   }
 
-  #getGridPadding() {
-    if (!this.app?.renderer) {
-      return { horizontal: 0, vertical: 0 };
-    }
+  _getGridPadding() {
+    if (!this.app?.renderer) return { horizontal: 0, vertical: 0 };
 
     const configMobilePaddingX = Number(
       gameConfig?.gameplay?.grid?.mobilePaddingX ?? 0
@@ -651,7 +687,7 @@ export class GameScene {
       gameConfig?.gameplay?.grid?.mobilePaddingY ?? 0
     );
 
-    if (this.#isPortraitViewport()) {
+    if (this._isPortraitViewport()) {
       return { horizontal: configMobilePaddingX, vertical: configMobilePaddingY };
     }
 
@@ -681,10 +717,11 @@ export class GameScene {
     };
   }
 
-  #isPortraitViewport() {
+  _isPortraitViewport() {
     if (typeof window !== "undefined") {
       const viewportWidth = Number(window.innerWidth);
       const viewportHeight = Number(window.innerHeight);
+
       if (
         Number.isFinite(viewportWidth) &&
         Number.isFinite(viewportHeight) &&
@@ -695,16 +732,13 @@ export class GameScene {
       }
 
       const mediaQuery = window.matchMedia?.("(orientation: portrait)");
-      if (mediaQuery?.matches === true) {
-        return true;
-      }
-      if (mediaQuery?.matches === false) {
-        return false;
-      }
+      if (mediaQuery?.matches === true) return true;
+      if (mediaQuery?.matches === false) return false;
     }
 
     const rendererWidth = this.app?.renderer?.width;
     const rendererHeight = this.app?.renderer?.height;
+
     if (
       Number.isFinite(rendererWidth) &&
       Number.isFinite(rendererHeight) &&
