@@ -280,10 +280,10 @@ serverUI = createServer(serverRelay, {
   initialDemoMode: demoMode,
   initialHidden: true,
   onVisibilityChange: (isVisible) => {
-    controlPanel?.setDummyServerPanelVisibility?.(isVisible);
+    controlPanel?.setServerPanelVisibility?.(isVisible);
   },
 });
-controlPanel?.setDummyServerPanelVisibility?.(
+controlPanel?.setServerPanelVisibility?.(
   serverUI?.isVisible?.() ?? false
 );
 serverRelay.setDemoMode(demoMode);
@@ -395,7 +395,7 @@ function setControlPanelLoadingState(isLoading) {
     controlPanel.setStopOnProfitClickable?.(false);
     controlPanel.setStopOnLossClickable?.(false);
     controlPanel.setAnimationsToggleClickable?.(false);
-    controlPanel.setShowDummyServerClickable?.(false);
+    controlPanel.setShowServerButtonClickable?.(false);
     return;
   }
 
@@ -406,8 +406,8 @@ function setControlPanelLoadingState(isLoading) {
   controlPanel.setStopOnProfitClickable?.(true);
   controlPanel.setStopOnLossClickable?.(true);
   controlPanel.setAnimationsToggleClickable?.(true);
-  controlPanel.setShowDummyServerClickable?.(true);
-  controlPanel.setDummyServerPanelVisibility?.(
+  controlPanel.setShowServerButtonClickable?.(true);
+  controlPanel.setServerPanelVisibility?.(
     serverUI?.isVisible?.() ?? false
   );
 }
@@ -1183,7 +1183,7 @@ const opts = {
       opts.disableAnimations = !enabled;
       game?.setAnimationsEnabled?.(enabled);
     });
-    controlPanel.addEventListener("showdummyserver", () => {
+    controlPanel.addEventListener("showserver", () => {
       serverUI?.show?.();
     });
     controlPanel.addEventListener("bet", handleBetButtonClick);
@@ -1195,7 +1195,7 @@ const opts = {
     controlPanel.setProfitOnWinDisplay("$0.00");
     setTotalProfitAmountValue("0.00000000");
     opts.disableAnimations = !(controlPanel.getAnimationsEnabled?.() ?? true);
-    controlPanel.setDummyServerPanelVisibility(
+    controlPanel.setServerPanelVisibility(
       serverUI?.isVisible?.() ?? false
     );
     setControlPanelLoadingState(true);
