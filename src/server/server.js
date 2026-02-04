@@ -2,7 +2,7 @@ import { ServerRelay } from "../serverRelay.js";
 import { ServerPanel } from "./serverPanel.js";
 
 export const DEFAULT_SERVER_URL = "https://dev.securesocket.net:8443";
-export const DEFAULT_SCRATCH_GAME_ID = "CrashDice";
+export const DEFAULT_SCRATCH_GAME_ID = "CrashLilBaby";
 
 let sessionId = null;
 let sessionGameDetails = null;

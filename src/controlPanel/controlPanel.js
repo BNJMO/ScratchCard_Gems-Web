@@ -838,7 +838,7 @@ export class ControlPanel extends EventTarget {
       }
       this.dispatchEvent(new CustomEvent("showserver"));
     });
-    //this.footerActions.appendChild(this.showServerButton);
+    this.footerActions.appendChild(this.showServerButton);
 
     this.updateShowServerButtonState();
   }
