@@ -2,7 +2,7 @@ import buildConfig from "../buildConfig.json";
 import { createGame } from "./game/game.js";
 import { ControlPanel } from "./controlPanel/controlPanel.js";
 import { ServerRelay } from "./serverRelay.js";
-import { createServerDummy } from "./serverDummy/serverDummy.js";
+import { createServer } from "./server/server.js";
 import localConfig from "./gameConfig.json";
 import { getFileExtension, resolveAssetFromGlob } from "./game/assetResolver.js";
 
@@ -133,7 +133,7 @@ let game;
 let controlPanel;
 let demoMode = true;
 const serverRelay = new ServerRelay();
-let serverDummyUI = null;
+let serverUI = null;
 let suppressRelay = false;
 let betButtonMode = "bet";
 let roundActive = false;
@@ -229,13 +229,13 @@ function setDemoMode(value) {
   const next = Boolean(value);
   if (demoMode === next) {
     serverRelay.setDemoMode(next);
-    serverDummyUI?.setDemoMode?.(next);
+    serverUI?.setDemoMode?.(next);
     return;
   }
 
   demoMode = next;
   serverRelay.setDemoMode(next);
-  serverDummyUI?.setDemoMode?.(next);
+  serverUI?.setDemoMode?.(next);
 
   if (demoMode) {
     clearSelectionDelay();
@@ -272,19 +272,19 @@ function applyAutoResultsFromServer(results = []) {
   game?.revealAutoSelections?.(results);
 }
 
-const serverDummyMount =
+const serverMount =
   document.querySelector(".app-wrapper") ?? document.body;
-serverDummyUI = createServerDummy(serverRelay, {
-  mount: serverDummyMount,
+serverUI = createServer(serverRelay, {
+  mount: serverMount,
   onDemoModeToggle: (value) => setDemoMode(value),
   initialDemoMode: demoMode,
   initialHidden: true,
   onVisibilityChange: (isVisible) => {
-    controlPanel?.setDummyServerPanelVisibility?.(isVisible);
+    controlPanel?.setServerPanelVisibility?.(isVisible);
   },
 });
-controlPanel?.setDummyServerPanelVisibility?.(
-  serverDummyUI?.isVisible?.() ?? false
+controlPanel?.setServerPanelVisibility?.(
+  serverUI?.isVisible?.() ?? false
 );
 serverRelay.setDemoMode(demoMode);
 
@@ -340,7 +340,7 @@ serverRelay.addEventListener("demomodechange", (event) => {
     return;
   }
   demoMode = value;
-  serverDummyUI?.setDemoMode?.(value);
+  serverUI?.setDemoMode?.(value);
   if (demoMode) {
     clearSelectionDelay();
   }
@@ -395,7 +395,7 @@ function setControlPanelLoadingState(isLoading) {
     controlPanel.setStopOnProfitClickable?.(false);
     controlPanel.setStopOnLossClickable?.(false);
     controlPanel.setAnimationsToggleClickable?.(false);
-    controlPanel.setShowDummyServerClickable?.(false);
+    controlPanel.setShowServerButtonClickable?.(false);
     return;
   }
 
@@ -406,9 +406,9 @@ function setControlPanelLoadingState(isLoading) {
   controlPanel.setStopOnProfitClickable?.(true);
   controlPanel.setStopOnLossClickable?.(true);
   controlPanel.setAnimationsToggleClickable?.(true);
-  controlPanel.setShowDummyServerClickable?.(true);
-  controlPanel.setDummyServerPanelVisibility?.(
-    serverDummyUI?.isVisible?.() ?? false
+  controlPanel.setShowServerButtonClickable?.(true);
+  controlPanel.setServerPanelVisibility?.(
+    serverUI?.isVisible?.() ?? false
   );
 }
 
@@ -1183,8 +1183,8 @@ const opts = {
       opts.disableAnimations = !enabled;
       game?.setAnimationsEnabled?.(enabled);
     });
-    controlPanel.addEventListener("showdummyserver", () => {
-      serverDummyUI?.show?.();
+    controlPanel.addEventListener("showserver", () => {
+      serverUI?.show?.();
     });
     controlPanel.addEventListener("bet", handleBetButtonClick);
     controlPanel.addEventListener("randompick", handleRandomPickClick);
@@ -1195,8 +1195,8 @@ const opts = {
     controlPanel.setProfitOnWinDisplay("$0.00");
     setTotalProfitAmountValue("0.00000000");
     opts.disableAnimations = !(controlPanel.getAnimationsEnabled?.() ?? true);
-    controlPanel.setDummyServerPanelVisibility(
-      serverDummyUI?.isVisible?.() ?? false
+    controlPanel.setServerPanelVisibility(
+      serverUI?.isVisible?.() ?? false
     );
     setControlPanelLoadingState(true);
   } catch (err) {
