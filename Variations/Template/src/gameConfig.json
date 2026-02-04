@@ -46,6 +46,7 @@
       "winFrameOffsetX": 0,
       "winFrameOffsetY": 0
     },
+    "multipliersMapping": {},
     "scratch": {
       "revealRadius": 40,
       "coverFadeOutDuration": 200
