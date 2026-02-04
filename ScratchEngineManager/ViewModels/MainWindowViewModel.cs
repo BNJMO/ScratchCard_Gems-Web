@@ -400,7 +400,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         GameConfigText = LoadConfigFile(gameConfigPath);
         gameConfigNode = TryParseJson(GameConfigText);
-        PopulateConfigEntries(GameConfigEntries, gameConfigNode, OnGameConfigEntryChanged);
+        PopulateConfigEntries(GameConfigEntries, gameConfigNode, ConfigTarget.Game, OnGameConfigEntryChanged);
         gameConfigSnapshot = GameConfigText;
         IsGameConfigDirty = false;
         AppendSuccess("Reloaded gameConfig.json.");
@@ -417,7 +417,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         BuildConfigText = LoadConfigFile(buildConfigPath);
         buildConfigNode = TryParseJson(BuildConfigText);
-        PopulateConfigEntries(BuildConfigEntries, buildConfigNode, OnBuildConfigEntryChanged);
+        PopulateConfigEntries(BuildConfigEntries, buildConfigNode, ConfigTarget.Build, OnBuildConfigEntryChanged);
         buildConfigSnapshot = BuildConfigText;
         IsBuildConfigDirty = false;
         AppendSuccess("Reloaded buildConfig.json.");
@@ -533,7 +533,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
         VariationGameConfigText = LoadConfigFile(variationGameConfigPath);
         variationGameConfigNode = TryParseJson(VariationGameConfigText);
-        PopulateConfigEntries(VariationGameConfigEntries, variationGameConfigNode, OnVariationGameConfigEntryChanged);
+        PopulateConfigEntries(
+            VariationGameConfigEntries,
+            variationGameConfigNode,
+            ConfigTarget.VariationGame,
+            OnVariationGameConfigEntryChanged);
         variationGameConfigSnapshot = VariationGameConfigText;
         IsVariationGameConfigDirty = false;
         AppendSuccess($"Reloaded variation gameConfig.json for {SelectedVariation}.");
@@ -553,10 +557,70 @@ public partial class MainWindowViewModel : ViewModelBase
 
         VariationBuildConfigText = LoadConfigFile(variationBuildConfigPath);
         variationBuildConfigNode = TryParseJson(VariationBuildConfigText);
-        PopulateConfigEntries(VariationBuildConfigEntries, variationBuildConfigNode, OnVariationBuildConfigEntryChanged);
+        PopulateConfigEntries(
+            VariationBuildConfigEntries,
+            variationBuildConfigNode,
+            ConfigTarget.VariationBuild,
+            OnVariationBuildConfigEntryChanged);
         variationBuildConfigSnapshot = VariationBuildConfigText;
         IsVariationBuildConfigDirty = false;
         AppendSuccess($"Reloaded variation buildConfig.json for {SelectedVariation}.");
+    }
+
+    [RelayCommand]
+    private void DeleteConfigEntry(ConfigValueEntry? entry)
+    {
+        if (entry is null || !entry.IsKeyEditable)
+        {
+            return;
+        }
+
+        if (!TryGetConfigContext(entry.Target, out var rootNode, out var entries, out var onValueChanged))
+        {
+            return;
+        }
+
+        if (rootNode is null || !TryRemoveJsonEntry(rootNode, entry))
+        {
+            return;
+        }
+
+        UpdateConfigText(entry.Target, rootNode);
+        RebuildConfigEntries(entries, rootNode, entry.Target, onValueChanged);
+    }
+
+    [RelayCommand]
+    private void BeginRenameConfigEntry(ConfigValueEntry? entry)
+    {
+        if (entry is null || !entry.IsKeyEditable)
+        {
+            return;
+        }
+
+        entry.EditableKey = GetLeafPropertyName(entry.Segments) ?? string.Empty;
+        entry.IsRenaming = true;
+    }
+
+    [RelayCommand]
+    private void AddConfigEntry(ConfigAddEntry? entry)
+    {
+        if (entry is null)
+        {
+            return;
+        }
+
+        if (!TryGetConfigContext(entry.Target, out var rootNode, out var entries, out var onValueChanged))
+        {
+            return;
+        }
+
+        if (rootNode is null || !TryAddJsonEntry(rootNode, entry, out var newSegments))
+        {
+            return;
+        }
+
+        UpdateConfigText(entry.Target, rootNode);
+        RebuildConfigEntries(entries, rootNode, entry.Target, onValueChanged, newSegments);
     }
 
     [RelayCommand]
@@ -842,8 +906,8 @@ public partial class MainWindowViewModel : ViewModelBase
         BuildConfigText = LoadConfigFile(buildConfigPath);
         gameConfigNode = TryParseJson(GameConfigText);
         buildConfigNode = TryParseJson(BuildConfigText);
-        PopulateConfigEntries(GameConfigEntries, gameConfigNode, OnGameConfigEntryChanged);
-        PopulateConfigEntries(BuildConfigEntries, buildConfigNode, OnBuildConfigEntryChanged);
+        PopulateConfigEntries(GameConfigEntries, gameConfigNode, ConfigTarget.Game, OnGameConfigEntryChanged);
+        PopulateConfigEntries(BuildConfigEntries, buildConfigNode, ConfigTarget.Build, OnBuildConfigEntryChanged);
         gameConfigSnapshot = GameConfigText;
         buildConfigSnapshot = BuildConfigText;
         IsGameConfigDirty = false;
@@ -871,13 +935,79 @@ public partial class MainWindowViewModel : ViewModelBase
         VariationBuildConfigText = LoadConfigFile(variationBuildConfigPath);
         variationGameConfigNode = TryParseJson(VariationGameConfigText);
         variationBuildConfigNode = TryParseJson(VariationBuildConfigText);
-        PopulateConfigEntries(VariationGameConfigEntries, variationGameConfigNode, OnVariationGameConfigEntryChanged);
-        PopulateConfigEntries(VariationBuildConfigEntries, variationBuildConfigNode, OnVariationBuildConfigEntryChanged);
+        PopulateConfigEntries(
+            VariationGameConfigEntries,
+            variationGameConfigNode,
+            ConfigTarget.VariationGame,
+            OnVariationGameConfigEntryChanged);
+        PopulateConfigEntries(
+            VariationBuildConfigEntries,
+            variationBuildConfigNode,
+            ConfigTarget.VariationBuild,
+            OnVariationBuildConfigEntryChanged);
         
         variationGameConfigSnapshot = VariationGameConfigText;
         variationBuildConfigSnapshot = VariationBuildConfigText;
         IsVariationGameConfigDirty = false;
         IsVariationBuildConfigDirty = false;
+    }
+
+    public void CommitConfigKeyRename(ConfigValueEntry entry)
+    {
+        if (entry.IsRenaming)
+        {
+            CommitConfigKeyRenameInternal(entry);
+        }
+    }
+
+    public void CommitPendingConfigRenames()
+    {
+        CommitRenamesInCollection(GameConfigEntries);
+        CommitRenamesInCollection(BuildConfigEntries);
+        CommitRenamesInCollection(VariationGameConfigEntries);
+        CommitRenamesInCollection(VariationBuildConfigEntries);
+    }
+
+    private void CommitRenamesInCollection(IEnumerable<ConfigDisplayItem> entries)
+    {
+        foreach (var entry in entries.OfType<ConfigValueEntry>().Where(item => item.IsRenaming))
+        {
+            CommitConfigKeyRenameInternal(entry);
+        }
+    }
+
+    private void CommitConfigKeyRenameInternal(ConfigValueEntry entry)
+    {
+        var currentKey = GetLeafPropertyName(entry.Segments);
+        var proposedKey = entry.EditableKey?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(currentKey))
+        {
+            entry.IsRenaming = false;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(proposedKey) || string.Equals(currentKey, proposedKey, StringComparison.Ordinal))
+        {
+            entry.EditableKey = currentKey;
+            entry.IsRenaming = false;
+            return;
+        }
+
+        if (!TryGetConfigContext(entry.Target, out var rootNode, out var entries, out var onValueChanged))
+        {
+            entry.IsRenaming = false;
+            return;
+        }
+
+        if (rootNode is null || !TryRenameJsonEntry(rootNode, entry, proposedKey))
+        {
+            entry.IsRenaming = false;
+            return;
+        }
+
+        UpdateConfigText(entry.Target, rootNode);
+        RebuildConfigEntries(entries, rootNode, entry.Target, onValueChanged);
     }
 
     private void LoadAssetEntries()
@@ -1125,7 +1255,9 @@ public partial class MainWindowViewModel : ViewModelBase
     private void PopulateConfigEntries(
         ObservableCollection<ConfigDisplayItem> target,
         JsonNode? rootNode,
-        Action<ConfigValueEntry> onValueChanged)
+        ConfigTarget configTarget,
+        Action<ConfigValueEntry> onValueChanged,
+        IReadOnlyDictionary<string, bool>? expandedGroups = null)
     {
         target.Clear();
         if (rootNode is null)
@@ -1135,8 +1267,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var path = new List<ConfigPathSegment>();
         var items = new List<ConfigDisplayItem>();
-        CollectConfigItems(rootNode, path, items, 0, onValueChanged, () => UpdateVisibility(items));
+        CollectConfigItems(rootNode, path, items, 0, configTarget, onValueChanged, () => UpdateVisibility(items));
         ApplyHierarchyPresentation(items);
+        ApplyExpandedGroups(items, expandedGroups);
         UpdateVisibility(items);
 
         foreach (var item in items)
@@ -1145,11 +1278,97 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    private void RebuildConfigEntries(
+        ObservableCollection<ConfigDisplayItem> target,
+        JsonNode? rootNode,
+        ConfigTarget configTarget,
+        Action<ConfigValueEntry> onValueChanged,
+        IReadOnlyList<ConfigPathSegment>? focusSegments = null)
+    {
+        var expandedGroups = CaptureExpandedGroups(target);
+        PopulateConfigEntries(target, rootNode, configTarget, onValueChanged, expandedGroups);
+
+        if (focusSegments is null)
+        {
+            return;
+        }
+
+        var entryToFocus = target.OfType<ConfigValueEntry>()
+            .FirstOrDefault(entry => AreSegmentsEqual(entry.Segments, focusSegments));
+        if (entryToFocus is null)
+        {
+            return;
+        }
+
+        entryToFocus.EditableKey = GetLeafPropertyName(entryToFocus.Segments) ?? string.Empty;
+        entryToFocus.IsRenaming = true;
+    }
+
+    private static IReadOnlyDictionary<string, bool> CaptureExpandedGroups(IEnumerable<ConfigDisplayItem> items)
+    {
+        var expandedGroups = new Dictionary<string, bool>(StringComparer.Ordinal);
+        foreach (var group in items.OfType<ConfigGroupEntry>())
+        {
+            expandedGroups[BuildSegmentKey(group.Segments)] = group.IsExpanded;
+        }
+
+        return expandedGroups;
+    }
+
+    private static void ApplyExpandedGroups(
+        IReadOnlyList<ConfigDisplayItem> items,
+        IReadOnlyDictionary<string, bool>? expandedGroups)
+    {
+        if (expandedGroups is null || expandedGroups.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var group in items.OfType<ConfigGroupEntry>())
+        {
+            if (expandedGroups.TryGetValue(BuildSegmentKey(group.Segments), out var isExpanded))
+            {
+                group.IsExpanded = isExpanded;
+            }
+        }
+    }
+
+    private static string BuildSegmentKey(IReadOnlyList<ConfigPathSegment> segments)
+    {
+        if (segments.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        return BuildPrefixKey(segments, segments.Count - 1);
+    }
+
+    private static bool AreSegmentsEqual(
+        IReadOnlyList<ConfigPathSegment> left,
+        IReadOnlyList<ConfigPathSegment> right)
+    {
+        if (left.Count != right.Count)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < left.Count; i++)
+        {
+            if (!SegmentEquals(left[i], right[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private void CollectConfigItems(
         JsonNode? node,
         List<ConfigPathSegment> path,
         List<ConfigDisplayItem> target,
         int depth,
+        ConfigTarget configTarget,
         Action<ConfigValueEntry> onValueChanged,
         Action visibilityUpdater)
     {
@@ -1163,17 +1382,18 @@ public partial class MainWindowViewModel : ViewModelBase
             var isRoot = path.Count == 0;
             if (!isRoot)
             {
-                target.Add(new ConfigGroupEntry(GetCurrentLabel(path), path.ToArray(), depth, _ => visibilityUpdater()));
+                target.Add(new ConfigGroupEntry(GetCurrentLabel(path), path.ToArray(), depth, configTarget, _ => visibilityUpdater()));
             }
 
             var childDepth = isRoot ? depth : depth + 1;
             foreach (var entry in obj)
             {
                 path.Add(new ConfigPathSegment(entry.Key, null));
-                CollectConfigItems(entry.Value, path, target, childDepth, onValueChanged, visibilityUpdater);
+                CollectConfigItems(entry.Value, path, target, childDepth, configTarget, onValueChanged, visibilityUpdater);
                 path.RemoveAt(path.Count - 1);
             }
 
+            target.Add(new ConfigAddEntry(path.ToArray(), childDepth, configTarget));
             return;
         }
 
@@ -1181,13 +1401,13 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             if (path.Count > 0)
             {
-                target.Add(new ConfigGroupEntry(GetCurrentLabel(path), path.ToArray(), depth, _ => visibilityUpdater()));
+                target.Add(new ConfigGroupEntry(GetCurrentLabel(path), path.ToArray(), depth, configTarget, _ => visibilityUpdater()));
             }
 
             for (var i = 0; i < array.Count; i++)
             {
                 path.Add(new ConfigPathSegment(null, i));
-                CollectConfigItems(array[i], path, target, depth + 1, onValueChanged, visibilityUpdater);
+                CollectConfigItems(array[i], path, target, depth + 1, configTarget, onValueChanged, visibilityUpdater);
                 path.RemoveAt(path.Count - 1);
             }
 
@@ -1199,7 +1419,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var displayPath = BuildDisplayPath(path);
             var (valueText, valueType) = ExtractValue(valueNode);
             var segments = path.ToArray();
-            target.Add(new ConfigValueEntry(displayPath, segments, valueText, valueType, depth, onValueChanged));
+            target.Add(new ConfigValueEntry(displayPath, segments, valueText, valueType, depth, configTarget, onValueChanged));
         }
     }
 
@@ -1302,6 +1522,10 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 case ConfigValueEntry entry:
                     entry.DisplaySegments = BuildDisplaySegments(entry.Segments, groupColors, random);
+                    entry.PrefixDisplaySegments = entry.DisplaySegments.Count > 1
+                        ? entry.DisplaySegments.Take(entry.DisplaySegments.Count - 1).ToArray()
+                        : Array.Empty<ConfigPathDisplaySegment>();
+                    entry.LeafDisplaySegment = entry.DisplaySegments.Count > 0 ? entry.DisplaySegments[^1] : null;
                     entry.ItemMargin = BuildHierarchyMargin(entry.Segments, previousSegments);
                     previousSegments = entry.Segments;
                     break;
@@ -1589,6 +1813,165 @@ public partial class MainWindowViewModel : ViewModelBase
             VariationBuildConfigText = variationBuildConfigNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
             IsVariationBuildConfigDirty = !string.Equals(VariationBuildConfigText, variationBuildConfigSnapshot, StringComparison.Ordinal);
         }
+    }
+
+    private static string? GetLeafPropertyName(IReadOnlyList<ConfigPathSegment> segments)
+    {
+        return segments.Count == 0 ? null : segments[^1].PropertyName;
+    }
+
+    private bool TryGetConfigContext(
+        ConfigTarget target,
+        out JsonNode? rootNode,
+        out ObservableCollection<ConfigDisplayItem> entries,
+        out Action<ConfigValueEntry> onValueChanged)
+    {
+        switch (target)
+        {
+            case ConfigTarget.Game:
+                rootNode = gameConfigNode;
+                entries = GameConfigEntries;
+                onValueChanged = OnGameConfigEntryChanged;
+                return true;
+            case ConfigTarget.Build:
+                rootNode = buildConfigNode;
+                entries = BuildConfigEntries;
+                onValueChanged = OnBuildConfigEntryChanged;
+                return true;
+            case ConfigTarget.VariationGame:
+                rootNode = variationGameConfigNode;
+                entries = VariationGameConfigEntries;
+                onValueChanged = OnVariationGameConfigEntryChanged;
+                return true;
+            case ConfigTarget.VariationBuild:
+                rootNode = variationBuildConfigNode;
+                entries = VariationBuildConfigEntries;
+                onValueChanged = OnVariationBuildConfigEntryChanged;
+                return true;
+            default:
+                rootNode = null;
+                entries = GameConfigEntries;
+                onValueChanged = OnGameConfigEntryChanged;
+                return false;
+        }
+    }
+
+    private void UpdateConfigText(ConfigTarget target, JsonNode rootNode)
+    {
+        var formatted = rootNode.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        switch (target)
+        {
+            case ConfigTarget.Game:
+                GameConfigText = formatted;
+                IsGameConfigDirty = !string.Equals(GameConfigText, gameConfigSnapshot, StringComparison.Ordinal);
+                break;
+            case ConfigTarget.Build:
+                BuildConfigText = formatted;
+                IsBuildConfigDirty = !string.Equals(BuildConfigText, buildConfigSnapshot, StringComparison.Ordinal);
+                break;
+            case ConfigTarget.VariationGame:
+                VariationGameConfigText = formatted;
+                IsVariationGameConfigDirty = !string.Equals(VariationGameConfigText, variationGameConfigSnapshot, StringComparison.Ordinal);
+                break;
+            case ConfigTarget.VariationBuild:
+                VariationBuildConfigText = formatted;
+                IsVariationBuildConfigDirty = !string.Equals(VariationBuildConfigText, variationBuildConfigSnapshot, StringComparison.Ordinal);
+                break;
+        }
+    }
+
+    private static bool TryRemoveJsonEntry(JsonNode rootNode, ConfigValueEntry entry)
+    {
+        if (entry.Segments.Count == 0 || entry.Segments[^1].PropertyName is null)
+        {
+            return false;
+        }
+
+        var parent = GetNodeForSegments(rootNode, entry.Segments.Take(entry.Segments.Count - 1));
+        if (parent is JsonObject parentObj && entry.Segments[^1].PropertyName is { } propertyName)
+        {
+            return parentObj.Remove(propertyName);
+        }
+
+        return false;
+    }
+
+    private static bool TryRenameJsonEntry(JsonNode rootNode, ConfigValueEntry entry, string newKey)
+    {
+        if (entry.Segments.Count == 0 || entry.Segments[^1].PropertyName is null)
+        {
+            return false;
+        }
+
+        var parent = GetNodeForSegments(rootNode, entry.Segments.Take(entry.Segments.Count - 1));
+        if (parent is not JsonObject parentObj)
+        {
+            return false;
+        }
+
+        var oldKey = entry.Segments[^1].PropertyName!;
+        if (!parentObj.ContainsKey(oldKey))
+        {
+            return false;
+        }
+
+        if (!string.Equals(oldKey, newKey, StringComparison.Ordinal) && parentObj.ContainsKey(newKey))
+        {
+            return false;
+        }
+
+        var node = parentObj[oldKey];
+        parentObj.Remove(oldKey);
+        parentObj[newKey] = node;
+        return true;
+    }
+
+    private static bool TryAddJsonEntry(
+        JsonNode rootNode,
+        ConfigAddEntry entry,
+        out IReadOnlyList<ConfigPathSegment>? newSegments)
+    {
+        newSegments = null;
+        var targetNode = GetNodeForSegments(rootNode, entry.Segments);
+        if (targetNode is not JsonObject targetObject)
+        {
+            return false;
+        }
+
+        var newKey = BuildUniquePropertyName(targetObject, "newKey");
+        targetObject[newKey] = JsonValue.Create(string.Empty);
+        var segments = entry.Segments.ToList();
+        segments.Add(new ConfigPathSegment(newKey, null));
+        newSegments = segments;
+        return true;
+    }
+
+    private static string BuildUniquePropertyName(JsonObject targetObject, string baseName)
+    {
+        var candidate = baseName;
+        var suffix = 1;
+        while (targetObject.ContainsKey(candidate))
+        {
+            candidate = $"{baseName}{suffix}";
+            suffix++;
+        }
+
+        return candidate;
+    }
+
+    private static JsonNode? GetNodeForSegments(JsonNode? node, IEnumerable<ConfigPathSegment> segments)
+    {
+        var current = node;
+        foreach (var segment in segments)
+        {
+            current = GetSegmentNode(current, segment);
+            if (current is null)
+            {
+                return null;
+            }
+        }
+
+        return current;
     }
 
     private static bool TryUpdateJsonValue(JsonNode rootNode, ConfigValueEntry entry)

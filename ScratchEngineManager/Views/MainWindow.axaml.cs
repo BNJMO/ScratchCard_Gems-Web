@@ -182,6 +182,43 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnConfigKeyEditorLostFocus(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Control { DataContext: ConfigValueEntry entry })
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.CommitConfigKeyRename(entry);
+        }
+    }
+
+    private void OnConfigKeyEditorKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (sender is not Control { DataContext: ConfigValueEntry entry })
+        {
+            return;
+        }
+
+        if (DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            viewModel.CommitConfigKeyRename(entry);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            entry.IsRenaming = false;
+            e.Handled = true;
+        }
+    }
+
     private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.Source is TextBox { DataContext: AssetFileEntry })
@@ -189,9 +226,15 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (e.Source is TextBox { DataContext: ConfigValueEntry })
+        {
+            return;
+        }
+
         if (DataContext is MainWindowViewModel viewModel)
         {
             viewModel.CommitPendingAssetRenames();
+            viewModel.CommitPendingConfigRenames();
         }
     }
 

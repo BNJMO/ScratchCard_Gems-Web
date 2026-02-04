@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:ScratchEngineManager.ViewModels"
+        xmlns:converters="using:ScratchEngineManager.Converters"
         xmlns:input="using:Avalonia.Input"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,6 +12,9 @@
         Title="Scratch Engine Manager"
         Background="#1C1F26"
         PointerPressed="OnWindowPointerPressed">
+    <Window.Resources>
+        <converters:BooleanNegationConverter x:Key="BooleanNegationConverter"/>
+    </Window.Resources>
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -339,24 +343,54 @@
                                                                 Padding="10"
                                                                 Margin="{Binding ItemMargin}"
                                                                 IsVisible="{Binding IsVisible}">
+                                                            <Border.ContextMenu>
+                                                                <ContextMenu>
+                                                                    <MenuItem Header="Rename"
+                                                                              Command="{Binding DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                              CommandParameter="{Binding}"
+                                                                              IsEnabled="{Binding IsKeyEditable}"/>
+                                                                    <MenuItem Header="Delete"
+                                                                              Command="{Binding DataContext.DeleteConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                              CommandParameter="{Binding}"
+                                                                              IsEnabled="{Binding IsKeyEditable}"/>
+                                                                </ContextMenu>
+                                                            </Border.ContextMenu>
                                                             <Grid ColumnDefinitions="2*,3*"
                                                                   ColumnSpacing="12"
                                                                   Margin="{Binding Indent}">
-                                                                <ItemsControl ItemsSource="{Binding DisplaySegments}"
-                                                                              VerticalAlignment="Center">
-                                                                    <ItemsControl.ItemsPanel>
-                                                                        <ItemsPanelTemplate>
-                                                                            <StackPanel Orientation="Horizontal"/>
-                                                                        </ItemsPanelTemplate>
-                                                                    </ItemsControl.ItemsPanel>
-                                                                    <ItemsControl.ItemTemplate>
-                                                                        <DataTemplate>
-                                                                            <TextBlock Text="{Binding Text}"
-                                                                                       Foreground="{Binding Foreground}"
-                                                                                       FontFamily="Consolas"/>
-                                                                        </DataTemplate>
-                                                                    </ItemsControl.ItemTemplate>
-                                                                </ItemsControl>
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            VerticalAlignment="Center"
+                                                                            Spacing="0">
+                                                                    <ItemsControl ItemsSource="{Binding PrefixDisplaySegments}"
+                                                                                  VerticalAlignment="Center">
+                                                                        <ItemsControl.ItemsPanel>
+                                                                            <ItemsPanelTemplate>
+                                                                                <StackPanel Orientation="Horizontal"/>
+                                                                            </ItemsPanelTemplate>
+                                                                        </ItemsControl.ItemsPanel>
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate>
+                                                                                <TextBlock Text="{Binding Text}"
+                                                                                           Foreground="{Binding Foreground}"
+                                                                                           FontFamily="Consolas"/>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                    <TextBlock Text="{Binding LeafDisplaySegment.Text}"
+                                                                               Foreground="{Binding LeafDisplaySegment.Foreground}"
+                                                                               FontFamily="Consolas"
+                                                                               IsVisible="{Binding IsRenaming, Converter={StaticResource BooleanNegationConverter}}"/>
+                                                                    <TextBox Text="{Binding EditableKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1B2B3D"
+                                                                             Foreground="#E6E8ED"
+                                                                             BorderBrush="#4B5A70"
+                                                                             CornerRadius="4"
+                                                                             Padding="6"
+                                                                             FontFamily="Consolas"
+                                                                             IsVisible="{Binding IsRenaming}"
+                                                                             KeyDown="OnConfigKeyEditorKeyDown"
+                                                                             LostFocus="OnConfigKeyEditorLostFocus"/>
+                                                                </StackPanel>
                                                                 <TextBox Grid.Column="1"
                                                                          Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                          Background="#1B2B3D"
@@ -365,6 +399,27 @@
                                                                          CornerRadius="4"
                                                                          Padding="6"
                                                                          FontFamily="Consolas"/>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                    <DataTemplate DataType="vm:ConfigAddEntry">
+                                                        <Border Background="Transparent"
+                                                                BorderBrush="Transparent"
+                                                                CornerRadius="6"
+                                                                Padding="4"
+                                                                Margin="0,0,0,10"
+                                                                IsVisible="{Binding IsVisible}">
+                                                            <Grid Margin="{Binding Indent}">
+                                                                <Button Content="+"
+                                                                        HorizontalAlignment="Right"
+                                                                        Command="{Binding DataContext.AddConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"
+                                                                        Background="#3B414F"
+                                                                        Foreground="#E6E8ED"
+                                                                        BorderBrush="#3B414F"
+                                                                        CornerRadius="6"
+                                                                        Padding="8,2"
+                                                                        FontSize="12"/>
                                                             </Grid>
                                                         </Border>
                                                     </DataTemplate>
@@ -454,24 +509,54 @@
                                                                 Padding="10"
                                                                 Margin="{Binding ItemMargin}"
                                                                 IsVisible="{Binding IsVisible}">
+                                                            <Border.ContextMenu>
+                                                                <ContextMenu>
+                                                                    <MenuItem Header="Rename"
+                                                                              Command="{Binding DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                              CommandParameter="{Binding}"
+                                                                              IsEnabled="{Binding IsKeyEditable}"/>
+                                                                    <MenuItem Header="Delete"
+                                                                              Command="{Binding DataContext.DeleteConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                              CommandParameter="{Binding}"
+                                                                              IsEnabled="{Binding IsKeyEditable}"/>
+                                                                </ContextMenu>
+                                                            </Border.ContextMenu>
                                                             <Grid ColumnDefinitions="2*,3*"
                                                                   ColumnSpacing="12"
                                                                   Margin="{Binding Indent}">
-                                                                <ItemsControl ItemsSource="{Binding DisplaySegments}"
-                                                                              VerticalAlignment="Center">
-                                                                    <ItemsControl.ItemsPanel>
-                                                                        <ItemsPanelTemplate>
-                                                                            <StackPanel Orientation="Horizontal"/>
-                                                                        </ItemsPanelTemplate>
-                                                                    </ItemsControl.ItemsPanel>
-                                                                    <ItemsControl.ItemTemplate>
-                                                                        <DataTemplate>
-                                                                            <TextBlock Text="{Binding Text}"
-                                                                                       Foreground="{Binding Foreground}"
-                                                                                       FontFamily="Consolas"/>
-                                                                        </DataTemplate>
-                                                                    </ItemsControl.ItemTemplate>
-                                                                </ItemsControl>
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            VerticalAlignment="Center"
+                                                                            Spacing="0">
+                                                                    <ItemsControl ItemsSource="{Binding PrefixDisplaySegments}"
+                                                                                  VerticalAlignment="Center">
+                                                                        <ItemsControl.ItemsPanel>
+                                                                            <ItemsPanelTemplate>
+                                                                                <StackPanel Orientation="Horizontal"/>
+                                                                            </ItemsPanelTemplate>
+                                                                        </ItemsControl.ItemsPanel>
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate>
+                                                                                <TextBlock Text="{Binding Text}"
+                                                                                           Foreground="{Binding Foreground}"
+                                                                                           FontFamily="Consolas"/>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                    <TextBlock Text="{Binding LeafDisplaySegment.Text}"
+                                                                               Foreground="{Binding LeafDisplaySegment.Foreground}"
+                                                                               FontFamily="Consolas"
+                                                                               IsVisible="{Binding IsRenaming, Converter={StaticResource BooleanNegationConverter}}"/>
+                                                                    <TextBox Text="{Binding EditableKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1B2B3D"
+                                                                             Foreground="#E6E8ED"
+                                                                             BorderBrush="#4B5A70"
+                                                                             CornerRadius="4"
+                                                                             Padding="6"
+                                                                             FontFamily="Consolas"
+                                                                             IsVisible="{Binding IsRenaming}"
+                                                                             KeyDown="OnConfigKeyEditorKeyDown"
+                                                                             LostFocus="OnConfigKeyEditorLostFocus"/>
+                                                                </StackPanel>
                                                                 <TextBox Grid.Column="1"
                                                                          Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                          Background="#1B2B3D"
@@ -480,6 +565,27 @@
                                                                          CornerRadius="4"
                                                                          Padding="6"
                                                                          FontFamily="Consolas"/>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                    <DataTemplate DataType="vm:ConfigAddEntry">
+                                                        <Border Background="Transparent"
+                                                                BorderBrush="Transparent"
+                                                                CornerRadius="6"
+                                                                Padding="4"
+                                                                Margin="0,0,0,10"
+                                                                IsVisible="{Binding IsVisible}">
+                                                            <Grid Margin="{Binding Indent}">
+                                                                <Button Content="+"
+                                                                        HorizontalAlignment="Right"
+                                                                        Command="{Binding DataContext.AddConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"
+                                                                        Background="#3B414F"
+                                                                        Foreground="#E6E8ED"
+                                                                        BorderBrush="#3B414F"
+                                                                        CornerRadius="6"
+                                                                        Padding="8,2"
+                                                                        FontSize="12"/>
                                                             </Grid>
                                                         </Border>
                                                     </DataTemplate>
@@ -572,24 +678,54 @@
                                                                 Padding="10"
                                                                 Margin="{Binding ItemMargin}"
                                                                 IsVisible="{Binding IsVisible}">
+                                                            <Border.ContextMenu>
+                                                                <ContextMenu>
+                                                                    <MenuItem Header="Rename"
+                                                                              Command="{Binding DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                              CommandParameter="{Binding}"
+                                                                              IsEnabled="{Binding IsKeyEditable}"/>
+                                                                    <MenuItem Header="Delete"
+                                                                              Command="{Binding DataContext.DeleteConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                              CommandParameter="{Binding}"
+                                                                              IsEnabled="{Binding IsKeyEditable}"/>
+                                                                </ContextMenu>
+                                                            </Border.ContextMenu>
                                                             <Grid ColumnDefinitions="2*,3*"
                                                                   ColumnSpacing="12"
                                                                   Margin="{Binding Indent}">
-                                                                <ItemsControl ItemsSource="{Binding DisplaySegments}"
-                                                                              VerticalAlignment="Center">
-                                                                    <ItemsControl.ItemsPanel>
-                                                                        <ItemsPanelTemplate>
-                                                                            <StackPanel Orientation="Horizontal"/>
-                                                                        </ItemsPanelTemplate>
-                                                                    </ItemsControl.ItemsPanel>
-                                                                    <ItemsControl.ItemTemplate>
-                                                                        <DataTemplate>
-                                                                            <TextBlock Text="{Binding Text}"
-                                                                                       Foreground="{Binding Foreground}"
-                                                                                       FontFamily="Consolas"/>
-                                                                        </DataTemplate>
-                                                                    </ItemsControl.ItemTemplate>
-                                                                </ItemsControl>
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            VerticalAlignment="Center"
+                                                                            Spacing="0">
+                                                                    <ItemsControl ItemsSource="{Binding PrefixDisplaySegments}"
+                                                                                  VerticalAlignment="Center">
+                                                                        <ItemsControl.ItemsPanel>
+                                                                            <ItemsPanelTemplate>
+                                                                                <StackPanel Orientation="Horizontal"/>
+                                                                            </ItemsPanelTemplate>
+                                                                        </ItemsControl.ItemsPanel>
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate>
+                                                                                <TextBlock Text="{Binding Text}"
+                                                                                           Foreground="{Binding Foreground}"
+                                                                                           FontFamily="Consolas"/>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                    <TextBlock Text="{Binding LeafDisplaySegment.Text}"
+                                                                               Foreground="{Binding LeafDisplaySegment.Foreground}"
+                                                                               FontFamily="Consolas"
+                                                                               IsVisible="{Binding IsRenaming, Converter={StaticResource BooleanNegationConverter}}"/>
+                                                                    <TextBox Text="{Binding EditableKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1B2B3D"
+                                                                             Foreground="#E6E8ED"
+                                                                             BorderBrush="#4B5A70"
+                                                                             CornerRadius="4"
+                                                                             Padding="6"
+                                                                             FontFamily="Consolas"
+                                                                             IsVisible="{Binding IsRenaming}"
+                                                                             KeyDown="OnConfigKeyEditorKeyDown"
+                                                                             LostFocus="OnConfigKeyEditorLostFocus"/>
+                                                                </StackPanel>
                                                                 <TextBox Grid.Column="1"
                                                                          Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                          Background="#1B2B3D"
@@ -598,6 +734,27 @@
                                                                          CornerRadius="4"
                                                                          Padding="6"
                                                                          FontFamily="Consolas"/>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                    <DataTemplate DataType="vm:ConfigAddEntry">
+                                                        <Border Background="Transparent"
+                                                                BorderBrush="Transparent"
+                                                                CornerRadius="6"
+                                                                Padding="4"
+                                                                Margin="0,0,0,10"
+                                                                IsVisible="{Binding IsVisible}">
+                                                            <Grid Margin="{Binding Indent}">
+                                                                <Button Content="+"
+                                                                        HorizontalAlignment="Right"
+                                                                        Command="{Binding DataContext.AddConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"
+                                                                        Background="#3B414F"
+                                                                        Foreground="#E6E8ED"
+                                                                        BorderBrush="#3B414F"
+                                                                        CornerRadius="6"
+                                                                        Padding="8,2"
+                                                                        FontSize="12"/>
                                                             </Grid>
                                                         </Border>
                                                     </DataTemplate>
@@ -687,24 +844,54 @@
                                                                 Padding="10"
                                                                 Margin="{Binding ItemMargin}"
                                                                 IsVisible="{Binding IsVisible}">
+                                                            <Border.ContextMenu>
+                                                                <ContextMenu>
+                                                                    <MenuItem Header="Rename"
+                                                                              Command="{Binding DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                              CommandParameter="{Binding}"
+                                                                              IsEnabled="{Binding IsKeyEditable}"/>
+                                                                    <MenuItem Header="Delete"
+                                                                              Command="{Binding DataContext.DeleteConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                              CommandParameter="{Binding}"
+                                                                              IsEnabled="{Binding IsKeyEditable}"/>
+                                                                </ContextMenu>
+                                                            </Border.ContextMenu>
                                                             <Grid ColumnDefinitions="2*,3*"
                                                                   ColumnSpacing="12"
                                                                   Margin="{Binding Indent}">
-                                                                <ItemsControl ItemsSource="{Binding DisplaySegments}"
-                                                                              VerticalAlignment="Center">
-                                                                    <ItemsControl.ItemsPanel>
-                                                                        <ItemsPanelTemplate>
-                                                                            <StackPanel Orientation="Horizontal"/>
-                                                                        </ItemsPanelTemplate>
-                                                                    </ItemsControl.ItemsPanel>
-                                                                    <ItemsControl.ItemTemplate>
-                                                                        <DataTemplate>
-                                                                            <TextBlock Text="{Binding Text}"
-                                                                                       Foreground="{Binding Foreground}"
-                                                                                       FontFamily="Consolas"/>
-                                                                        </DataTemplate>
-                                                                    </ItemsControl.ItemTemplate>
-                                                                </ItemsControl>
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            VerticalAlignment="Center"
+                                                                            Spacing="0">
+                                                                    <ItemsControl ItemsSource="{Binding PrefixDisplaySegments}"
+                                                                                  VerticalAlignment="Center">
+                                                                        <ItemsControl.ItemsPanel>
+                                                                            <ItemsPanelTemplate>
+                                                                                <StackPanel Orientation="Horizontal"/>
+                                                                            </ItemsPanelTemplate>
+                                                                        </ItemsControl.ItemsPanel>
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate>
+                                                                                <TextBlock Text="{Binding Text}"
+                                                                                           Foreground="{Binding Foreground}"
+                                                                                           FontFamily="Consolas"/>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                    <TextBlock Text="{Binding LeafDisplaySegment.Text}"
+                                                                               Foreground="{Binding LeafDisplaySegment.Foreground}"
+                                                                               FontFamily="Consolas"
+                                                                               IsVisible="{Binding IsRenaming, Converter={StaticResource BooleanNegationConverter}}"/>
+                                                                    <TextBox Text="{Binding EditableKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Background="#1B2B3D"
+                                                                             Foreground="#E6E8ED"
+                                                                             BorderBrush="#4B5A70"
+                                                                             CornerRadius="4"
+                                                                             Padding="6"
+                                                                             FontFamily="Consolas"
+                                                                             IsVisible="{Binding IsRenaming}"
+                                                                             KeyDown="OnConfigKeyEditorKeyDown"
+                                                                             LostFocus="OnConfigKeyEditorLostFocus"/>
+                                                                </StackPanel>
                                                                 <TextBox Grid.Column="1"
                                                                          Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                          Background="#1B2B3D"
@@ -713,6 +900,27 @@
                                                                          CornerRadius="4"
                                                                          Padding="6"
                                                                          FontFamily="Consolas"/>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                    <DataTemplate DataType="vm:ConfigAddEntry">
+                                                        <Border Background="Transparent"
+                                                                BorderBrush="Transparent"
+                                                                CornerRadius="6"
+                                                                Padding="4"
+                                                                Margin="0,0,0,10"
+                                                                IsVisible="{Binding IsVisible}">
+                                                            <Grid Margin="{Binding Indent}">
+                                                                <Button Content="+"
+                                                                        HorizontalAlignment="Right"
+                                                                        Command="{Binding DataContext.AddConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"
+                                                                        Background="#3B414F"
+                                                                        Foreground="#E6E8ED"
+                                                                        BorderBrush="#3B414F"
+                                                                        CornerRadius="6"
+                                                                        Padding="8,2"
+                                                                        FontSize="12"/>
                                                             </Grid>
                                                         </Border>
                                                     </DataTemplate>
