@@ -51,7 +51,7 @@ const cardTypeMultipliersMap = new Map(
         return [];
       }
 
-      return [[cardTypeKey, parsedMultiplier]];
+      return [[parsedMultiplier, cardTypeKey]];
     }
   )
 );
