@@ -7,6 +7,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="ScratchEngineManager.Views.MainWindow"
+        x:Name="RootView"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="Scratch Engine Manager"
@@ -348,12 +349,12 @@
                                                                              DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                                     <MenuItem Header="Rename"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding PlacementTarget.DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              Command="{Binding #RootView.DataContext.BeginRenameConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding PlacementTarget.DataContext.DeleteConfigEntryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              Command="{Binding #RootView.DataContext.DeleteConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
@@ -518,12 +519,12 @@
                                                                              DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                                     <MenuItem Header="Rename"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding PlacementTarget.DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              Command="{Binding #RootView.DataContext.BeginRenameConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding PlacementTarget.DataContext.DeleteConfigEntryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              Command="{Binding #RootView.DataContext.DeleteConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
@@ -691,12 +692,12 @@
                                                                              DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                                     <MenuItem Header="Rename"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding PlacementTarget.DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              Command="{Binding #RootView.DataContext.BeginRenameConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding PlacementTarget.DataContext.DeleteConfigEntryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              Command="{Binding #RootView.DataContext.DeleteConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
@@ -861,12 +862,12 @@
                                                                              DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                                     <MenuItem Header="Rename"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding PlacementTarget.DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              Command="{Binding #RootView.DataContext.BeginRenameConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding PlacementTarget.DataContext.DeleteConfigEntryCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                              Command="{Binding #RootView.DataContext.DeleteConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
