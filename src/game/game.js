@@ -39,6 +39,23 @@ const CARD_TYPE_EXTENSION = getFileExtension("cardTypes", ".svg");
 const GAME_BACKGROUND_EXTENSION = getFileExtension("gameBackground", ".svg");
 const GRID_BACKGROUND_EXTENSION = getFileExtension("gridBackground", ".png");
 
+const cardTypeMultipliersMap = new Map(
+  Object.entries(gameConfig?.gameplay?.multipliersMapping ?? {}).flatMap(
+    ([cardTypeKey, multiplierValue]) => {
+      if (!/^cardType_\d+$/i.test(cardTypeKey)) {
+        return [];
+      }
+
+      const parsedMultiplier = Number(multiplierValue);
+      if (!Number.isFinite(parsedMultiplier)) {
+        return [];
+      }
+
+      return [[cardTypeKey, parsedMultiplier]];
+    }
+  )
+);
+
 const tileTapDownSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "TileTapDown", {
   extension: SOUND_EXTENSION,
   fallbackExtension: ".wav",
