@@ -9,6 +9,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using ScratchEngineManager.ViewModels;
 
 namespace ScratchEngineManager.Views;
@@ -221,7 +222,7 @@ public partial class MainWindow : Window
 
     private void OnRenameConfigEntryClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is not Control { DataContext: ConfigValueEntry entry })
+        if (!TryGetConfigValueEntryFromMenu(sender, out var entry))
         {
             return;
         }
@@ -234,7 +235,7 @@ public partial class MainWindow : Window
 
     private void OnDeleteConfigEntryClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is not Control { DataContext: ConfigValueEntry entry })
+        if (!TryGetConfigValueEntryFromMenu(sender, out var entry))
         {
             return;
         }
@@ -257,6 +258,30 @@ public partial class MainWindow : Window
             viewModel.BeginRenameConfigEntryCommand.Execute(entry);
             e.Handled = true;
         }
+    }
+
+    private static bool TryGetConfigValueEntryFromMenu(object? sender, out ConfigValueEntry entry)
+    {
+        entry = null!;
+        if (sender is not MenuItem menuItem)
+        {
+            return false;
+        }
+
+        if (menuItem.DataContext is ConfigValueEntry directEntry)
+        {
+            entry = directEntry;
+            return true;
+        }
+
+        var contextMenu = menuItem.FindAncestorOfType<ContextMenu>();
+        if (contextMenu?.PlacementTarget?.DataContext is ConfigValueEntry placementEntry)
+        {
+            entry = placementEntry;
+            return true;
+        }
+
+        return false;
     }
 
     private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
