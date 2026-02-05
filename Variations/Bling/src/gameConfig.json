@@ -47,7 +47,9 @@
       "winFrameOffsetX": 0,
       "winFrameOffsetY": -5
     },
-    "multipliersMapping": {},
+    "multipliersMapping": {
+      "cardType_0": 1
+    },
     "scratch": {
       "revealRadius": 40,
       "coverFadeOutDuration": 200
