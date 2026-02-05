@@ -7,7 +7,6 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="ScratchEngineManager.Views.MainWindow"
-        x:Name="RootWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="Scratch Engine Manager"
@@ -347,11 +346,13 @@
                                                             <Border.ContextMenu>
                                                                 <ContextMenu>
                                                                     <MenuItem Header="Rename"
-                                                                              Command="{Binding #RootWindow.DataContext.BeginRenameConfigEntryCommand}"
+                                                                              x:CompileBindings="False"
+                                                                              Command="{Binding DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
-                                                                              Command="{Binding #RootWindow.DataContext.DeleteConfigEntryCommand}"
+                                                                              x:CompileBindings="False"
+                                                                              Command="{Binding DataContext.DeleteConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
@@ -412,8 +413,9 @@
                                                                 IsVisible="{Binding IsVisible}">
                                                             <Grid Margin="{Binding Indent}">
                                                                 <Button Content="+"
+                                                                        x:CompileBindings="False"
                                                                         HorizontalAlignment="Right"
-                                                                        Command="{Binding #RootWindow.DataContext.AddConfigEntryCommand}"
+                                                                        Command="{Binding DataContext.AddConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#3B414F"
                                                                         Foreground="#E6E8ED"
@@ -513,11 +515,13 @@
                                                             <Border.ContextMenu>
                                                                 <ContextMenu>
                                                                     <MenuItem Header="Rename"
-                                                                              Command="{Binding #RootWindow.DataContext.BeginRenameConfigEntryCommand}"
+                                                                              x:CompileBindings="False"
+                                                                              Command="{Binding DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
-                                                                              Command="{Binding #RootWindow.DataContext.DeleteConfigEntryCommand}"
+                                                                              x:CompileBindings="False"
+                                                                              Command="{Binding DataContext.DeleteConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
@@ -578,8 +582,9 @@
                                                                 IsVisible="{Binding IsVisible}">
                                                             <Grid Margin="{Binding Indent}">
                                                                 <Button Content="+"
+                                                                        x:CompileBindings="False"
                                                                         HorizontalAlignment="Right"
-                                                                        Command="{Binding #RootWindow.DataContext.AddConfigEntryCommand}"
+                                                                        Command="{Binding DataContext.AddConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#3B414F"
                                                                         Foreground="#E6E8ED"
@@ -682,11 +687,13 @@
                                                             <Border.ContextMenu>
                                                                 <ContextMenu>
                                                                     <MenuItem Header="Rename"
-                                                                              Command="{Binding #RootWindow.DataContext.BeginRenameConfigEntryCommand}"
+                                                                              x:CompileBindings="False"
+                                                                              Command="{Binding DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
-                                                                              Command="{Binding #RootWindow.DataContext.DeleteConfigEntryCommand}"
+                                                                              x:CompileBindings="False"
+                                                                              Command="{Binding DataContext.DeleteConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
@@ -747,8 +754,9 @@
                                                                 IsVisible="{Binding IsVisible}">
                                                             <Grid Margin="{Binding Indent}">
                                                                 <Button Content="+"
+                                                                        x:CompileBindings="False"
                                                                         HorizontalAlignment="Right"
-                                                                        Command="{Binding #RootWindow.DataContext.AddConfigEntryCommand}"
+                                                                        Command="{Binding DataContext.AddConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#3B414F"
                                                                         Foreground="#E6E8ED"
@@ -848,11 +856,13 @@
                                                             <Border.ContextMenu>
                                                                 <ContextMenu>
                                                                     <MenuItem Header="Rename"
-                                                                              Command="{Binding #RootWindow.DataContext.BeginRenameConfigEntryCommand}"
+                                                                              x:CompileBindings="False"
+                                                                              Command="{Binding DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
-                                                                              Command="{Binding #RootWindow.DataContext.DeleteConfigEntryCommand}"
+                                                                              x:CompileBindings="False"
+                                                                              Command="{Binding DataContext.DeleteConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
@@ -913,8 +923,9 @@
                                                                 IsVisible="{Binding IsVisible}">
                                                             <Grid Margin="{Binding Indent}">
                                                                 <Button Content="+"
+                                                                        x:CompileBindings="False"
                                                                         HorizontalAlignment="Right"
-                                                                        Command="{Binding #RootWindow.DataContext.AddConfigEntryCommand}"
+                                                                        Command="{Binding DataContext.AddConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#3B414F"
                                                                         Foreground="#E6E8ED"
