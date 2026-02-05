@@ -7,7 +7,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="ScratchEngineManager.Views.MainWindow"
-        x:Name="MainWindow"
+        x:Name="RootWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="Scratch Engine Manager"
@@ -347,11 +347,11 @@
                                                             <Border.ContextMenu>
                                                                 <ContextMenu>
                                                                     <MenuItem Header="Rename"
-                                                                              Command="{Binding #MainWindow.DataContext.BeginRenameConfigEntryCommand}"
+                                                                              Command="{Binding #RootWindow.DataContext.BeginRenameConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
-                                                                              Command="{Binding #MainWindow.DataContext.DeleteConfigEntryCommand}"
+                                                                              Command="{Binding #RootWindow.DataContext.DeleteConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
@@ -413,7 +413,7 @@
                                                             <Grid Margin="{Binding Indent}">
                                                                 <Button Content="+"
                                                                         HorizontalAlignment="Right"
-                                                                        Command="{Binding #MainWindow.DataContext.AddConfigEntryCommand}"
+                                                                        Command="{Binding #RootWindow.DataContext.AddConfigEntryCommand}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#3B414F"
                                                                         Foreground="#E6E8ED"
@@ -513,11 +513,11 @@
                                                             <Border.ContextMenu>
                                                                 <ContextMenu>
                                                                     <MenuItem Header="Rename"
-                                                                              Command="{Binding #MainWindow.DataContext.BeginRenameConfigEntryCommand}"
+                                                                              Command="{Binding #RootWindow.DataContext.BeginRenameConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
-                                                                              Command="{Binding #MainWindow.DataContext.DeleteConfigEntryCommand}"
+                                                                              Command="{Binding #RootWindow.DataContext.DeleteConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
@@ -579,7 +579,7 @@
                                                             <Grid Margin="{Binding Indent}">
                                                                 <Button Content="+"
                                                                         HorizontalAlignment="Right"
-                                                                        Command="{Binding #MainWindow.DataContext.AddConfigEntryCommand}"
+                                                                        Command="{Binding #RootWindow.DataContext.AddConfigEntryCommand}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#3B414F"
                                                                         Foreground="#E6E8ED"
@@ -682,11 +682,11 @@
                                                             <Border.ContextMenu>
                                                                 <ContextMenu>
                                                                     <MenuItem Header="Rename"
-                                                                              Command="{Binding #MainWindow.DataContext.BeginRenameConfigEntryCommand}"
+                                                                              Command="{Binding #RootWindow.DataContext.BeginRenameConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
-                                                                              Command="{Binding #MainWindow.DataContext.DeleteConfigEntryCommand}"
+                                                                              Command="{Binding #RootWindow.DataContext.DeleteConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
@@ -748,7 +748,7 @@
                                                             <Grid Margin="{Binding Indent}">
                                                                 <Button Content="+"
                                                                         HorizontalAlignment="Right"
-                                                                        Command="{Binding #MainWindow.DataContext.AddConfigEntryCommand}"
+                                                                        Command="{Binding #RootWindow.DataContext.AddConfigEntryCommand}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#3B414F"
                                                                         Foreground="#E6E8ED"
@@ -848,11 +848,11 @@
                                                             <Border.ContextMenu>
                                                                 <ContextMenu>
                                                                     <MenuItem Header="Rename"
-                                                                              Command="{Binding #MainWindow.DataContext.BeginRenameConfigEntryCommand}"
+                                                                              Command="{Binding #RootWindow.DataContext.BeginRenameConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
-                                                                              Command="{Binding #MainWindow.DataContext.DeleteConfigEntryCommand}"
+                                                                              Command="{Binding #RootWindow.DataContext.DeleteConfigEntryCommand}"
                                                                               CommandParameter="{Binding}"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
@@ -914,7 +914,7 @@
                                                             <Grid Margin="{Binding Indent}">
                                                                 <Button Content="+"
                                                                         HorizontalAlignment="Right"
-                                                                        Command="{Binding #MainWindow.DataContext.AddConfigEntryCommand}"
+                                                                        Command="{Binding #RootWindow.DataContext.AddConfigEntryCommand}"
                                                                         CommandParameter="{Binding}"
                                                                         Background="#3B414F"
                                                                         Foreground="#E6E8ED"
