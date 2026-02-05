@@ -219,6 +219,46 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnRenameConfigEntryClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Control { DataContext: ConfigValueEntry entry })
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.BeginRenameConfigEntryCommand.Execute(entry);
+        }
+    }
+
+    private void OnDeleteConfigEntryClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Control { DataContext: ConfigValueEntry entry })
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.DeleteConfigEntryCommand.Execute(entry);
+        }
+    }
+
+    private void OnConfigEntryDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is not Control { DataContext: ConfigValueEntry entry })
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.BeginRenameConfigEntryCommand.Execute(entry);
+            e.Handled = true;
+        }
+    }
+
     private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.Source is TextBox { DataContext: AssetFileEntry })

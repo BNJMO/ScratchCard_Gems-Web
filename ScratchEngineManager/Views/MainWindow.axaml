@@ -343,19 +343,18 @@
                                                                 CornerRadius="6"
                                                                 Padding="10"
                                                                 Margin="{Binding ItemMargin}"
-                                                                IsVisible="{Binding IsVisible}">
+                                                                IsVisible="{Binding IsVisible}"
+                                                                DoubleTapped="OnConfigEntryDoubleTapped">
                                                             <Border.ContextMenu>
                                                                 <ContextMenu x:CompileBindings="False"
                                                                              DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                                     <MenuItem Header="Rename"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding #RootView.DataContext.BeginRenameConfigEntryCommand}"
-                                                                              CommandParameter="{Binding}"
+                                                                              Click="OnRenameConfigEntryClick"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding #RootView.DataContext.DeleteConfigEntryCommand}"
-                                                                              CommandParameter="{Binding}"
+                                                                              Click="OnDeleteConfigEntryClick"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
                                                             </Border.ContextMenu>
@@ -513,19 +512,18 @@
                                                                 CornerRadius="6"
                                                                 Padding="10"
                                                                 Margin="{Binding ItemMargin}"
-                                                                IsVisible="{Binding IsVisible}">
+                                                                IsVisible="{Binding IsVisible}"
+                                                                DoubleTapped="OnConfigEntryDoubleTapped">
                                                             <Border.ContextMenu>
                                                                 <ContextMenu x:CompileBindings="False"
                                                                              DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                                     <MenuItem Header="Rename"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding #RootView.DataContext.BeginRenameConfigEntryCommand}"
-                                                                              CommandParameter="{Binding}"
+                                                                              Click="OnRenameConfigEntryClick"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding #RootView.DataContext.DeleteConfigEntryCommand}"
-                                                                              CommandParameter="{Binding}"
+                                                                              Click="OnDeleteConfigEntryClick"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
                                                             </Border.ContextMenu>
@@ -686,19 +684,18 @@
                                                                 CornerRadius="6"
                                                                 Padding="10"
                                                                 Margin="{Binding ItemMargin}"
-                                                                IsVisible="{Binding IsVisible}">
+                                                                IsVisible="{Binding IsVisible}"
+                                                                DoubleTapped="OnConfigEntryDoubleTapped">
                                                             <Border.ContextMenu>
                                                                 <ContextMenu x:CompileBindings="False"
                                                                              DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                                     <MenuItem Header="Rename"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding #RootView.DataContext.BeginRenameConfigEntryCommand}"
-                                                                              CommandParameter="{Binding}"
+                                                                              Click="OnRenameConfigEntryClick"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding #RootView.DataContext.DeleteConfigEntryCommand}"
-                                                                              CommandParameter="{Binding}"
+                                                                              Click="OnDeleteConfigEntryClick"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
                                                             </Border.ContextMenu>
@@ -856,19 +853,18 @@
                                                                 CornerRadius="6"
                                                                 Padding="10"
                                                                 Margin="{Binding ItemMargin}"
-                                                                IsVisible="{Binding IsVisible}">
+                                                                IsVisible="{Binding IsVisible}"
+                                                                DoubleTapped="OnConfigEntryDoubleTapped">
                                                             <Border.ContextMenu>
                                                                 <ContextMenu x:CompileBindings="False"
                                                                              DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                                     <MenuItem Header="Rename"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding #RootView.DataContext.BeginRenameConfigEntryCommand}"
-                                                                              CommandParameter="{Binding}"
+                                                                              Click="OnRenameConfigEntryClick"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                     <MenuItem Header="Delete"
                                                                               x:CompileBindings="False"
-                                                                              Command="{Binding #RootView.DataContext.DeleteConfigEntryCommand}"
-                                                                              CommandParameter="{Binding}"
+                                                                              Click="OnDeleteConfigEntryClick"
                                                                               IsEnabled="{Binding IsKeyEditable}"/>
                                                                 </ContextMenu>
                                                             </Border.ContextMenu>
