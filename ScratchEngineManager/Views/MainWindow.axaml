@@ -344,7 +344,8 @@
                                                                 Margin="{Binding ItemMargin}"
                                                                 IsVisible="{Binding IsVisible}">
                                                             <Border.ContextMenu>
-                                                                <ContextMenu>
+                                                                <ContextMenu x:CompileBindings="False"
+                                                                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                                     <MenuItem Header="Rename"
                                                                               x:CompileBindings="False"
                                                                               Command="{Binding DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -513,7 +514,8 @@
                                                                 Margin="{Binding ItemMargin}"
                                                                 IsVisible="{Binding IsVisible}">
                                                             <Border.ContextMenu>
-                                                                <ContextMenu>
+                                                                <ContextMenu x:CompileBindings="False"
+                                                                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                                     <MenuItem Header="Rename"
                                                                               x:CompileBindings="False"
                                                                               Command="{Binding DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -685,7 +687,8 @@
                                                                 Margin="{Binding ItemMargin}"
                                                                 IsVisible="{Binding IsVisible}">
                                                             <Border.ContextMenu>
-                                                                <ContextMenu>
+                                                                <ContextMenu x:CompileBindings="False"
+                                                                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                                     <MenuItem Header="Rename"
                                                                               x:CompileBindings="False"
                                                                               Command="{Binding DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -854,7 +857,8 @@
                                                                 Margin="{Binding ItemMargin}"
                                                                 IsVisible="{Binding IsVisible}">
                                                             <Border.ContextMenu>
-                                                                <ContextMenu>
+                                                                <ContextMenu x:CompileBindings="False"
+                                                                             DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                                     <MenuItem Header="Rename"
                                                                               x:CompileBindings="False"
                                                                               Command="{Binding DataContext.BeginRenameConfigEntryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
