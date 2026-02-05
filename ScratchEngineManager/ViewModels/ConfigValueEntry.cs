@@ -19,14 +19,25 @@ public readonly record struct ConfigPathSegment(string? PropertyName, int? Index
 
 public sealed record ConfigPathDisplaySegment(string Text, IBrush Foreground);
 
+public enum ConfigTarget
+{
+    Game,
+    Build,
+    VariationGame,
+    VariationBuild,
+}
+
 public abstract partial class ConfigDisplayItem : ObservableObject
 {
-    protected ConfigDisplayItem(int depth)
+    protected ConfigDisplayItem(int depth, ConfigTarget target)
     {
         Depth = depth;
+        Target = target;
     }
 
     public int Depth { get; }
+
+    public ConfigTarget Target { get; }
 
     [ObservableProperty]
     private bool isVisible = true;
@@ -42,8 +53,9 @@ public sealed partial class ConfigGroupEntry : ConfigDisplayItem
         string label,
         IReadOnlyList<ConfigPathSegment> segments,
         int depth,
+        ConfigTarget target,
         Action<ConfigGroupEntry>? onToggle = null)
-        : base(depth)
+        : base(depth, target)
     {
         Label = label;
         Segments = segments;
@@ -79,8 +91,9 @@ public sealed partial class ConfigValueEntry : ConfigDisplayItem
         string value,
         ConfigValueType valueType,
         int depth,
+        ConfigTarget target,
         Action<ConfigValueEntry>? onValueChanged = null)
-        : base(depth)
+        : base(depth, target)
     {
         Path = path;
         Segments = segments;
@@ -95,8 +108,16 @@ public sealed partial class ConfigValueEntry : ConfigDisplayItem
 
     public ConfigValueType ValueType { get; }
 
+    public bool IsKeyEditable => Segments.Count > 0 && Segments[^1].PropertyName is not null;
+
     [ObservableProperty]
     private IReadOnlyList<ConfigPathDisplaySegment> displaySegments = Array.Empty<ConfigPathDisplaySegment>();
+
+    [ObservableProperty]
+    private IReadOnlyList<ConfigPathDisplaySegment> prefixDisplaySegments = Array.Empty<ConfigPathDisplaySegment>();
+
+    [ObservableProperty]
+    private ConfigPathDisplaySegment? leafDisplaySegment;
 
     [ObservableProperty]
     private Thickness itemMargin = new(0, 0, 0, 10);
@@ -104,8 +125,28 @@ public sealed partial class ConfigValueEntry : ConfigDisplayItem
     [ObservableProperty]
     private string value = string.Empty;
 
+    [ObservableProperty]
+    private string editableKey = string.Empty;
+
+    [ObservableProperty]
+    private bool isRenaming;
+
     partial void OnValueChanged(string value)
     {
         onValueChanged?.Invoke(this);
     }
+}
+
+public sealed partial class ConfigAddEntry : ConfigDisplayItem
+{
+    public ConfigAddEntry(
+        IReadOnlyList<ConfigPathSegment> segments,
+        int depth,
+        ConfigTarget target)
+        : base(depth, target)
+    {
+        Segments = segments;
+    }
+
+    public IReadOnlyList<ConfigPathSegment> Segments { get; }
 }

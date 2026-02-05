@@ -9,6 +9,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using ScratchEngineManager.ViewModels;
 
 namespace ScratchEngineManager.Views;
@@ -182,6 +183,107 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnConfigKeyEditorLostFocus(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Control { DataContext: ConfigValueEntry entry })
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.CommitConfigKeyRename(entry);
+        }
+    }
+
+    private void OnConfigKeyEditorKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (sender is not Control { DataContext: ConfigValueEntry entry })
+        {
+            return;
+        }
+
+        if (DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Enter)
+        {
+            viewModel.CommitConfigKeyRename(entry);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            entry.IsRenaming = false;
+            e.Handled = true;
+        }
+    }
+
+    private void OnRenameConfigEntryClick(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetConfigValueEntryFromMenu(sender, out var entry))
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.BeginRenameConfigEntryCommand.Execute(entry);
+        }
+    }
+
+    private void OnDeleteConfigEntryClick(object? sender, RoutedEventArgs e)
+    {
+        if (!TryGetConfigValueEntryFromMenu(sender, out var entry))
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.DeleteConfigEntryCommand.Execute(entry);
+        }
+    }
+
+    private void OnConfigEntryDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is not Control { DataContext: ConfigValueEntry entry })
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.BeginRenameConfigEntryCommand.Execute(entry);
+            e.Handled = true;
+        }
+    }
+
+    private static bool TryGetConfigValueEntryFromMenu(object? sender, out ConfigValueEntry entry)
+    {
+        entry = null!;
+        if (sender is not MenuItem menuItem)
+        {
+            return false;
+        }
+
+        if (menuItem.DataContext is ConfigValueEntry directEntry)
+        {
+            entry = directEntry;
+            return true;
+        }
+
+        var contextMenu = menuItem.FindAncestorOfType<ContextMenu>();
+        if (contextMenu?.PlacementTarget?.DataContext is ConfigValueEntry placementEntry)
+        {
+            entry = placementEntry;
+            return true;
+        }
+
+        return false;
+    }
+
     private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.Source is TextBox { DataContext: AssetFileEntry })
@@ -189,9 +291,15 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (e.Source is TextBox { DataContext: ConfigValueEntry })
+        {
+            return;
+        }
+
         if (DataContext is MainWindowViewModel viewModel)
         {
             viewModel.CommitPendingAssetRenames();
+            viewModel.CommitPendingConfigRenames();
         }
     }
 
