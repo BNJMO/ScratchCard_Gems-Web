@@ -1,5 +1,6 @@
 import { ServerRelay } from "../serverRelay.js";
 import { ServerPanel } from "./serverPanel.js";
+import gameConfig from "../gameConfig.json";
 
 export const DEFAULT_SERVER_URL = "https://dev.securesocket.net:8443";
 export const DEFAULT_SCRATCH_GAME_ID = "CrashLilBaby";
@@ -12,6 +13,41 @@ let lastBetResult = null;
 let lastBetRoundId = null;
 let lastBetBalance = null;
 let lastBetRegisteredBets = [];
+let activeRound = null;
+
+const GRID_ROWS = Math.max(
+  1,
+  Number.isFinite(gameConfig?.gameplay?.grid?.rows)
+    ? gameConfig.gameplay.grid.rows
+    : Number.isFinite(gameConfig?.gameplay?.gridSize)
+    ? gameConfig.gameplay.gridSize
+    : 3
+);
+const GRID_COLUMNS = Math.max(
+  1,
+  Number.isFinite(gameConfig?.gameplay?.grid?.columns)
+    ? gameConfig.gameplay.grid.columns
+    : Number.isFinite(gameConfig?.gameplay?.gridSize)
+    ? gameConfig.gameplay.gridSize
+    : 3
+);
+const cardTypeMultipliersMap = new Map(
+  Object.entries(gameConfig?.gameplay?.multipliersMapping ?? {}).flatMap(
+    ([cardTypeKey, multiplierValue]) => {
+      if (!/^cardType_\d+$/i.test(cardTypeKey)) {
+        return [];
+      }
+
+      const parsedMultiplier = Number(multiplierValue);
+      if (!Number.isFinite(parsedMultiplier)) {
+        return [];
+      }
+
+      return [[parsedMultiplier, cardTypeKey]];
+    }
+  )
+);
+const availableCardTypes = Array.from(cardTypeMultipliersMap.values());
 
 function normalizeBaseUrl(url) {
   if (typeof url !== "string") {
@@ -110,9 +146,169 @@ function serializeBetRequestBody({ type = "bet", amountLiteral, betInfo }) {
 function normalizeBetRate(rate) {
   const numeric = Number(rate);
   if (!Number.isFinite(numeric)) {
-    return 1;
+    return 2;
   }
-  return Math.max(1, Math.floor(numeric));
+  return Math.max(1, Math.floor(numeric)) || 2;
+}
+
+function shuffleArray(values = []) {
+  const array = [...values];
+  for (let i = array.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function createCardPositions() {
+  const positions = [];
+  for (let row = 0; row < GRID_ROWS; row += 1) {
+    for (let col = 0; col < GRID_COLUMNS; col += 1) {
+      positions.push({ row, col });
+    }
+  }
+  return positions;
+}
+
+function generateServerRoundAssignments({ status, winningCardType }) {
+  const betWon = status === "Won";
+  const cardTypes =
+    Array.isArray(availableCardTypes) && availableCardTypes.length > 0
+      ? [...availableCardTypes]
+      : [null];
+  const positions = shuffleArray(createCardPositions());
+  const assignments = [];
+  const counts = new Map(cardTypes.map((key) => [key, 0]));
+
+  if (betWon) {
+    const primaryType =
+      typeof winningCardType === "string" && cardTypes.includes(winningCardType)
+        ? winningCardType
+        : cardTypes[0] ?? null;
+    const primarySlots = Math.min(3, positions.length);
+
+    for (let i = 0; i < primarySlots; i += 1) {
+      const position = positions.shift();
+      if (!position) break;
+      assignments.push({
+        row: position.row,
+        col: position.col,
+        contentKey: primaryType,
+      });
+      counts.set(primaryType, (counts.get(primaryType) ?? 0) + 1);
+    }
+
+    for (const position of positions) {
+      const available = cardTypes.filter((type) => {
+        if (type === primaryType) {
+          return (counts.get(type) ?? 0) < 3;
+        }
+        return (counts.get(type) ?? 0) < 2;
+      });
+      const pool = available.length > 0 ? available : cardTypes;
+      const choice = pool[Math.floor(Math.random() * pool.length)] ?? null;
+      counts.set(choice, (counts.get(choice) ?? 0) + 1);
+      assignments.push({
+        row: position.row,
+        col: position.col,
+        contentKey: choice,
+      });
+    }
+
+    return assignments;
+  }
+
+  for (const position of positions) {
+    const available = cardTypes.filter((type) => (counts.get(type) ?? 0) < 2);
+    const pool = available.length > 0 ? available : cardTypes;
+    const choice = pool[Math.floor(Math.random() * pool.length)] ?? null;
+    counts.set(choice, (counts.get(choice) ?? 0) + 1);
+    assignments.push({
+      row: position.row,
+      col: position.col,
+      contentKey: choice,
+    });
+  }
+
+  return assignments;
+}
+
+function createRoundLookup(assignments = []) {
+  const lookup = new Map();
+  assignments.forEach((entry) => {
+    if (typeof entry?.row !== "number" || typeof entry?.col !== "number") {
+      return;
+    }
+    lookup.set(`${entry.row},${entry.col}`, entry.contentKey ?? null);
+  });
+  return lookup;
+}
+
+function clearActiveRound() {
+  activeRound = null;
+}
+
+async function handleServerBetRequest({
+  relay,
+  url,
+  scratchGameId,
+  payload,
+  auto = false,
+}) {
+  const amount = payload?.bet ?? payload?.amount ?? 0;
+  const submitted = await submitBet({
+    url,
+    gameId: scratchGameId,
+    amount,
+    relay,
+  });
+
+  const state = submitted?.state ?? null;
+  const status = typeof state?.status === "string" ? state.status : "Lost";
+  const didWin = status === "Won";
+  const multiplier = Number(state?.multiplier);
+  const winningCardType = didWin
+    ? cardTypeMultipliersMap.get(multiplier) ?? null
+    : null;
+  const winAmount = state?.winAmount ?? 0;
+  const assignments = generateServerRoundAssignments({
+    status,
+    winningCardType,
+  });
+
+  activeRound = {
+    assignments,
+    lookup: createRoundLookup(assignments),
+    result: didWin ? "win" : "lost",
+  };
+
+  relay.deliver("profit:update-multiplier", {
+    value: didWin ? multiplier : 1,
+    numericValue: didWin ? multiplier : 1,
+  });
+  relay.deliver("profit:update-total", {
+    value: winAmount,
+    numericValue: Number(winAmount),
+  });
+  relay.deliver("start-bet", {
+    result: didWin ? "win" : "lost",
+    status,
+    multiplier: didWin ? multiplier : null,
+    winAmount,
+    winningCardType,
+  });
+
+  if (auto) {
+    relay.deliver("auto-bet-result", {
+      results: assignments,
+      status,
+      multiplier: didWin ? multiplier : null,
+      winAmount,
+      winningCardType,
+    });
+    relay.deliver("finalize-bet", {});
+    clearActiveRound();
+  }
 }
 
 export async function initializeSessionId({
@@ -390,9 +586,7 @@ export async function submitBet({
 
   const baseUrl = normalizeBaseUrl(url);
   const normalizedGameId = normalizeScratchGameId(gameId);
-  const endpoint = `${baseUrl}/post/${encodeURIComponent(
-    normalizedGameId
-  )}?betInfo`;
+  const endpoint = `${baseUrl}/post/${encodeURIComponent(normalizedGameId)}`;
 
   lastBetResult = null;
   lastBetRoundId = null;
@@ -400,14 +594,14 @@ export async function submitBet({
   lastBetRegisteredBets = [];
 
   const normalizedAmount = normalizeBetAmount(amount);
-  const normalizedRate = normalizeBetRate(rate);
+  const normalizedRate = normalizeBetRate(rate || 2);
   const amountLiteral = formatBetAmountLiteral(normalizedAmount);
   const normalizedTargetMultiplier = Number.isFinite(targetMultiplier)
     ? targetMultiplier
     : null;
 
   const betInfo = {
-    id: 4,
+    id: 1,
     title: {
       key: "straight",
       value: {},
@@ -624,6 +818,61 @@ export function createServer(relay, options = {}) {
   serverRelay.addEventListener("outgoing", outgoingHandler);
   serverRelay.addEventListener("incoming", incomingHandler);
 
+  const gameActionHandler = (event) => {
+    const { type, payload } = event.detail ?? {};
+    if (serverRelay.demoMode) {
+      return;
+    }
+
+    if (type === "action:bet") {
+      handleServerBetRequest({
+        relay: serverRelay,
+        url: serverUrl,
+        scratchGameId,
+        payload,
+        auto: false,
+      }).catch((error) => {
+        console.error("Failed to resolve server bet", error);
+        clearActiveRound();
+      });
+      return;
+    }
+
+    if (type === "game:manual-selection") {
+      const row = Number(payload?.row);
+      const col = Number(payload?.col);
+      const key = `${row},${col}`;
+      const contentKey = activeRound?.lookup?.get(key) ?? null;
+      serverRelay.deliver("bet-result", {
+        row,
+        col,
+        contentKey,
+        result: contentKey,
+      });
+      return;
+    }
+
+    if (type === "game:auto-round-request") {
+      handleServerBetRequest({
+        relay: serverRelay,
+        url: serverUrl,
+        scratchGameId,
+        payload,
+        auto: true,
+      }).catch((error) => {
+        console.error("Failed to resolve auto bet", error);
+        clearActiveRound();
+      });
+      return;
+    }
+
+    if (type === "action:cashout" || type === "finalize-bet") {
+      clearActiveRound();
+    }
+  };
+
+  serverRelay.addEventListener("outgoing", gameActionHandler);
+
   const initializationPromise = autoInitialize
     ? initializeServerConnection({
         relay: serverRelay,
@@ -650,6 +899,7 @@ export function createServer(relay, options = {}) {
     initialization: initializationPromise,
     destroy() {
       serverRelay.removeEventListener("outgoing", outgoingHandler);
+      serverRelay.removeEventListener("outgoing", gameActionHandler);
       serverRelay.removeEventListener("incoming", incomingHandler);
       serverPanel.destroy();
     },
