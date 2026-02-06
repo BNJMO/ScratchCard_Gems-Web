@@ -206,10 +206,13 @@ export class ControlPanel extends EventTarget {
     this.betInputWrapper.appendChild(this.betInput);
 
     const icon = document.createElement("img");
-    icon.src = bitcoinIconUrl;
     icon.alt = "";
     icon.className = "control-bet-input-icon";
+    if (this.currencyIconUrl) {
+      icon.src = this.currencyIconUrl;
+    }
     this.betInputWrapper.appendChild(icon);
+    this.currencyIcons.add(icon);
 
     this.betStepper = new Stepper({
       onStepUp: () => this.adjustBetValue(1e-8),
@@ -801,10 +804,13 @@ export class ControlPanel extends EventTarget {
     this.profitBox.appendChild(this.profitValue);
 
     const icon = document.createElement("img");
-    icon.src = bitcoinIconUrl;
     icon.alt = "";
     icon.className = "control-profit-icon";
+    if (this.currencyIconUrl) {
+      icon.src = this.currencyIconUrl;
+    }
     this.profitBox.appendChild(icon);
+    this.currencyIcons.add(icon);
 
     const parent = this.manualSection ?? this.scrollContainer;
     parent.appendChild(this.profitBox);
