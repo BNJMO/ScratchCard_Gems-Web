@@ -225,6 +225,12 @@ function sendRelayMessage(type, payload = {}) {
   serverRelay.send(type, payload);
 }
 
+function syncModeWithBetValue(rawValue) {
+  const numericValue = coerceNumericValue(rawValue);
+  const shouldUseDemoMode = !(numericValue != null && numericValue > 0);
+  setDemoMode(shouldUseDemoMode);
+}
+
 function setDemoMode(value) {
   const next = Boolean(value);
   if (demoMode === next) {
@@ -1082,6 +1088,7 @@ const opts = {
       initialMines,
     });
     controlPanelMode = controlPanel?.getMode?.() ?? "manual";
+    syncModeWithBetValue(controlPanel?.getBetValue?.());
     controlPanel.addEventListener("modechange", (event) => {
       const nextMode = event.detail?.mode === "auto" ? "auto" : "manual";
       const previousMode = controlPanelMode;
@@ -1129,9 +1136,11 @@ const opts = {
     });
     controlPanel.addEventListener("betvaluechange", (event) => {
       console.debug(`Bet value updated to ${event.detail.value}`);
+      const numericValue = event.detail?.numericValue;
+      syncModeWithBetValue(numericValue);
       sendRelayMessage("control:bet-value", {
         value: event.detail?.value,
-        numericValue: event.detail?.numericValue,
+        numericValue,
       });
     });
     controlPanel.addEventListener("mineschanged", (event) => {
