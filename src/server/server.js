@@ -8,6 +8,8 @@ let sessionId = null;
 let sessionGameDetails = null;
 let sessionGameUrl = null;
 let sessionUserToken = null;
+let currentCurrency = null;
+let sessionScratchGameId = null;
 let lastBetResult = null;
 let lastBetRoundId = null;
 let lastBetBalance = null;
@@ -53,6 +55,35 @@ export function getGameUrl() {
 
 export function getUserToken() {
   return sessionUserToken;
+}
+
+export function getCurrentCurrency() {
+  return currentCurrency;
+}
+
+function getLocationSearchParams() {
+  const locationHref =
+    typeof window !== "undefined" && typeof window.location?.href === "string"
+      ? window.location.href
+      : null;
+
+  if (!locationHref) {
+    return null;
+  }
+
+  try {
+    return new URL(locationHref).searchParams;
+  } catch (error) {
+    return null;
+  }
+}
+
+function getResolvedScratchGameId(fallbackGameId = DEFAULT_SCRATCH_GAME_ID) {
+  if (typeof sessionScratchGameId === "string" && sessionScratchGameId.length > 0) {
+    return normalizeScratchGameId(sessionScratchGameId);
+  }
+
+  return normalizeScratchGameId(fallbackGameId);
 }
 
 function ensureRelay(relay) {
@@ -115,10 +146,51 @@ function normalizeBetRate(rate) {
   return Math.max(1, Math.floor(numeric));
 }
 
+function normalizeCurrencyName(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const normalized = value.trim();
+  if (!normalized) {
+    return null;
+  }
+  if (["Euro", "Dollar", "Bitcoin"].includes(normalized)) {
+    return normalized;
+  }
+  return null;
+}
+
+function resolveCurrencyName({ userData, userDataList, gameId }) {
+  const fromUserData = normalizeCurrencyName(userData?.CurrencyName);
+  if (fromUserData) {
+    return fromUserData;
+  }
+  const fromList = normalizeCurrencyName(userDataList?.[gameId]?.CurrencyName);
+  if (fromList) {
+    return fromList;
+  }
+  return null;
+}
+
 export async function initializeSessionId({
   url = DEFAULT_SERVER_URL,
   relay,
 } = {}) {
+  const urlParams = getLocationSearchParams();
+
+  if (urlParams) {
+    const gameIdFromUrl = urlParams.get("gameId");
+    if (typeof gameIdFromUrl === "string" && gameIdFromUrl.length > 0) {
+      sessionScratchGameId = normalizeScratchGameId(gameIdFromUrl);
+    }
+
+    const tokenFromUrl = urlParams.get("gameToken");
+    if (typeof tokenFromUrl === "string" && tokenFromUrl.length > 0) {
+      sessionId = tokenFromUrl;
+      return tokenFromUrl;
+    }
+  }
+
   const baseUrl = normalizeBaseUrl(url);
   const endpoint = `${baseUrl}/get_session_id`;
 
@@ -233,7 +305,7 @@ export async function initializeGameSession({
   }
 
   const baseUrl = normalizeBaseUrl(url);
-  const gameId = normalizeScratchGameId(scratchGameId);
+  const gameId = getResolvedScratchGameId(scratchGameId);
   const endpoint = `${baseUrl}/join/${encodeURIComponent(gameId)}/`;
 
   sessionGameDetails = null;
@@ -353,6 +425,22 @@ export async function initializeGameSession({
     typeof gameData?.userToken === "string" && gameData.userToken
       ? gameData.userToken
       : null;
+
+  const nextCurrency = resolveCurrencyName({
+    userData,
+    userDataList,
+    gameId,
+  });
+  if (nextCurrency !== currentCurrency) {
+    const previousCurrency = currentCurrency;
+    currentCurrency = nextCurrency;
+    if (isServerRelay(relay)) {
+      relay.deliver("currencyUpdated", {
+        currency: currentCurrency,
+        previousCurrency,
+      });
+    }
+  }
 
   if (isServerRelay(relay)) {
     relay.deliver("api:join:response", {
