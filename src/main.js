@@ -2,7 +2,7 @@ import buildConfig from "../buildConfig.json";
 import { createGame, getCardTypeKeyForMultiplier } from "./game/game.js";
 import { ControlPanel } from "./controlPanel/controlPanel.js";
 import { ServerRelay } from "./serverRelay.js";
-import { createServer } from "./server/server.js";
+import { createServer, setCurrentCurrency } from "./server/server.js";
 import localConfig from "./gameConfig.json";
 import { getFileExtension, resolveAssetFromGlob } from "./game/assetResolver.js";
 
@@ -128,6 +128,8 @@ const hoverEnterDuration = Number.isFinite(HOVER_CONFIG.enterDuration)
 const hoverExitDuration = Number.isFinite(HOVER_CONFIG.exitDuration)
   ? HOVER_CONFIG.exitDuration
   : 200;
+
+setCurrentCurrency("Euro");
 
 let game;
 let controlPanel;
