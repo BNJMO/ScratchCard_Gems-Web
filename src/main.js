@@ -1051,15 +1051,10 @@ function handleCardSelected(selection) {
     setControlPanelMinesState(false);
   }
 
-  beginSelectionDelay();
+  const useLocalReveal = demoMode || suppressRelay;
 
-  if (!demoMode && !suppressRelay) {
-    const payload = {
-      row: selection?.row,
-      col: selection?.col,
-    };
-    sendRelayMessage("game:manual-selection", payload);
-    return;
+  if (useLocalReveal) {
+    beginSelectionDelay();
   }
 
   selectionDelayHandle = null;
