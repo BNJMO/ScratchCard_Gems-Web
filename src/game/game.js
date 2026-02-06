@@ -56,6 +56,14 @@ const cardTypeMultipliersMap = new Map(
   )
 );
 
+export function getCardTypeKeyForMultiplier(multiplier) {
+  const numericMultiplier = Number(multiplier);
+  if (!Number.isFinite(numericMultiplier)) {
+    return null;
+  }
+  return cardTypeMultipliersMap.get(numericMultiplier) ?? null;
+}
+
 const tileTapDownSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "TileTapDown", {
   extension: SOUND_EXTENSION,
   fallbackExtension: ".wav",

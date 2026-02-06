@@ -1,5 +1,5 @@
 import buildConfig from "../buildConfig.json";
-import { createGame } from "./game/game.js";
+import { createGame, getCardTypeKeyForMultiplier } from "./game/game.js";
 import { ControlPanel } from "./controlPanel/controlPanel.js";
 import { ServerRelay } from "./serverRelay.js";
 import { createServer } from "./server/server.js";
@@ -531,6 +531,65 @@ function determineDemoBetResult() {
   return betResult;
 }
 
+
+
+function randomCardTypeExcluding(excludedKey = null) {
+  const cardTypes =
+    Array.isArray(availableCardTypes) && availableCardTypes.length > 0
+      ? [...availableCardTypes]
+      : [null];
+  const pool = cardTypes.filter((key) => key !== excludedKey);
+  const source = pool.length > 0 ? pool : cardTypes;
+  return source[Math.floor(Math.random() * source.length)] ?? null;
+}
+
+function getServerOutcomeFromBetResponse(response) {
+  const state = response?.state ?? null;
+  const status = typeof state?.status === "string" ? state.status : "";
+  const won = status.toLowerCase() === "won";
+  const winAmount = coerceNumericValue(state?.winAmount);
+  const multiplier = coerceNumericValue(state?.multiplier);
+  const winningKey = won ? getCardTypeKeyForMultiplier(multiplier) : null;
+
+  return {
+    betResult: won ? "win" : "lost",
+    winningKey,
+    winAmount: winAmount != null ? winAmount : 0,
+  };
+}
+
+async function submitServerBetRound() {
+  const betAmount = controlPanel?.getBetValue?.() ?? 0;
+  const betNumericAmount = coerceNumericValue(betAmount) ?? 0;
+
+  disableServerRoundSetupControls();
+
+  try {
+    const response = await serverUI?.submitBet?.({
+      amount: betNumericAmount,
+    });
+
+    const outcome = getServerOutcomeFromBetResponse(response ?? {});
+    setTotalProfitAmountValue(outcome.winAmount);
+
+    performBet();
+    game?.reset?.();
+    prepareScratchRound(outcome.betResult, { winningKey: outcome.winningKey });
+
+    if (controlPanelMode === "auto") {
+      setTimeout(() => {
+        if (!autoRunActive) {
+          return;
+        }
+        game?.revealRemainingTiles?.();
+      }, 0);
+    }
+  } catch (error) {
+    console.error("Failed to submit server bet", error);
+    finalizeRound();
+  }
+}
+
 function executeAutoBetRound() {
   if (!autoRunActive) {
     return;
@@ -539,7 +598,7 @@ function executeAutoBetRound() {
   autoRoundInProgress = true;
 
   if (!demoMode && !suppressRelay) {
-    sendRelayMessage("game:auto-round-request", {});
+    submitServerBetRound();
     return;
   }
 
@@ -739,10 +798,12 @@ function handleBetButtonClick() {
   } else if (betButtonMode === "scratch") {
     handleScratchButtonClick();
   } else {
-    let betResult = "lost";
-    if (demoMode || suppressRelay) {
-      betResult = determineDemoBetResult();
+    if (!demoMode && !suppressRelay) {
+      submitServerBetRound();
+      return;
     }
+
+    const betResult = determineDemoBetResult();
     handleBet(betResult);
   }
 }
@@ -818,7 +879,7 @@ function createCardPositions() {
   return positions;
 }
 
-function generateScratchCardAssignments(betResult) {
+function generateScratchCardAssignments(betResult, options = {}) {
   const cardTypes =
     Array.isArray(availableCardTypes) && availableCardTypes.length > 0
       ? [...availableCardTypes]
@@ -829,8 +890,11 @@ function generateScratchCardAssignments(betResult) {
   let winningKey = null;
 
   if (betResult === "win") {
-    const shuffledTypes = shuffleArray(cardTypes);
-    const primaryType = shuffledTypes.length > 0 ? shuffledTypes[0] ?? null : null;
+    const requestedWinningKey = options?.winningKey;
+    const primaryType =
+      requestedWinningKey != null && cardTypes.includes(requestedWinningKey)
+        ? requestedWinningKey
+        : randomCardTypeExcluding(null);
     winningKey = primaryType ?? null;
     const primarySlots = Math.min(3, positions.length);
     for (let i = 0; i < primarySlots; i += 1) {
@@ -879,13 +943,13 @@ function generateScratchCardAssignments(betResult) {
   return { assignments, winningKey };
 }
 
-function prepareScratchRound(betResult) {
+function prepareScratchRound(betResult, options = {}) {
   currentBetResult = betResult;
   if (!game) {
     return;
   }
 
-  const { assignments, winningKey } = generateScratchCardAssignments(betResult);
+  const { assignments, winningKey } = generateScratchCardAssignments(betResult, options);
   currentRoundAssignments.clear();
   for (const entry of assignments) {
     currentRoundAssignments.set(
@@ -904,20 +968,14 @@ function prepareScratchRound(betResult) {
   });
 }
 
-function handleBet(betResult = "lost") {
+function handleBet(betResult = "lost", options = {}) {
   if (!demoMode && !suppressRelay) {
-    disableServerRoundSetupControls();
-    sendRelayMessage("action:bet", {
-      bet: controlPanel?.getBetValue?.(),
-      mines: controlPanel?.getMinesValue?.(),
-      result: betResult,
-    });
     return;
   }
 
   performBet();
   game?.reset?.();
-  prepareScratchRound(betResult);
+  prepareScratchRound(betResult, options);
 }
 
 function handleGameStateChange(state) {
