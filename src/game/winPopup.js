@@ -56,7 +56,7 @@ const DEFAULT_OPTIONS = {
 
   referenceWidthPx: 520,
   currencyVariation: "orange",
-  currencyName: null,
+  currencyName: "Euro",
   relay: null,
 };
 
@@ -72,7 +72,7 @@ export class WinPopup {
 
     this.amountValue = 0;
     this.spriteUrl = winPopupSpriteUrl;
-    this.currencyName = null;
+    this.currencyName = "Euro";
 
     this.container = this.createContainer();
     if (this.container) {
@@ -496,7 +496,7 @@ const textLinesPadding = this.getScaledOffset(this.options.textLinesPadding);
 
   initializeCurrency() {
     const initialCurrency =
-      this.options.currencyName ?? getCurrentCurrency?.() ?? "Bitcoin";
+      this.options.currencyName ?? getCurrentCurrency?.() ?? "Euro";
     this.setCurrencyName(initialCurrency);
     this.subscribeToCurrencyUpdates();
   }
