@@ -1192,6 +1192,12 @@ const opts = {
     });
     controlPanel.addEventListener("betvaluechange", (event) => {
       console.debug(`Bet value updated to ${event.detail.value}`);
+      const numericValue =
+        coerceNumericValue(event.detail?.numericValue) ??
+        coerceNumericValue(event.detail?.value);
+      if (numericValue != null) {
+        setDemoMode(numericValue <= 0);
+      }
       sendRelayMessage("control:bet-value", {
         value: event.detail?.value,
         numericValue: event.detail?.numericValue,
