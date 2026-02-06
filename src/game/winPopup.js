@@ -1,5 +1,10 @@
-import bitCoinIconUrl from "../../assets/sprites/controlPanel/BitCoin.svg";
 import winPopupSpriteUrl from "../../assets/sprites/winPopup.png";
+import {
+  getBitcoinAsset,
+  getDollarAsset,
+  getEuroAsset,
+} from "../currencyProvider.js";
+import { getCurrentCurrency } from "../server/server.js";
 
 const DEFAULT_OPTIONS = {
   spriteName: "winPopup",
@@ -50,6 +55,9 @@ const DEFAULT_OPTIONS = {
   gapPx: 8,
 
   referenceWidthPx: 520,
+  currencyVariation: "orange",
+  currencyName: "Euro",
+  relay: null,
 };
 
 export class WinPopup {
@@ -60,9 +68,11 @@ export class WinPopup {
     this._hideTimer = null;
     this._autoHideTimer = null;
     this._resizeHandler = null;
+    this._currencyHandler = null;
 
     this.amountValue = 0;
     this.spriteUrl = winPopupSpriteUrl;
+    this.currencyName = "Euro";
 
     this.container = this.createContainer();
     if (this.container) {
@@ -70,6 +80,7 @@ export class WinPopup {
     }
 
     this.setupResizeHandler();
+    this.initializeCurrency();
 
     // Apply responsive styling
     this.forceUpdateToLatestDefaults();
@@ -329,8 +340,8 @@ export class WinPopup {
       `;
 
       const amountIcon = document.createElement("img");
-      amountIcon.src = bitCoinIconUrl;
-      amountIcon.alt = "Coin";
+      amountIcon.src = this.resolveCurrencyAsset(this.currencyName);
+      amountIcon.alt = this.currencyName ? `${this.currencyName} icon` : "Coin";
       amountIcon.style.cssText = `
         display:block;
         object-fit:contain;
@@ -455,6 +466,10 @@ const textLinesPadding = this.getScaledOffset(this.options.textLinesPadding);
   updateOptions(newOptions) {
     this.options = { ...this.options, ...newOptions };
 
+    if (newOptions.currencyName != null) {
+      this.setCurrencyName(newOptions.currencyName);
+    }
+
     // If the popup is visible, update the transform immediately
     if (this.visible && this.container) {
       this.container.style.transform = this.visibleTransform();
@@ -477,6 +492,54 @@ const textLinesPadding = this.getScaledOffset(this.options.textLinesPadding);
     if (this.visible && this.container) {
       this.container.style.transform = this.visibleTransform();
     }
+  }
+
+  initializeCurrency() {
+    const initialCurrency =
+      this.options.currencyName ?? getCurrentCurrency?.() ?? "Euro";
+    this.setCurrencyName(initialCurrency);
+    this.subscribeToCurrencyUpdates();
+  }
+
+  resolveCurrencyAsset(currencyName) {
+    const variation = this.options.currencyVariation;
+    switch (currencyName) {
+      case "Euro":
+        return getEuroAsset(variation) ?? getBitcoinAsset(variation);
+      case "Dollar":
+        return getDollarAsset(variation) ?? getBitcoinAsset(variation);
+      case "Bitcoin":
+      default:
+        return getBitcoinAsset(variation);
+    }
+  }
+
+  setCurrencyName(currencyName) {
+    if (typeof currencyName !== "string" || !currencyName.trim()) {
+      return;
+    }
+    if (this.currencyName === currencyName) {
+      return;
+    }
+    this.currencyName = currencyName;
+    if (this.amountIconNode) {
+      this.amountIconNode.src = this.resolveCurrencyAsset(currencyName);
+      this.amountIconNode.alt = `${currencyName} icon`;
+    }
+  }
+
+  subscribeToCurrencyUpdates() {
+    if (!this.options.relay?.addEventListener) {
+      return;
+    }
+    this._currencyHandler = (event) => {
+      const { type, payload } = event?.detail ?? {};
+      if (type !== "currencyUpdated") {
+        return;
+      }
+      this.setCurrencyName(payload?.currency);
+    };
+    this.options.relay.addEventListener("incoming", this._currencyHandler);
   }
 
   show({ amount, duration } = {}) {
@@ -526,6 +589,13 @@ const textLinesPadding = this.getScaledOffset(this.options.textLinesPadding);
     if (this._resizeHandler) {
       window.removeEventListener("resize", this._resizeHandler);
       this._resizeHandler = null;
+    }
+    if (this._currencyHandler && this.options.relay?.removeEventListener) {
+      this.options.relay.removeEventListener(
+        "incoming",
+        this._currencyHandler
+      );
+      this._currencyHandler = null;
     }
 
     clearTimeout(this._hideTimer);

@@ -1118,6 +1118,7 @@ const opts = {
   cardIconScale,
   cardIconOffsetX,
   cardIconOffsetY,
+  currencyRelay: serverRelay,
   cardSpritesheetAnimationSpeed,
   cardMatchShake,
   tileTapDownSoundPath: tileTapDownSoundUrl,

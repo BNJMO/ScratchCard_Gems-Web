@@ -825,6 +825,9 @@ export async function createGame(mount, opts = {}) {
       textOffsetX: gameConfig?.gameplay?.winPopup?.textOffsetX ?? 0,
       textOffsetY: gameConfig?.gameplay?.winPopup?.textOffsetY ?? 0,
       textLinesPadding: gameConfig?.gameplay?.winPopup?.textLinesPadding ?? 0,
+      currencyVariation: opts.currencyVariation ?? "orange",
+      currencyName: opts.currencyName ?? null,
+      relay: opts.currencyRelay ?? opts.relay ?? null,
     },
     onResize: () => {
       coverScratch?.syncWithLayout();

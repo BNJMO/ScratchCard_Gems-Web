@@ -145,6 +145,9 @@ export class GameScene {
         winPopupOptions?.textLinesPadding ??
         gameConfig?.gameplay?.winPopup?.textLinesPadding ??
         0,
+      currencyVariation: winPopupOptions?.currencyVariation ?? "orange",
+      currencyName: winPopupOptions?.currencyName ?? null,
+      relay: winPopupOptions?.relay ?? null,
     };
     this.onResize = onResize;
 
