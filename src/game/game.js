@@ -61,7 +61,11 @@ export function getCardTypeKeyForMultiplier(multiplier) {
   if (!Number.isFinite(numericMultiplier)) {
     return null;
   }
-  return cardTypeMultipliersMap.get(numericMultiplier) ?? null;
+
+  // Keep this intentionally simple and explicit to avoid any transpile/runtime
+  // edge cases across browsers.
+  const resolvedKey = cardTypeMultipliersMap.get(numericMultiplier);
+  return typeof resolvedKey === "string" ? resolvedKey : null;
 }
 
 const tileTapDownSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "TileTapDown", {

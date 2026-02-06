@@ -532,6 +532,16 @@ function determineDemoBetResult() {
 }
 
 
+function getCurrentBetAmountValue() {
+  const numericAmount = coerceNumericValue(controlPanel?.getBetValue?.());
+  return numericAmount != null ? Math.max(0, numericAmount) : 0;
+}
+
+function isDemoBetAmount() {
+  return getCurrentBetAmountValue() <= 0;
+}
+
+
 
 function randomCardTypeExcluding(excludedKey = null) {
   const cardTypes =
@@ -597,7 +607,7 @@ function executeAutoBetRound() {
 
   autoRoundInProgress = true;
 
-  if (!demoMode && !suppressRelay) {
+  if (!demoMode && !suppressRelay && !isDemoBetAmount()) {
     submitServerBetRound();
     return;
   }
@@ -798,7 +808,7 @@ function handleBetButtonClick() {
   } else if (betButtonMode === "scratch") {
     handleScratchButtonClick();
   } else {
-    if (!demoMode && !suppressRelay) {
+    if (!demoMode && !suppressRelay && !isDemoBetAmount()) {
       submitServerBetRound();
       return;
     }
