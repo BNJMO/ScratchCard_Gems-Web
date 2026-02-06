@@ -1,5 +1,4 @@
 import { Stepper } from "../stepper/stepper.js";
-import bitcoinIconUrl from "../../assets/sprites/controlPanel/BitCoin.svg";
 import infinityIconUrl from "../../assets/sprites/controlPanel/Infinity.svg";
 import percentageIconUrl from "../../assets/sprites/controlPanel/Percentage.svg";
 
@@ -81,6 +80,9 @@ export class ControlPanel extends EventTarget {
     this.totalProfitMultiplier = 1;
 
     this.betTooltipTimeout = null;
+
+    this.currencyIcons = new Set();
+    this.currencyIconUrl = "";
 
     const totalTilesOption = Number(this.options.totalTiles);
     const normalizedTotalTiles =
@@ -612,10 +614,13 @@ export class ControlPanel extends EventTarget {
     wrapper.appendChild(input);
 
     const icon = document.createElement("img");
-    icon.src = bitcoinIconUrl;
     icon.alt = "";
     icon.className = "control-bet-input-icon";
+    if (this.currencyIconUrl) {
+      icon.src = this.currencyIconUrl;
+    }
     wrapper.appendChild(icon);
+    this.currencyIcons.add(icon);
 
     const stepper = new Stepper({
       onStepUp: () => {
@@ -632,6 +637,18 @@ export class ControlPanel extends EventTarget {
     wrapper.appendChild(stepper.element);
 
     return { wrapper, input, icon, stepper };
+  }
+
+  setCurrencyIconUrl(url) {
+    const resolved = typeof url === "string" ? url : "";
+    this.currencyIconUrl = resolved;
+    this.currencyIcons.forEach((icon) => {
+      if (resolved) {
+        icon.src = resolved;
+      } else {
+        icon.removeAttribute("src");
+      }
+    });
   }
 
   buildBetButton() {

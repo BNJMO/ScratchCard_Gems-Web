@@ -25,3 +25,23 @@ export const euroMap = buildCurrencyMap(euroModules);
 export const getBitcoinAsset = (variation) => bitcoinMap[variation];
 export const getDollarAsset = (variation) => dollarMap[variation];
 export const getEuroAsset = (variation) => euroMap[variation];
+export const getCurrencyAsset = (currency, variation) => {
+  const normalized =
+    typeof currency === "string" ? currency.trim().toLowerCase() : "";
+  switch (normalized) {
+    case "bitcoin":
+      return getBitcoinAsset(variation);
+    case "dollar":
+      return getDollarAsset(variation);
+    case "euro":
+      return getEuroAsset(variation);
+    default:
+      return undefined;
+  }
+};
+
+export const getDefaultCurrencyVariation = () =>
+  Object.keys(euroMap)[0] ??
+  Object.keys(dollarMap)[0] ??
+  Object.keys(bitcoinMap)[0] ??
+  null;

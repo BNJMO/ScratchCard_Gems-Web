@@ -1,8 +1,12 @@
 import buildConfig from "../buildConfig.json";
 import { createGame, getCardTypeKeyForMultiplier } from "./game/game.js";
 import { ControlPanel } from "./controlPanel/controlPanel.js";
+import {
+  getCurrencyAsset,
+  getDefaultCurrencyVariation,
+} from "./currencyProvider.js";
 import { ServerRelay } from "./serverRelay.js";
-import { createServer } from "./server/server.js";
+import { createServer, getCurrentCurrency } from "./server/server.js";
 import localConfig from "./gameConfig.json";
 import { getFileExtension, resolveAssetFromGlob } from "./game/assetResolver.js";
 
@@ -156,6 +160,17 @@ const currentRoundAssignments = new Map();
 
 let totalProfitMultiplierValue = 1;
 let totalProfitAmountDisplayValue = "0.00000000";
+
+const DEFAULT_CURRENCY_NAME = "euro";
+const currencyVariation = getDefaultCurrencyVariation();
+
+function resolveCurrencyIcon(currency) {
+  const asset = getCurrencyAsset(currency, currencyVariation);
+  if (asset) {
+    return asset;
+  }
+  return getCurrencyAsset(DEFAULT_CURRENCY_NAME, currencyVariation);
+}
 
 const AUTO_RESET_DELAY_MS = 1000;
 let autoResetDelayMs = AUTO_RESET_DELAY_MS;
@@ -326,6 +341,14 @@ serverRelay.addEventListener("incoming", (event) => {
         const incomingValue =
           payload?.numericValue ?? payload?.value ?? null;
         setTotalProfitAmountValue(incomingValue);
+        break;
+      }
+      case "currencyUpdate": {
+        const nextCurrency = payload?.currency ?? DEFAULT_CURRENCY_NAME;
+        const iconUrl = resolveCurrencyIcon(nextCurrency);
+        if (iconUrl) {
+          controlPanel?.setCurrencyIconUrl?.(iconUrl);
+        }
         break;
       }
       default:
@@ -1144,6 +1167,11 @@ const opts = {
       maxMines,
       initialMines,
     });
+    const initialCurrency = getCurrentCurrency?.() ?? DEFAULT_CURRENCY_NAME;
+    const initialCurrencyIcon = resolveCurrencyIcon(initialCurrency);
+    if (initialCurrencyIcon) {
+      controlPanel.setCurrencyIconUrl(initialCurrencyIcon);
+    }
     controlPanelMode = controlPanel?.getMode?.() ?? "manual";
     controlPanel.addEventListener("modechange", (event) => {
       const nextMode = event.detail?.mode === "auto" ? "auto" : "manual";

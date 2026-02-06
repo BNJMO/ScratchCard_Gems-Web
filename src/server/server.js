@@ -8,7 +8,7 @@ let sessionId = null;
 let sessionGameDetails = null;
 let sessionGameUrl = null;
 let sessionUserToken = null;
-let currentCurrency = null;
+let currentCurrency = "euro";
 let sessionScratchGameId = null;
 let lastBetResult = null;
 let lastBetRoundId = null;
@@ -435,7 +435,7 @@ export async function initializeGameSession({
     const previousCurrency = currentCurrency;
     currentCurrency = nextCurrency;
     if (isServerRelay(relay)) {
-      relay.deliver("currencyUpdated", {
+      relay.deliver("currencyUpdate", {
         currency: currentCurrency,
         previousCurrency,
       });
