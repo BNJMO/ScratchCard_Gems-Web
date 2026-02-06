@@ -1,7 +1,33 @@
 import { Stepper } from "../stepper/stepper.js";
-import bitcoinIconUrl from "../../assets/sprites/controlPanel/BitCoin.svg";
+import {
+  getBitcoinAsset,
+  getDollarAsset,
+  getEuroAsset,
+} from "../currencyProvider.js";
+import { currencyEvents, getCurrentCurrency } from "../server/server.js";
 import infinityIconUrl from "../../assets/sprites/controlPanel/Infinity.svg";
 import percentageIconUrl from "../../assets/sprites/controlPanel/Percentage.svg";
+
+const DEFAULT_CURRENCY_VARIATION = "orange";
+
+function resolveCurrencyIconUrl(currency) {
+  const variation = DEFAULT_CURRENCY_VARIATION;
+  const fallback =
+    getBitcoinAsset(variation) ??
+    getDollarAsset(variation) ??
+    getEuroAsset(variation) ??
+    "";
+  if (currency === "Euro") {
+    return getEuroAsset(variation) ?? fallback;
+  }
+  if (currency === "Dollar") {
+    return getDollarAsset(variation) ?? fallback;
+  }
+  if (currency === "Bitcoin") {
+    return getBitcoinAsset(variation) ?? fallback;
+  }
+  return fallback;
+}
 
 function resolveMount(mount) {
   if (!mount) {
@@ -40,6 +66,11 @@ export class ControlPanel extends EventTarget {
 
   constructor(mount, options = {}) {
     super();
+    this.currencyIcons = new Set();
+    this.handleCurrencyUpdate = (event) => {
+      const nextCurrency = event?.detail?.currency ?? null;
+      this.setCurrencyIcon(nextCurrency);
+    };
     this.options = {
       betAmountLabel: options.betAmountLabel ?? "Bet Amount",
       profitOnWinLabel: options.profitOnWinLabel ?? "Profit on Win",
@@ -118,6 +149,8 @@ export class ControlPanel extends EventTarget {
     this.buildModeSections();
     // this.buildFooter();
 
+    this.setCurrencyIcon(getCurrentCurrency() ?? "Euro");
+    currencyEvents.addEventListener("currencyUpdate", this.handleCurrencyUpdate);
     this.setBetAmountDisplay(this.options.initialBetAmountDisplay);
     this.setProfitOnWinDisplay(this.options.initialProfitOnWinDisplay);
     this.setTotalProfitMultiplier(this.options.initialTotalProfitMultiplier);
@@ -133,6 +166,18 @@ export class ControlPanel extends EventTarget {
     this.updateAnimationToggle();
 
     this.setupResponsiveLayout();
+  }
+
+  registerCurrencyIcon(icon) {
+    if (!icon) return;
+    this.currencyIcons.add(icon);
+  }
+
+  setCurrencyIcon(currency) {
+    const iconUrl = resolveCurrencyIconUrl(currency);
+    this.currencyIcons.forEach((icon) => {
+      icon.src = iconUrl;
+    });
   }
 
   buildToggle() {
@@ -204,9 +249,9 @@ export class ControlPanel extends EventTarget {
     this.betInputWrapper.appendChild(this.betInput);
 
     const icon = document.createElement("img");
-    icon.src = bitcoinIconUrl;
     icon.alt = "";
     icon.className = "control-bet-input-icon";
+    this.registerCurrencyIcon(icon);
     this.betInputWrapper.appendChild(icon);
 
     this.betStepper = new Stepper({
@@ -612,9 +657,9 @@ export class ControlPanel extends EventTarget {
     wrapper.appendChild(input);
 
     const icon = document.createElement("img");
-    icon.src = bitcoinIconUrl;
     icon.alt = "";
     icon.className = "control-bet-input-icon";
+    this.registerCurrencyIcon(icon);
     wrapper.appendChild(icon);
 
     const stepper = new Stepper({

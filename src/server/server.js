@@ -9,6 +9,7 @@ let sessionGameDetails = null;
 let sessionGameUrl = null;
 let sessionUserToken = null;
 let currentCurrency = null;
+export const currencyEvents = new EventTarget();
 let sessionScratchGameId = null;
 let lastBetResult = null;
 let lastBetRoundId = null;
@@ -170,6 +171,39 @@ function resolveCurrencyName({ userData, userDataList, gameId }) {
     return fromList;
   }
   return null;
+}
+
+function emitCurrencyUpdate({
+  currency,
+  previousCurrency,
+  relay,
+} = {}) {
+  currencyEvents.dispatchEvent(
+    new CustomEvent("currencyUpdate", {
+      detail: { currency, previousCurrency },
+    })
+  );
+  if (isServerRelay(relay)) {
+    relay.deliver("currencyUpdated", {
+      currency,
+      previousCurrency,
+    });
+  }
+}
+
+export function setCurrentCurrency(currency, { relay } = {}) {
+  const normalized = normalizeCurrencyName(currency);
+  if (normalized === currentCurrency) {
+    return currentCurrency;
+  }
+  const previousCurrency = currentCurrency;
+  currentCurrency = normalized;
+  emitCurrencyUpdate({
+    currency: currentCurrency,
+    previousCurrency,
+    relay,
+  });
+  return currentCurrency;
 }
 
 export async function initializeSessionId({
@@ -434,12 +468,11 @@ export async function initializeGameSession({
   if (nextCurrency !== currentCurrency) {
     const previousCurrency = currentCurrency;
     currentCurrency = nextCurrency;
-    if (isServerRelay(relay)) {
-      relay.deliver("currencyUpdated", {
-        currency: currentCurrency,
-        previousCurrency,
-      });
-    }
+    emitCurrencyUpdate({
+      currency: currentCurrency,
+      previousCurrency,
+      relay,
+    });
   }
 
   if (isServerRelay(relay)) {
