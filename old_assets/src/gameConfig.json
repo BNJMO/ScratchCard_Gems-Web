@@ -1,18 +1,19 @@
 {
   "app": {
-    "gameName": "Flipping Cards - Bling",
+    "gameName": "Flipping Cards - Gems",
     "fileExtensions": {
       "sounds": ".wav",
-      "cardTypes": ".png",
+      "cardTypes": ".svg",
       "scratchMasks": ".png",
-      "gameBackground": ".png",
+      "gameBackground": ".svg",
       "gridBackground": ".png",
       "scratchCover": ".png",
       "spark": ".png",
       "tile_flipped": ".svg",
-      "tile_hovered": ".png",
-      "tile_unflipped": ".png",
-      "winFrame": ".png"
+      "tile_hovered": ".svg",
+      "tile_unflipped": ".svg",
+      "winFrame": ".svg",
+      "winPopup": ".png"
     }
   },
   "gameplay": {
@@ -39,7 +40,7 @@
       "iconOffsetY": -5,
       "spritesheetAnimationSpeed": 0.14,
       "matchShake": true,
-      "winFrameScale": 1.1,
+      "winFrameScale": 0.99,
       "tileScaleFactorX": 1.0,
       "tileScaleFactorY": 1.0,
       "tilePaddingX": 1.0,
@@ -47,22 +48,7 @@
       "winFrameOffsetX": 0,
       "winFrameOffsetY": -5
     },
-    "multipliersMapping": {
-      "cardType_0": "2",
-      "cardType_1": "10",
-      "cardType_2": "2",
-      "cardType_3": "10",
-      "cardType_4": "2",
-      "cardType_5": "10",
-      "cardType_6": "2",
-      "cardType_7": "10",
-      "cardType_8": "2",
-      "cardType_9": "10",
-      "cardType_10": "Freeplay",
-      "cardType_11": "50",
-      "cardType_12": "1000",
-      "cardType_13": "10000"
-    },
+    "multipliersMapping": {},
     "scratch": {
       "revealRadius": 40,
       "coverFadeOutDuration": 200
@@ -76,33 +62,32 @@
     "gridSpritesheetProvider": {
       "columns": 3,
       "rows": 4,
-      "cellWidth": 144,
-      "cellHeight": 148,
-      "horizontalGap": 5,
-      "verticalGap": 21,
-      "paddingLeft": 11,
-      "paddingTop": 29,
-      "paddingRight": 8,
+      "cellWidth": 152,
+      "cellHeight": 166,
+      "horizontalGap": 4,
+      "verticalGap": 8,
+      "paddingLeft": 0,
+      "paddingTop": 0,
+      "paddingRight": 0,
       "paddingBottom": 0,
       "resolutionFactor": 0.75
     },
     "winPopup": {
-      "useSprite": true,
       "spriteName": "winPopup",
       "scale": 0.6,
       "minScale": 0.15,
       "offsetX": 0,
-      "offsetY": -60,
+      "offsetY": 0,
       "showDuration": 10000,
       "animationDuration": 300,
       "showText": true,
       "textOffsetX": 0,
-      "textOffsetY": 100,
+      "textOffsetY": 0,
       "textLinesPadding": 0,
       "textColor": "#FFFFFF",
       "amountColor": "#EAFF00",
-      "fontSize": 42,
-      "amountFontSize": 38
+      "fontSize": 32,
+      "amountFontSize": 26
     }
   }
 }
