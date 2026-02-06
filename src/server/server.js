@@ -371,8 +371,7 @@ export async function submitBet({
   url = DEFAULT_SERVER_URL,
   gameId = DEFAULT_SCRATCH_GAME_ID,
   amount = 0,
-  rate = 0,
-  targetMultiplier = null,
+  rate = 2,
   relay,
 } = {}) {
   if (typeof sessionId !== "string" || sessionId.length === 0) {
@@ -390,9 +389,7 @@ export async function submitBet({
 
   const baseUrl = normalizeBaseUrl(url);
   const normalizedGameId = normalizeScratchGameId(gameId);
-  const endpoint = `${baseUrl}/post/${encodeURIComponent(
-    normalizedGameId
-  )}?betInfo`;
+  const endpoint = `${baseUrl}/post/${encodeURIComponent(normalizedGameId)}`;
 
   lastBetResult = null;
   lastBetRoundId = null;
@@ -402,12 +399,9 @@ export async function submitBet({
   const normalizedAmount = normalizeBetAmount(amount);
   const normalizedRate = normalizeBetRate(rate);
   const amountLiteral = formatBetAmountLiteral(normalizedAmount);
-  const normalizedTargetMultiplier = Number.isFinite(targetMultiplier)
-    ? targetMultiplier
-    : null;
 
   const betInfo = {
-    id: 4,
+    id: 1,
     title: {
       key: "straight",
       value: {},
@@ -418,9 +412,6 @@ export async function submitBet({
     state: "Active",
   };
 
-  if (normalizedTargetMultiplier !== null) {
-    betInfo.targetMultiplier = normalizedTargetMultiplier;
-  }
 
   const requestBody = {
     type: "bet",
@@ -646,6 +637,14 @@ export function createServer(relay, options = {}) {
         relay: serverRelay,
         url: serverUrl,
         scratchGameId,
+      }),
+    submitBet: ({ amount = 0, rate = 2 } = {}) =>
+      submitBet({
+        relay: serverRelay,
+        url: serverUrl,
+        gameId: scratchGameId,
+        amount,
+        rate,
       }),
     initialization: initializationPromise,
     destroy() {

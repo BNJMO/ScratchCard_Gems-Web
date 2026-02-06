@@ -39,22 +39,43 @@ const CARD_TYPE_EXTENSION = getFileExtension("cardTypes", ".svg");
 const GAME_BACKGROUND_EXTENSION = getFileExtension("gameBackground", ".svg");
 const GRID_BACKGROUND_EXTENSION = getFileExtension("gridBackground", ".png");
 
-const cardTypeMultipliersMap = new Map(
-  Object.entries(gameConfig?.gameplay?.multipliersMapping ?? {}).flatMap(
-    ([cardTypeKey, multiplierValue]) => {
-      if (!/^cardType_\d+$/i.test(cardTypeKey)) {
-        return [];
-      }
+const cardTypeMultipliersMap = Object.entries(
+  gameConfig?.gameplay?.multipliersMapping ?? {}
+).reduce((map, [cardTypeKey, multiplierValue]) => {
+  if (!/^cardType_\d+$/i.test(cardTypeKey)) {
+    return map;
+  }
 
-      const parsedMultiplier = Number(multiplierValue);
-      if (!Number.isFinite(parsedMultiplier)) {
-        return [];
-      }
+  const parsedMultiplier = Number(multiplierValue);
+  if (!Number.isFinite(parsedMultiplier)) {
+    return map;
+  }
 
-      return [[parsedMultiplier, cardTypeKey]];
-    }
-  )
-);
+  const existing = map.get(parsedMultiplier);
+  if (Array.isArray(existing)) {
+    existing.push(cardTypeKey);
+  } else {
+    map.set(parsedMultiplier, [cardTypeKey]);
+  }
+
+  return map;
+}, new Map());
+
+export function getCardTypeKeyForMultiplier(multiplier) {
+  const numericMultiplier = Number(multiplier);
+  if (!Number.isFinite(numericMultiplier)) {
+    return null;
+  }
+
+  // Keep this intentionally simple and explicit to avoid any transpile/runtime
+  // edge cases across browsers.
+  const availableKeys = cardTypeMultipliersMap.get(numericMultiplier);
+  if (!Array.isArray(availableKeys) || availableKeys.length == 0) {
+    return null;
+  }
+  const choice = availableKeys[Math.floor(Math.random() * availableKeys.length)];
+  return typeof choice === "string" ? choice : null;
+}
 
 const tileTapDownSoundUrl = resolveAssetFromGlob(SOUND_MODULES, "TileTapDown", {
   extension: SOUND_EXTENSION,
