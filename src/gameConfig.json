@@ -34,7 +34,7 @@
     "card": {
       "iconType": "static",
       "spritesheetType": "grid",
-      "iconScale": 1,
+      "iconScale": 1.16,
       "iconOffsetX": 0,
       "iconOffsetY": -5,
       "spritesheetAnimationSpeed": 0.14,
@@ -49,19 +49,14 @@
     },
     "multipliersMapping": {
       "cardType_0": "2",
-      "cardType_1": "10",
-      "cardType_2": "2",
+      "cardType_1": "2",
+      "cardType_2": "10",
       "cardType_3": "10",
-      "cardType_4": "2",
-      "cardType_5": "10",
-      "cardType_6": "2",
-      "cardType_7": "10",
-      "cardType_8": "2",
-      "cardType_9": "10",
-      "cardType_10": "Freeplay",
-      "cardType_11": "50",
-      "cardType_12": "1000",
-      "cardType_13": "10000"
+      "cardType_4": "10",
+      "cardType_5": "Freeplay",
+      "cardType_6": "50",
+      "cardType_7": "100",
+      "cardType_8": "1000"
     },
     "scratch": {
       "revealRadius": 40,
