@@ -526,9 +526,7 @@ function clearAutoRoundTimer() {
 }
 
 function determineDemoBetResult() {
-  const lostProbability = Math.random() < 0.4;
-  const betResult = lostProbability ? "lost" : "win";
-  return betResult;
+  return "win";
 }
 
 
