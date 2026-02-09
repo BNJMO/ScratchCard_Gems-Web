@@ -449,12 +449,12 @@ const textLinesPadding = this.getScaledOffset(this.options.textLinesPadding);
 
   formatAmount(value) {
     const num = Number(value);
-    return (Number.isFinite(num) ? num : 0).toFixed(2);
+    return (Number.isFinite(num) ? num : 0).toFixed(1);
   }
 
   formatCurrency(value) {
     const num = Number(value);
-    return "$" + (Number.isFinite(num) ? num : 0).toFixed(2);
+    return "$" + (Number.isFinite(num) ? num : 0).toFixed(1);
   }
 
   setAmount(value) {
