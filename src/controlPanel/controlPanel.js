@@ -1218,6 +1218,8 @@ export class ControlPanel extends EventTarget {
   }
 
   dispatchBetValueChange(value = this.betInput.value) {
+    const formatted = this.formatBetValue(value);
+    this.setBetAmountDisplay(formatted);
     this.dispatchEvent(
       new CustomEvent("betvaluechange", {
         detail: { value: value, numericValue: this.getBetValue() },

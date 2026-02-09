@@ -215,6 +215,7 @@ function setTotalProfitAmountValue(value) {
   totalProfitAmountDisplayValue = normalized;
   controlPanel?.setProfitValue?.(normalized);
   const numeric = coerceNumericValue(normalized);
+  controlPanel?.setProfitOnWinDisplay?.(normalized);
   game?.setWinPopupAmount?.(numeric != null ? numeric : 0);
 }
 
