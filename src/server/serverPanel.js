@@ -1,13 +1,10 @@
 export class ServerPanel {
   constructor({
     mount = document.body,
-    initialDemoMode = true,
     initialCollapsed = false,
     initialHidden = false,
-    onDemoModeToggle = () => {},
     onVisibilityChange = () => {},
   } = {}) {
-    this.onDemoModeToggle = onDemoModeToggle;
     this.onVisibilityChange = onVisibilityChange;
     this.visible = !initialHidden;
 
@@ -20,16 +17,15 @@ export class ServerPanel {
       this.container.classList.add("server-panel--hidden");
     }
 
-    this.buildHeader(initialDemoMode, initialCollapsed);
+    this.buildHeader(initialCollapsed);
     this.buildBody();
 
     mount.prepend(this.container);
 
-    this.setDemoMode(initialDemoMode);
     this.applyVisibility(this.visible, { force: true });
   }
 
-  buildHeader(initialDemoMode, initialCollapsed) {
+  buildHeader(initialCollapsed) {
     const header = document.createElement("div");
     header.className = "server-panel__header";
     this.container.appendChild(header);
@@ -42,20 +38,6 @@ export class ServerPanel {
     const headerControls = document.createElement("div");
     headerControls.className = "server-panel__header-controls";
     header.appendChild(headerControls);
-
-    const toggleLabel = document.createElement("label");
-    toggleLabel.className = "server-panel__toggle";
-    toggleLabel.textContent = "Demo Mode";
-
-    this.toggleInput = document.createElement("input");
-    this.toggleInput.type = "checkbox";
-    this.toggleInput.checked = initialDemoMode;
-    this.toggleInput.addEventListener("change", () => {
-      this.onDemoModeToggle(Boolean(this.toggleInput.checked));
-    });
-
-    toggleLabel.appendChild(this.toggleInput);
-    headerControls.appendChild(toggleLabel);
 
     const minimizeButton = document.createElement("button");
     minimizeButton.type = "button";
@@ -113,13 +95,6 @@ export class ServerPanel {
     const entry = createLogEntry(direction, type, payload);
     this.logList.appendChild(entry);
     this.logList.scrollTop = this.logList.scrollHeight;
-  }
-
-  setDemoMode(enabled) {
-    const normalized = Boolean(enabled);
-    if (this.toggleInput.checked !== normalized) {
-      this.toggleInput.checked = normalized;
-    }
   }
 
   applyVisibility(next, { force = false } = {}) {
