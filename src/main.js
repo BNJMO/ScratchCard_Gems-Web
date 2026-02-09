@@ -808,6 +808,9 @@ function handleBetButtonClick() {
   } else if (betButtonMode === "scratch") {
     handleScratchButtonClick();
   } else {
+    if (getCurrentBetAmountValue() <= 0) {
+      return;
+    }
     if (!demoMode && !suppressRelay && !isDemoBetAmount()) {
       submitServerBetRound();
       return;
