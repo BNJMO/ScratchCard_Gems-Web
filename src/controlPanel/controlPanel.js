@@ -49,7 +49,7 @@ export class ControlPanel extends EventTarget {
       profitOnWinLabel: options.profitOnWinLabel ?? "Profit on Win",
       initialTotalProfitMultiplier:
         options.initialTotalProfitMultiplier ?? 1,
-      initialBetValue: options.initialBetValue ?? "0.00000000",
+      initialBetValue: options.initialBetValue ?? "0.00",
       initialBetAmountDisplay: options.initialBetAmountDisplay ?? "0.00",
       initialProfitOnWinDisplay: options.initialProfitOnWinDisplay ?? "0.00",
       initialProfitValue: options.initialProfitValue ?? "0.00",
@@ -223,8 +223,8 @@ export class ControlPanel extends EventTarget {
     this.currencyIcons.push(icon);
 
     this.betStepper = new Stepper({
-      onStepUp: () => this.adjustBetValue(1e-8),
-      onStepDown: () => this.adjustBetValue(-1e-8),
+      onStepUp: () => this.adjustBetValue(1),
+      onStepDown: () => this.adjustBetValue(-1),
       upAriaLabel: "Increase bet amount",
       downAriaLabel: "Decrease bet amount",
     });
@@ -544,7 +544,7 @@ export class ControlPanel extends EventTarget {
     input.autocomplete = "off";
     input.spellcheck = false;
     input.className = "control-bet-input";
-    input.value = "0";
+    input.value = "0.00";
     field.appendChild(input);
 
     const icon = document.createElement("img");
@@ -608,7 +608,7 @@ export class ControlPanel extends EventTarget {
     onChange,
     increaseAriaLabel = "Increase amount",
     decreaseAriaLabel = "Decrease amount",
-    step = 1e-8,
+    step = 1,
   } = {}) {
     const wrapper = document.createElement("div");
     wrapper.className =
@@ -620,7 +620,7 @@ export class ControlPanel extends EventTarget {
     input.autocomplete = "off";
     input.spellcheck = false;
     input.className = "control-bet-input";
-    input.value = "0.00000000";
+    input.value = "0.00";
     this.enableSelectAllOnFocus(input);
     wrapper.appendChild(input);
 
@@ -1002,8 +1002,8 @@ export class ControlPanel extends EventTarget {
 
     if (!value) {
       if (enforceMinimum) {
-        input.value = "0";
-        return "0";
+        input.value = "0.00";
+        return "0.00";
       }
       input.value = "";
       return "";
@@ -1150,7 +1150,7 @@ export class ControlPanel extends EventTarget {
   }
 
   adjustCurrencyInputValue(input, delta) {
-    if (!input) return "0.00000000";
+    if (!input) return "0.00";
     const current = Number(this.parseBetValue(input.value));
     const next = clampToZero(
       (Number.isFinite(current) ? current : 0) + Number(delta || 0)
@@ -1161,7 +1161,7 @@ export class ControlPanel extends EventTarget {
   }
 
   normalizeCurrencyInputValue(input) {
-    if (!input) return "0.00000000";
+    if (!input) return "0.00";
     const formatted = this.formatBetValue(input.value);
     input.value = formatted;
     return formatted;
@@ -1200,9 +1200,9 @@ export class ControlPanel extends EventTarget {
   formatBetValue(value) {
     const numeric = Number(this.parseBetValue(value));
     if (!Number.isFinite(numeric)) {
-      return "0.00000000";
+      return "0.00";
     }
-    return clampToZero(numeric).toFixed(8);
+    return clampToZero(numeric).toFixed(2);
   }
 
   parseBetValue(value) {
@@ -1259,11 +1259,8 @@ export class ControlPanel extends EventTarget {
   }
 
   formatStrategyValue(value, decimals = 0) {
-    const safeDecimals = Math.max(0, Math.min(2, decimals ?? 0));
+    const safeDecimals = 2;
     const clamped = Math.max(0, Number.isFinite(value) ? value : 0);
-    if (clamped === 0) {
-      return "0";
-    }
     return clamped.toFixed(safeDecimals);
   }
 
