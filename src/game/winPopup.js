@@ -69,6 +69,7 @@ export class WinPopup {
     this._autoHideTimer = null;
     this._resizeHandler = null;
     this._currencyHandler = null;
+    this._pendingAmount = null;
 
     this.amountValue = 0;
     this.spriteUrl = winPopupSpriteUrl;
@@ -457,8 +458,15 @@ const textLinesPadding = this.getScaledOffset(this.options.textLinesPadding);
   }
 
   setAmount(value) {
+    if (this.visible) {
+      this._pendingAmount = value;
+      return;
+    }
+    this._pendingAmount = null;
     this.amountValue = value;
-    if (this.amountTextNode) this.amountTextNode.textContent = this.formatAmount(value);
+    if (this.amountTextNode) {
+      this.amountTextNode.textContent = this.formatAmount(value);
+    }
   }
 
   setSize() {}
@@ -580,7 +588,14 @@ const textLinesPadding = this.getScaledOffset(this.options.textLinesPadding);
     this.container.style.opacity = "0";
     this.container.style.transform = this.hiddenTransform();
     this._hideTimer = setTimeout(() => {
-      if (!this.visible && this.container) this.container.style.display = "none";
+      if (!this.visible && this.container) {
+        this.container.style.display = "none";
+      }
+      if (!this.visible && this._pendingAmount != null) {
+        const pendingValue = this._pendingAmount;
+        this._pendingAmount = null;
+        this.setAmount(pendingValue);
+      }
     }, this.options.animationDuration);
   }
 
