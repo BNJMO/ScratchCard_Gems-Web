@@ -667,9 +667,7 @@ export function createServer(relay, options = {}) {
   const serverRelay = ensureRelay(relay);
   const {
     mount = document.querySelector(".app-wrapper") ?? document.body,
-    onDemoModeToggle = () => {},
     onVisibilityChange = () => {},
-    initialDemoMode = true,
     initialCollapsed = false,
     initialHidden = false,
     serverUrl = DEFAULT_SERVER_URL,
@@ -679,15 +677,9 @@ export function createServer(relay, options = {}) {
 
   const serverPanel = new ServerPanel({
     mount,
-    initialDemoMode: Boolean(initialDemoMode),
     initialCollapsed: Boolean(initialCollapsed),
     initialHidden: Boolean(initialHidden),
-    onDemoModeToggle,
     onVisibilityChange,
-  });
-
-  serverRelay.addEventListener("demomodechange", (event) => {
-    serverPanel.setDemoMode(Boolean(event.detail?.value));
   });
 
   const outgoingHandler = (event) => {
@@ -716,7 +708,6 @@ export function createServer(relay, options = {}) {
 
   return {
     element: serverPanel.container,
-    setDemoMode: (enabled) => serverPanel.setDemoMode(enabled),
     show: () => serverPanel.show(),
     hide: () => serverPanel.hide(),
     isVisible: () => serverPanel.isVisible(),

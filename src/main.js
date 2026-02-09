@@ -131,7 +131,6 @@ const hoverExitDuration = Number.isFinite(HOVER_CONFIG.exitDuration)
 
 let game;
 let controlPanel;
-let demoMode = true;
 const serverRelay = new ServerRelay();
 let serverUI = null;
 let suppressRelay = false;
@@ -219,27 +218,10 @@ function setTotalProfitAmountValue(value) {
 }
 
 function sendRelayMessage(type, payload = {}) {
-  if (demoMode || suppressRelay) {
+  if (suppressRelay) {
     return;
   }
   serverRelay.send(type, payload);
-}
-
-function setDemoMode(value) {
-  const next = Boolean(value);
-  if (demoMode === next) {
-    serverRelay.setDemoMode(next);
-    serverUI?.setDemoMode?.(next);
-    return;
-  }
-
-  demoMode = next;
-  serverRelay.setDemoMode(next);
-  serverUI?.setDemoMode?.(next);
-
-  if (demoMode) {
-    clearSelectionDelay();
-  }
 }
 
 function applyServerReveal(payload = {}) {
@@ -276,8 +258,6 @@ const serverMount =
   document.querySelector(".app-wrapper") ?? document.body;
 serverUI = createServer(serverRelay, {
   mount: serverMount,
-  onDemoModeToggle: (value) => setDemoMode(value),
-  initialDemoMode: demoMode,
   initialHidden: true,
   onVisibilityChange: (isVisible) => {
     controlPanel?.setServerPanelVisibility?.(isVisible);
@@ -286,7 +266,6 @@ serverUI = createServer(serverRelay, {
 controlPanel?.setServerPanelVisibility?.(
   serverUI?.isVisible?.() ?? false
 );
-serverRelay.setDemoMode(demoMode);
 
 serverRelay.addEventListener("incoming", (event) => {
   const { type, payload } = event.detail ?? {};
@@ -334,17 +313,6 @@ serverRelay.addEventListener("incoming", (event) => {
   });
 });
 
-serverRelay.addEventListener("demomodechange", (event) => {
-  const value = Boolean(event.detail?.value);
-  if (demoMode === value) {
-    return;
-  }
-  demoMode = value;
-  serverUI?.setDemoMode?.(value);
-  if (demoMode) {
-    clearSelectionDelay();
-  }
-});
 
 function setControlPanelBetMode(mode) {
   const normalized =
@@ -525,24 +493,6 @@ function clearAutoRoundTimer() {
   }
 }
 
-function determineDemoBetResult() {
-  const lostProbability = Math.random() < 0.4;
-  const betResult = lostProbability ? "lost" : "win";
-  return betResult;
-}
-
-
-function getCurrentBetAmountValue() {
-  const numericAmount = coerceNumericValue(controlPanel?.getBetValue?.());
-  return numericAmount != null ? Math.max(0, numericAmount) : 0;
-}
-
-function isDemoBetAmount() {
-  return getCurrentBetAmountValue() <= 0;
-}
-
-
-
 function randomCardTypeExcluding(excludedKey = null) {
   const cardTypes =
     Array.isArray(availableCardTypes) && availableCardTypes.length > 0
@@ -607,13 +557,7 @@ function executeAutoBetRound() {
 
   autoRoundInProgress = true;
 
-  if (!demoMode && !suppressRelay && !isDemoBetAmount()) {
-    submitServerBetRound();
-    return;
-  }
-
-  const betResult = determineDemoBetResult();
-  handleBet(betResult);
+  submitServerBetRound();
 
   setTimeout(() => {
     if (!autoRunActive) {
@@ -653,7 +597,7 @@ function startAutoBetProcess() {
   );
   autoRemainingBets = configuredBets;
 
-  if (!demoMode && !suppressRelay) {
+  if (!suppressRelay) {
     const payload = { numberOfBets: configuredBets };
     sendRelayMessage("control:start-autobet", payload);
     sendRelayMessage("action:start-autobet", payload);
@@ -671,7 +615,7 @@ function stopAutoBetProcess({ reason = "user", completed = false } = {}) {
   autoRunActive = false;
   autoRoundInProgress = false;
 
-  if (!demoMode && !suppressRelay && wasActive) {
+  if (!suppressRelay && wasActive) {
     sendRelayMessage("action:stop-autobet", {
       reason,
       completed,
@@ -808,13 +752,7 @@ function handleBetButtonClick() {
   } else if (betButtonMode === "scratch") {
     handleScratchButtonClick();
   } else {
-    if (!demoMode && !suppressRelay && !isDemoBetAmount()) {
-      submitServerBetRound();
-      return;
-    }
-
-    const betResult = determineDemoBetResult();
-    handleBet(betResult);
+    submitServerBetRound();
   }
 }
 
@@ -837,7 +775,7 @@ function handleCashout() {
     return;
   }
 
-  if (!demoMode && !suppressRelay) {
+  if (!suppressRelay) {
     sendRelayMessage("action:cashout", {});
     return;
   }
@@ -978,16 +916,6 @@ function prepareScratchRound(betResult, options = {}) {
   });
 }
 
-function handleBet(betResult = "lost", options = {}) {
-  if (!demoMode && !suppressRelay) {
-    return;
-  }
-
-  performBet();
-  game?.reset?.();
-  prepareScratchRound(betResult, options);
-}
-
 function handleGameStateChange(state) {
   lastKnownGameState = state;
   if (!roundActive) {
@@ -1051,7 +979,7 @@ function handleCardSelected(selection) {
     setControlPanelMinesState(false);
   }
 
-  const useLocalReveal = demoMode || suppressRelay;
+  const useLocalReveal = suppressRelay;
 
   if (useLocalReveal) {
     beginSelectionDelay();
@@ -1193,12 +1121,6 @@ const opts = {
     });
     controlPanel.addEventListener("betvaluechange", (event) => {
       console.debug(`Bet value updated to ${event.detail.value}`);
-      const numericValue =
-        coerceNumericValue(event.detail?.numericValue) ??
-        coerceNumericValue(event.detail?.value);
-      if (numericValue != null) {
-        setDemoMode(numericValue <= 0);
-      }
       sendRelayMessage("control:bet-value", {
         value: event.detail?.value,
         numericValue: event.detail?.numericValue,
