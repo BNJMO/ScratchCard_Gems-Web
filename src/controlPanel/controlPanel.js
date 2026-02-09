@@ -50,9 +50,9 @@ export class ControlPanel extends EventTarget {
       initialTotalProfitMultiplier:
         options.initialTotalProfitMultiplier ?? 1,
       initialBetValue: options.initialBetValue ?? "0.00000000",
-      initialBetAmountDisplay: options.initialBetAmountDisplay ?? "$0.00",
-      initialProfitOnWinDisplay: options.initialProfitOnWinDisplay ?? "$0.00",
-      initialProfitValue: options.initialProfitValue ?? "0.00000000",
+      initialBetAmountDisplay: options.initialBetAmountDisplay ?? "0.00",
+      initialProfitOnWinDisplay: options.initialProfitOnWinDisplay ?? "0.00",
+      initialProfitValue: options.initialProfitValue ?? "0.00",
       initialMode: options.initialMode ?? "manual",
       gameName: options.gameName ?? "Game Name",
       minesLabel: options.minesLabel ?? "Mines",
@@ -1304,11 +1304,11 @@ export class ControlPanel extends EventTarget {
     if (!this.profitValue) return;
     if (Number.isFinite(Number(value))) {
       const numeric = Number(value);
-      this.profitValue.textContent = clampToZero(numeric).toFixed(8);
+      this.profitValue.textContent = clampToZero(numeric).toFixed(2);
     } else if (typeof value === "string") {
       this.profitValue.textContent = value;
     } else {
-      this.profitValue.textContent = "0.00000000";
+      this.profitValue.textContent = "0.00";
     }
   }
 
